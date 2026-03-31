@@ -1,0 +1,1564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>RV Energy Simulator — ACFuture</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+/* ══════════════════════════════════════════════════════════════
+   ELEVATICS AI — RV ENERGY SIMULATOR
+   iPad / HMI Design System
+   Base: 20px · Labels: 18px · Values: 28-36px · Heroes: 72px+
+   Touch targets: min 52px height throughout
+════════════════════════════════════════════════════════════════ */
+:root{
+  --f:-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',sans-serif;
+  --fd:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',sans-serif;
+  --fm:'SF Mono','Menlo','Monaco','Courier New',monospace;
+
+  /* Backgrounds */
+  --bg:#000;--bg2:#0d0d10;--bg3:#1c1c1e;--bg4:#2c2c2e;--bg5:#3a3a3c;
+  /* Labels */
+  --l1:#fff;--l2:rgba(235,235,245,.75);--l3:rgba(235,235,245,.48);--l4:rgba(235,235,245,.22);--l5:rgba(235,235,245,.08);
+  --sep:rgba(84,84,88,.55);
+  /* Colors */
+  --blue:#0A84FF;--green:#30D158;--orange:#FF9F0A;--red:#FF453A;
+  --teal:#5AC8F5;--purple:#BF5AF2;--yellow:#FFD60A;
+  /* Surfaces */
+  --glass:rgba(28,28,30,.82);--gb:rgba(255,255,255,.09);--gh:rgba(255,255,255,.14);
+  /* Radii */
+  --r10:10px;--r16:16px;--r20:20px;--r28:28px;--r36:36px;--rp:999px;
+  /* Shadow */
+  --sh:0 4px 48px rgba(0,0,0,.65),0 1px 0 rgba(255,255,255,.05) inset;
+  /* Gaps */
+  --gap:20px;--gap-lg:28px;
+  /* Type scale */
+  --text-xs:13px; --text-sm:15px; --text-base:18px; --text-lg:22px;
+  --text-xl:28px; --text-2xl:36px; --text-3xl:48px; --text-hero:72px;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{
+  background:var(--bg);color:var(--l1);
+  font-family:var(--f);font-size:var(--text-base);
+  line-height:1.5;-webkit-font-smoothing:antialiased;
+}
+body{min-height:100vh;background:var(--bg)}
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 100% 40% at 50% 0%,rgba(10,84,255,.12) 0%,transparent 65%);
+}
+main,nav,.sb{position:relative;z-index:1}
+
+/* ── STATUS BAR ─────────────────────────────────────────────── */
+.sb{
+  height:44px;display:flex;align-items:center;gap:16px;padding:0 28px;
+  background:rgba(0,0,0,.94);border-bottom:1px solid var(--sep);
+  font-size:var(--text-sm);color:var(--l3);font-family:var(--fm);letter-spacing:.3px;
+}
+.dot{width:8px;height:8px;border-radius:50%}
+@keyframes breathe{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:1;transform:scale(1.3)}}
+.dot.live{background:var(--green);animation:breathe 2s ease-in-out infinite}
+.dot.off{background:var(--red)}
+.vsep{width:1px;height:16px;background:var(--sep);flex-shrink:0}
+.sbadge{padding:3px 12px;border-radius:var(--rp);font-size:var(--text-xs);font-weight:500;letter-spacing:.8px}
+.sbadge.live{background:rgba(48,209,88,.15);color:var(--green);border:1px solid rgba(48,209,88,.32)}
+.sbadge.off{background:rgba(255,69,58,.10);color:var(--red);border:1px solid rgba(255,69,58,.28)}
+
+/* ── NAV ────────────────────────────────────────────────────── */
+nav{
+  position:sticky;top:0;z-index:300;height:68px;
+  background:rgba(0,0,0,.88);backdrop-filter:blur(40px) saturate(180%);
+  border-bottom:1px solid var(--sep);
+}
+.ni{
+  max-width:1600px;margin:0 auto;height:100%;padding:0 28px;
+  display:flex;align-items:center;justify-content:space-between;gap:20px;
+}
+/* Brand — text only, no fake icons */
+.brand{display:flex;align-items:center;gap:0;flex-shrink:0}
+.brand-wordmark{
+  font-family:var(--fd);font-size:22px;font-weight:600;letter-spacing:-.5px;
+  color:var(--l1);
+}
+.brand-wordmark span{color:var(--blue)}
+.brand-sub{font-size:var(--text-xs);color:var(--l3);letter-spacing:1.5px;text-transform:uppercase;margin-top:2px;font-weight:600}
+
+/* Segmented control */
+.ntabs{display:flex;gap:2px;padding:4px;background:rgba(255,255,255,.07);border-radius:var(--rp)}
+.ntab{
+  padding:10px 24px;border-radius:var(--rp);font-size:var(--text-base);font-weight:600;
+  cursor:pointer;border:none;background:transparent;color:var(--l3);font-family:var(--f);
+  transition:all .2s;white-space:nowrap;min-height:44px;display:flex;align-items:center;
+}
+.ntab:hover{color:var(--l2)}
+.ntab.active{background:rgba(255,255,255,.15);color:var(--l1);
+  box-shadow:0 1px 4px rgba(0,0,0,.35)}
+
+.nr{display:flex;align-items:center;gap:12px;flex-shrink:0}
+.btn-live{
+  padding:12px 28px;border-radius:var(--rp);font-size:var(--text-base);font-weight:500;
+  font-family:var(--f);cursor:pointer;border:none;transition:all .18s;min-height:52px;
+}
+.btn-live.start{background:var(--green);color:#000}
+.btn-live.stop{background:var(--red);color:#fff}
+.btn-live:hover{opacity:.85}
+
+/* ── LAYOUT ─────────────────────────────────────────────────── */
+main{max-width:1600px;margin:0 auto;padding:28px}
+.page{display:none}.page.active{display:block}
+
+/* ── CARD ───────────────────────────────────────────────────── */
+.card{
+  background:var(--glass);border:1px solid var(--gb);border-radius:var(--r28);
+  backdrop-filter:blur(20px);box-shadow:var(--sh);padding:28px;
+  position:relative;overflow:hidden;
+}
+.card::before{
+  content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(135deg,rgba(255,255,255,.035) 0%,transparent 55%);
+}
+.section-label{
+  font-size:var(--text-sm);font-weight:500;color:var(--l3);
+  text-transform:uppercase;letter-spacing:2px;margin-bottom:20px;
+}
+
+/* ── TOOLBAR ────────────────────────────────────────────────── */
+.toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:14px}
+.filter-bar{display:flex;gap:8px;flex-wrap:wrap}
+.flt{
+  padding:10px 20px;border-radius:var(--rp);font-size:var(--text-base);font-weight:600;
+  border:1px solid var(--sep);background:transparent;color:var(--l2);
+  cursor:pointer;font-family:var(--f);transition:all .15s;min-height:44px;
+}
+.flt.active{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.22);color:var(--l1)}
+.btn-add{
+  padding:12px 28px;border-radius:var(--rp);background:var(--blue);border:none;
+  color:#fff;font-size:var(--text-base);font-weight:500;font-family:var(--f);
+  cursor:pointer;transition:opacity .15s;min-height:52px;
+}
+.btn-add:hover{opacity:.85}
+
+/* ── APPLIANCE CARDS ─────────────────────────────────────────── */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(440px,1fr));gap:var(--gap)}
+.app-card{
+  background:var(--glass);border:1px solid var(--gb);border-radius:var(--r28);
+  overflow:hidden;box-shadow:var(--sh);transition:border-color .2s;
+}
+.app-card:hover{border-color:rgba(255,255,255,.18)}
+.app-card.off{opacity:.58}
+
+/* Card header — large */
+.ch{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:22px 24px;border-bottom:1px solid var(--sep);gap:12px;
+}
+.ch-left{display:flex;align-items:center;gap:14px;min-width:0;flex:1}
+.app-color-strip{width:5px;height:52px;border-radius:3px;flex-shrink:0}
+
+/* Inline editable name — very large */
+.app-name-edit{
+  font-size:var(--text-xl);font-weight:500;
+  background:transparent;border:2px solid transparent;border-radius:var(--r10);
+  color:var(--l1);font-family:var(--f);
+  padding:4px 10px;cursor:pointer;width:100%;transition:border-color .18s;
+  line-height:1.2;
+}
+.app-name-edit:hover{border-color:var(--sep)}
+.app-name-edit:focus{outline:none;border-color:var(--blue);background:rgba(10,132,255,.08);cursor:text}
+.app-cat-label{font-size:var(--text-sm);color:var(--l3);padding-left:10px;margin-top:2px;font-weight:500}
+
+/* Toggle switch — large */
+.tgl-wrap{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.always-chip{
+  font-size:var(--text-sm);padding:5px 14px;border-radius:var(--rp);
+  background:rgba(48,209,88,.12);color:var(--green);border:1px solid rgba(48,209,88,.25);
+  font-weight:600;
+}
+.tgl{position:relative;width:56px;height:30px;flex-shrink:0}
+.tgl input{opacity:0;width:0;height:0;position:absolute}
+.tgl-sl{
+  position:absolute;inset:0;border-radius:var(--rp);
+  background:rgba(255,255,255,.12);border:1.5px solid var(--sep);
+  cursor:pointer;transition:all .22s;
+}
+.tgl-sl::after{
+  content:'';position:absolute;width:22px;height:22px;border-radius:50%;
+  background:rgba(255,255,255,.5);top:3px;left:3px;transition:all .22s;
+}
+.tgl input:checked+.tgl-sl{background:rgba(48,209,88,.28);border-color:var(--green)}
+.tgl input:checked+.tgl-sl::after{transform:translateX(26px);background:var(--green)}
+
+/* Card body */
+.cb{padding:24px}
+
+/* Param grid — 3-column, large fields */
+.pg{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.pi{background:rgba(255,255,255,.04);border-radius:var(--r16);padding:14px}
+.pi label{
+  display:block;font-size:var(--text-sm);color:var(--l3);font-weight:500;
+  text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;
+}
+.pi input,.pi select{
+  width:100%;padding:10px 12px;background:rgba(255,255,255,.08);
+  border:1.5px solid rgba(255,255,255,.10);border-radius:var(--r10);
+  color:var(--l1);font-family:var(--fm);font-size:var(--text-lg);font-weight:500;
+  text-align:center;outline:none;transition:border-color .18s;
+  -moz-appearance:textfield;
+}
+.pi input::-webkit-inner-spin-button{-webkit-appearance:none}
+.pi input:focus,.pi select:focus{border-color:var(--blue)}
+.pi input[readonly]{color:var(--orange);cursor:default}
+.pi select{font-family:var(--f);font-size:var(--text-base);text-align:left;cursor:pointer}
+.pi select option{background:#1c1c1e}
+
+/* Computed row */
+.comp-row{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:10px;
+  padding:16px;background:rgba(255,255,255,.04);border-radius:var(--r16);margin-bottom:16px;
+}
+.comp-cell{text-align:center}
+.comp-v{font-family:var(--fm);font-size:var(--text-xl);font-weight:600;margin-bottom:4px}
+.comp-l{font-size:var(--text-sm);color:var(--l3);text-transform:uppercase;letter-spacing:.8px;font-weight:600}
+
+/* Duty cycle */
+.duty-row{margin-bottom:16px}
+.duty-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.duty-header span:first-child{font-size:var(--text-base);color:var(--l2);font-weight:600}
+.duty-header span:last-child{font-family:var(--fm);font-size:var(--text-xl);font-weight:600;color:var(--blue)}
+input[type=range]{
+  width:100%;height:6px;background:rgba(255,255,255,.12);
+  outline:none;cursor:pointer;appearance:none;-webkit-appearance:none;border-radius:3px;
+}
+input[type=range]::-webkit-slider-thumb{
+  width:26px;height:26px;border-radius:50%;
+  background:var(--blue);cursor:pointer;-webkit-appearance:none;
+  box-shadow:0 2px 8px rgba(10,132,255,.5);
+}
+
+/* Scheduler section */
+.sched-section{border-top:1px solid var(--sep);padding-top:20px}
+.sched-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.sched-title{font-size:var(--text-base);color:var(--l3);font-weight:500;text-transform:uppercase;letter-spacing:1.2px}
+.btn-add-sched{
+  padding:8px 20px;border-radius:var(--rp);border:1.5px solid rgba(10,132,255,.40);
+  background:rgba(10,132,255,.12);color:var(--blue);font-size:var(--text-base);
+  font-weight:600;cursor:pointer;font-family:var(--f);min-height:44px;
+}
+.always-on-info{
+  font-size:var(--text-base);color:var(--green);padding:12px 16px;
+  background:rgba(48,209,88,.08);border-radius:var(--r16);
+  border:1px solid rgba(48,209,88,.22);font-weight:500;line-height:1.5;
+}
+.sched-win{
+  background:rgba(255,255,255,.04);border-radius:var(--r16);padding:16px;
+  margin-bottom:10px;position:relative;border:1px solid rgba(255,255,255,.07);
+}
+.sw-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.sw-label{font-size:var(--text-base);color:var(--l3);font-weight:600;white-space:nowrap}
+.sw-input{
+  padding:8px 12px;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.12);
+  border-radius:var(--r10);color:var(--l1);font-family:var(--fm);font-size:var(--text-lg);
+  font-weight:500;outline:none;width:100px;transition:border-color .18s;
+}
+.sw-input.wide{width:160px}
+.sw-input:focus{border-color:var(--blue)}
+.sw-delete{
+  position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;
+  background:rgba(255,69,58,.15);border:none;color:var(--red);cursor:pointer;
+  font-size:18px;display:flex;align-items:center;justify-content:center;transition:all .15s;
+}
+.sw-delete:hover{background:rgba(255,69,58,.30)}
+.dow-grid{display:flex;gap:6px;flex-wrap:wrap}
+.dow-btn{
+  width:36px;height:36px;border-radius:10px;border:1.5px solid var(--sep);
+  background:transparent;color:var(--l3);font-size:var(--text-sm);font-weight:500;
+  cursor:pointer;transition:all .15s;
+}
+.dow-btn.active{background:rgba(10,132,255,.22);border-color:var(--blue);color:var(--blue)}
+
+/* Card footer */
+.card-footer{
+  padding:16px 24px;border-top:1px solid var(--sep);
+  display:flex;justify-content:flex-end;
+}
+.btn-del-app{
+  padding:10px 24px;border-radius:var(--rp);background:rgba(255,69,58,.10);
+  border:1.5px solid rgba(255,69,58,.28);color:var(--red);font-size:var(--text-base);
+  font-weight:500;cursor:pointer;font-family:var(--f);min-height:44px;transition:all .15s;
+}
+.btn-del-app:hover{background:rgba(255,69,58,.22)}
+
+/* ── SIMULATE PAGE ───────────────────────────────────────────── */
+.live-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:var(--gap);margin-bottom:var(--gap)}
+.ls-card{background:var(--glass);border:1px solid var(--gb);border-radius:var(--r20);padding:22px 18px;text-align:center}
+.ls-val{font-family:var(--fm);font-size:var(--text-3xl);font-weight:600;line-height:1;margin-bottom:6px}
+.ls-lbl{font-size:var(--text-sm);color:var(--l3);font-weight:500;text-transform:uppercase;letter-spacing:1px}
+.sim-layout{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap);margin-bottom:var(--gap)}
+.dur-btn{padding:8px 16px;border-radius:var(--rp);font-size:var(--base);font-weight:500;cursor:pointer;border:none;background:transparent;color:var(--l3);font-family:var(--f);transition:all .15s;min-height:40px}
+.dur-btn:hover{color:var(--l2)}.dur-btn.active{background:rgba(255,255,255,.15);color:var(--l1)}
+.field-group{margin-bottom:16px}
+.field-label{font-size:var(--text-base);color:var(--l3);font-weight:500;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.field-input{
+  width:100%;padding:14px 16px;background:rgba(255,255,255,.07);
+  border:1.5px solid rgba(255,255,255,.12);border-radius:var(--r16);
+  color:var(--l1);font-family:var(--f);font-size:var(--text-lg);font-weight:600;
+  outline:none;transition:border-color .18s;
+}
+.field-input:focus{border-color:var(--blue)}
+.field-input option{background:#1c1c1e}
+.btn-run{
+  width:100%;padding:16px;background:var(--teal);border:none;border-radius:var(--r16);
+  color:#000;font-size:var(--text-lg);font-weight:600;font-family:var(--f);
+  cursor:pointer;min-height:56px;transition:opacity .15s;
+}
+.btn-run:hover{opacity:.85}
+
+/* Breakdown card */
+.bd-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:14px}
+.bd-title .t1{font-family:var(--fd);font-size:var(--text-xl);font-weight:500;margin-bottom:4px}
+.bd-title .t2{font-size:var(--text-base);color:var(--l2)}
+.bd-controls{display:flex;gap:10px;align-items:center}
+.btn-dl{
+  padding:10px 22px;border-radius:var(--rp);border:1.5px solid rgba(255,255,255,.22);
+  background:rgba(255,255,255,.07);color:var(--l2);font-size:var(--text-base);font-weight:500;
+  cursor:pointer;font-family:var(--f);min-height:44px;transition:all .15s;
+}
+.btn-dl:hover{background:rgba(255,255,255,.13);color:var(--l1)}
+.view-toggle{display:flex;gap:3px;padding:4px;background:rgba(255,255,255,.07);border-radius:var(--rp)}
+.vtb{
+  padding:9px 20px;border-radius:var(--rp);font-size:var(--text-base);font-weight:500;
+  cursor:pointer;border:none;background:transparent;color:var(--l3);font-family:var(--f);transition:all .15s;
+}
+.vtb.active{background:rgba(255,255,255,.15);color:var(--l1)}
+
+/* Breakdown table */
+.bd-table{width:100%;border-collapse:collapse}
+.bd-table thead tr{border-bottom:1.5px solid var(--sep)}
+.bd-table th{
+  font-size:var(--text-base);font-weight:500;color:var(--l3);
+  text-transform:uppercase;letter-spacing:1.2px;padding:14px 16px;text-align:left;
+}
+.bd-table td{padding:16px 16px;border-bottom:1px solid rgba(255,255,255,.05);font-size:var(--text-lg);vertical-align:middle}
+.bd-table tr:last-child td{border-bottom:none}
+.bd-table tr:hover td{background:rgba(255,255,255,.025)}
+.share-bar{display:flex;align-items:center;gap:12px}
+.share-track{flex:1;height:10px;background:rgba(255,255,255,.08);border-radius:5px;overflow:hidden}
+.share-fill{height:100%;border-radius:5px;transition:width .8s ease}
+.share-pct{font-family:var(--fm);font-size:var(--text-base);color:var(--l3);min-width:44px;text-align:right;font-weight:500}
+
+/* ── PROFILES PAGE ───────────────────────────────────────────── */
+.profiles-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:14px}
+.profiles-title .t1{font-family:var(--fd);font-size:var(--text-2xl);font-weight:500;margin-bottom:6px}
+.profiles-title .t2{font-size:var(--text-base);color:var(--l2);line-height:1.6}
+.btn-new-profile{
+  padding:14px 32px;border-radius:var(--rp);background:var(--purple);border:none;
+  color:#fff;font-size:var(--text-lg);font-weight:500;font-family:var(--f);
+  cursor:pointer;min-height:56px;transition:opacity .15s;white-space:nowrap;
+}
+.btn-new-profile:hover{opacity:.85}
+.profiles-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:var(--gap)}
+
+/* Profile card — large and editable */
+.prof-card{
+  background:var(--glass);border:1px solid var(--gb);border-radius:var(--r28);
+  box-shadow:var(--sh);transition:border-color .2s;overflow:hidden;
+}
+.prof-card.active{border-color:var(--blue)}
+.prof-card-top{padding:28px 28px 20px}
+.prof-icon-row{display:flex;align-items:center;gap:16px;margin-bottom:16px}
+.prof-icon-box{
+  width:64px;height:64px;border-radius:20px;
+  background:rgba(255,255,255,.07);border:1.5px solid var(--sep);
+  display:flex;align-items:center;justify-content:center;
+  font-size:32px;flex-shrink:0;cursor:pointer;transition:border-color .15s;
+}
+.prof-icon-box:focus{outline:none;border-color:var(--blue)}
+.prof-header{flex:1;min-width:0}
+.prof-label-edit{
+  font-size:var(--text-xl);font-weight:500;background:transparent;
+  border:2px solid transparent;border-radius:var(--r10);color:var(--l1);font-family:var(--f);
+  padding:4px 8px;width:100%;outline:none;transition:border-color .18s;
+}
+.prof-label-edit:hover{border-color:var(--sep)}
+.prof-label-edit:focus{border-color:var(--blue);background:rgba(10,132,255,.08)}
+.preset-badge{
+  display:inline-block;margin-top:6px;padding:3px 10px;border-radius:var(--rp);
+  font-size:var(--text-xs);font-weight:500;letter-spacing:1px;text-transform:uppercase;
+  background:rgba(255,255,255,.06);color:var(--l4);border:1px solid var(--sep);
+}
+.prof-desc-edit{
+  width:100%;padding:10px 12px;background:rgba(255,255,255,.05);
+  border:1.5px solid rgba(255,255,255,.10);border-radius:var(--r10);
+  color:var(--l2);font-family:var(--f);font-size:var(--text-base);
+  outline:none;resize:none;margin-bottom:16px;line-height:1.5;
+}
+.prof-desc-edit:focus{border-color:var(--blue)}
+
+/* Profile param grid */
+.prof-params{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.pp{background:rgba(255,255,255,.04);border-radius:var(--r16);padding:14px}
+.pp label{
+  display:block;font-size:var(--text-sm);color:var(--l3);font-weight:500;
+  text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;
+}
+.pp input,.pp select{
+  width:100%;padding:10px 12px;background:rgba(255,255,255,.08);
+  border:1.5px solid rgba(255,255,255,.10);border-radius:var(--r10);
+  color:var(--l1);font-family:var(--fm);font-size:var(--text-lg);font-weight:500;
+  text-align:center;outline:none;transition:border-color .18s;
+}
+.pp input:focus,.pp select:focus{border-color:var(--blue)}
+.pp select{font-family:var(--f);text-align:left;cursor:pointer}
+.pp select option{background:#1c1c1e}
+
+.prof-card-actions{
+  display:flex;gap:10px;padding:20px 28px;
+  border-top:1px solid var(--sep);
+}
+.btn-apply-profile{
+  flex:1;padding:14px;background:var(--blue);border:none;border-radius:var(--r16);
+  color:#fff;font-size:var(--text-lg);font-weight:500;font-family:var(--f);
+  cursor:pointer;transition:opacity .15s;min-height:52px;
+}
+.btn-apply-profile:hover{opacity:.85}
+.btn-save-profile{
+  flex:1;padding:14px;background:rgba(48,209,88,.15);border:1.5px solid rgba(48,209,88,.30);
+  border-radius:var(--r16);color:var(--green);font-size:var(--text-lg);font-weight:500;
+  font-family:var(--f);cursor:pointer;transition:all .15s;min-height:52px;
+}
+.btn-save-profile:hover{background:rgba(48,209,88,.25)}
+.btn-del-profile{
+  padding:14px 22px;background:rgba(255,69,58,.10);border:1.5px solid rgba(255,69,58,.28);
+  border-radius:var(--r16);color:var(--red);font-size:var(--text-base);font-weight:500;
+  font-family:var(--f);cursor:pointer;transition:all .15s;min-height:52px;
+}
+.btn-del-profile:hover{background:rgba(255,69,58,.22)}
+
+/* ── WEATHER PAGE ────────────────────────────────────────────── */
+.day-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:var(--gap)}
+.day-card{
+  background:rgba(255,255,255,.04);border:1.5px solid var(--sep);border-radius:var(--r20);
+  padding:18px 12px;text-align:center;cursor:pointer;transition:all .18s;
+}
+.day-card:hover,.day-card.active{border-color:var(--blue);background:rgba(10,132,255,.09)}
+.day-num{font-size:var(--text-base);font-weight:500;margin-bottom:10px}
+.day-wx-icon{font-size:32px;margin-bottom:10px;display:block}
+.day-cond{font-size:var(--text-sm);color:var(--l2);font-weight:600}
+.day-temp{font-size:var(--text-base);font-family:var(--fm);font-weight:500;color:var(--orange);margin-top:6px}
+.day-times{font-size:var(--text-xs);color:var(--l3);margin-top:6px;font-weight:500}
+
+/* ── MQTT PAGE ───────────────────────────────────────────────── */
+.mqtt-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)}
+.chk-row{
+  display:flex;align-items:center;gap:14px;padding:14px 0;
+  border-bottom:1px solid rgba(255,255,255,.05);
+}
+.chk-row:last-child{border-bottom:none}
+.chk-row input[type=checkbox]{width:24px;height:24px;accent-color:var(--blue);cursor:pointer}
+.chk-row label{font-size:var(--text-lg);color:var(--l2);cursor:pointer;font-weight:500}
+.save-btn{
+  width:100%;padding:16px;background:var(--blue);border:none;border-radius:var(--r16);
+  color:#fff;font-size:var(--text-lg);font-weight:500;font-family:var(--f);
+  cursor:pointer;margin-top:10px;min-height:56px;
+}
+.save-btn:hover{opacity:.85}
+.topic-mono{font-family:var(--fm);font-size:var(--text-lg);color:var(--teal);line-height:2.2}
+
+/* ── TOAST ───────────────────────────────────────────────────── */
+.toast{
+  position:fixed;bottom:32px;right:32px;z-index:900;
+  padding:16px 28px;border-radius:var(--r20);font-size:var(--text-lg);font-weight:600;
+  background:rgba(44,44,46,.96);border:1.5px solid rgba(255,255,255,.14);color:var(--l1);
+  transform:translateY(14px);opacity:0;transition:all .3s;pointer-events:none;
+  backdrop-filter:blur(24px);min-width:240px;
+}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.ok{border-color:rgba(48,209,88,.35);color:var(--green)}
+.toast.err{border-color:rgba(255,69,58,.35);color:var(--red)}
+
+/* ── RESPONSIVE ──────────────────────────────────────────────── */
+@media(max-width:1100px){
+  .cards-grid{grid-template-columns:1fr}
+  .sim-layout{grid-template-columns:1fr}
+  .mqtt-grid{grid-template-columns:1fr}
+  .day-grid{grid-template-columns:repeat(4,1fr)}
+  .pg{grid-template-columns:1fr 1fr}
+  .profiles-grid{grid-template-columns:1fr}
+  .live-strip{grid-template-columns:repeat(3,1fr)}
+}
+@media(max-width:720px){
+  :root{--text-hero:48px;--text-3xl:36px;--text-2xl:28px}
+  main{padding:16px}
+  .ni{padding:0 16px}
+  .ntabs{display:none}
+  .day-grid{grid-template-columns:repeat(2,1fr)}
+  .live-strip{grid-template-columns:1fr 1fr}
+  .prof-params{grid-template-columns:1fr}
+  .comp-row{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- STATUS BAR -->
+<div class="sb">
+  <div class="dot live"></div>
+  <span>ACFuture · RV Energy Simulator</span>
+  <div class="vsep"></div>
+  <span id="sim-status">Idle</span>
+  <div class="vsep"></div>
+  <span id="sb-time">--:--:--</span>
+  <div style="margin-left:auto"></div>
+  <div class="sbadge off" id="live-badge">OFFLINE</div>
+</div>
+
+<!-- NAV -->
+<nav><div class="ni">
+  <div class="brand">
+    <div>
+      <div class="brand-wordmark">ACFuture</div>
+      <div class="brand-sub">RV Energy Simulator</div>
+    </div>
+  </div>
+  <div class="ntabs">
+    <button class="ntab active" onclick="showTab('configure',this)">Configure</button>
+    <button class="ntab" onclick="showTab('profiles',this)">Profiles</button>
+    <button class="ntab" onclick="showTab('simulate',this)">Simulate</button>
+    <button class="ntab" onclick="showTab('weather',this)">Weather</button>
+    <button class="ntab" onclick="showTab('mqtt',this)">MQTT</button>
+  </div>
+  <div class="nr">
+    <button class="btn-live start" id="live-btn" onclick="toggleLive()">▶ Start Live Sim</button>
+  </div>
+</div></nav>
+
+<main>
+
+<!-- ══ CONFIGURE ═════════════════════════════════════════════ -->
+<div id="tab-configure" class="page active">
+  <div class="toolbar">
+    <div class="filter-bar">
+      <button class="flt active" onclick="filterCards('all',this)">All Appliances</button>
+      <button class="flt" onclick="filterCards('high',this)">High Power</button>
+      <button class="flt" onclick="filterCards('medium',this)">Medium</button>
+      <button class="flt" onclick="filterCards('low',this)">Low</button>
+      <button class="flt" onclick="filterCards('always_on',this)">Always-On</button>
+    </div>
+    <button class="btn-add" onclick="addAppliance()">+ Add Appliance</button>
+  </div>
+  <div class="cards-grid" id="cards-grid"></div>
+</div>
+
+<!-- ══ PROFILES ══════════════════════════════════════════════ -->
+<div id="tab-profiles" class="page">
+  <div class="profiles-header">
+    <div class="profiles-title">
+      <div class="t1">RV User Profiles</div>
+      <div class="t2">Select, edit, or create a profile to configure your simulation. All parameters are editable inline.</div>
+    </div>
+    <button class="btn-new-profile" onclick="createNewProfile()">+ New Custom Profile</button>
+  </div>
+  <div class="profiles-grid" id="profiles-grid"></div>
+</div>
+
+<!-- ══ SIMULATE ═══════════════════════════════════════════════ -->
+<div id="tab-simulate" class="page">
+  <div class="live-strip">
+    <div class="ls-card"><div class="ls-val" id="ls-soc" style="color:var(--green)">—</div><div class="ls-lbl">SOC %</div></div>
+    <div class="ls-card"><div class="ls-val" id="ls-sol" style="color:var(--orange)">—</div><div class="ls-lbl">Solar kW</div></div>
+    <div class="ls-card"><div class="ls-val" id="ls-ld" style="color:var(--blue)">—</div><div class="ls-lbl">Load kW</div></div>
+    <div class="ls-card"><div class="ls-val" id="ls-si">—</div><div class="ls-lbl">Stability</div></div>
+    <div class="ls-card"><div class="ls-val" id="ls-day" style="color:var(--l3)">—</div><div class="ls-lbl">Sim Day</div></div>
+  </div>
+
+  <!-- Battery & Solar Configuration — full-width card above charts -->
+  <div class="card" style="margin-bottom:var(--gap)">
+    <div class="section-label" style="margin-bottom:20px">Battery, Solar & Reserve Configuration</div>
+
+    <!-- Top row: SOC hero + 3 parameter fields -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px;margin-bottom:20px;align-items:start">
+
+      <!-- SOC Control — spans 1 column with large display -->
+      <div style="background:rgba(48,209,88,.07);border:1.5px solid rgba(48,209,88,.28);border-radius:var(--r20);padding:20px">
+        <div style="font-size:var(--sm);color:var(--green);font-weight:500;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:8px">State of Charge</div>
+        <div style="font-family:var(--fm);font-size:56px;font-weight:600;color:var(--green);line-height:1;margin-bottom:4px" id="soc-display">87%</div>
+        <div style="font-size:var(--sm);color:var(--l3);margin-bottom:14px" id="soc-kwh-display">39.2 kWh available</div>
+        <input type="range" id="cfg-soc" min="10" max="100" step="1" value="87"
+          style="width:100%;height:8px;accent-color:var(--green);cursor:pointer;margin-bottom:10px"
+          oninput="onSOCChange(this.value)" onchange="saveSettings()">
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="number" id="cfg-soc-num" value="87" min="10" max="100" step="1"
+            style="width:72px;padding:7px 10px;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.12);border-radius:10px;color:var(--l1);font-family:var(--fm);font-size:var(--lg);font-weight:500;text-align:center;outline:none"
+            oninput="syncSOCNum(this.value)" onchange="saveSettings()">
+          <span style="font-size:var(--sm);color:var(--l3)">%</span>
+          <div id="soc-status-badge" style="margin-left:auto;padding:4px 12px;border-radius:var(--rp);font-size:var(--sm);font-weight:500;background:rgba(48,209,88,.12);color:var(--green);border:1px solid rgba(48,209,88,.25);white-space:nowrap">Good</div>
+        </div>
+      </div>
+
+      <!-- Battery Capacity -->
+      <div style="background:rgba(255,255,255,.04);border-radius:var(--r20);padding:20px;border:1.5px solid rgba(255,255,255,.08)">
+        <div style="font-size:var(--sm);color:var(--l3);font-weight:500;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:8px">Battery Capacity</div>
+        <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:14px">
+          <div style="font-family:var(--fm);font-size:48px;font-weight:600;color:var(--blue);line-height:1" id="bat-display">45</div>
+          <div style="font-size:var(--lg);color:var(--l3);font-weight:500">kWh</div>
+        </div>
+        <input type="range" id="cfg-bat-slider" min="5" max="500" step="5" value="45"
+          style="width:100%;height:8px;accent-color:var(--blue);cursor:pointer;margin-bottom:10px"
+          oninput="onBatCapChange(this.value)" onchange="saveSettings()">
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="number" id="cfg-bat" value="45" min="5" max="500" step="5"
+            style="width:80px;padding:7px 10px;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.12);border-radius:10px;color:var(--l1);font-family:var(--fm);font-size:var(--lg);font-weight:500;text-align:center;outline:none"
+            oninput="syncBatNum(this.value)" onchange="saveSettings()">
+          <span style="font-size:var(--sm);color:var(--l3)">kWh</span>
+        </div>
+      </div>
+
+      <!-- Reserve Battery (configurable 5–30%) -->
+      <div style="background:rgba(255,69,58,.06);border-radius:var(--r20);padding:20px;border:1.5px solid rgba(255,69,58,.20)">
+        <div style="font-size:var(--sm);color:var(--red);font-weight:500;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:8px">Reserve Floor</div>
+        <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:14px">
+          <div style="font-family:var(--fm);font-size:48px;font-weight:600;color:var(--red);line-height:1" id="res-display">10</div>
+          <div style="font-size:var(--lg);color:var(--l3);font-weight:500">%</div>
+        </div>
+        <input type="range" id="cfg-reserve-slider" min="5" max="30" step="1" value="10"
+          style="width:100%;height:8px;accent-color:var(--red);cursor:pointer;margin-bottom:10px"
+          oninput="onReserveChange(this.value)" onchange="saveSettings()">
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="number" id="cfg-reserve" value="10" min="5" max="30" step="1"
+            style="width:72px;padding:7px 10px;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,69,58,.25);border-radius:10px;color:var(--l1);font-family:var(--fm);font-size:var(--lg);font-weight:500;text-align:center;outline:none"
+            oninput="syncReserveNum(this.value)" onchange="saveSettings()">
+          <span style="font-size:var(--sm);color:var(--l3)">% hard floor</span>
+        </div>
+      </div>
+
+      <!-- Solar Panels -->
+      <div style="background:rgba(255,159,10,.06);border-radius:var(--r20);padding:20px;border:1.5px solid rgba(255,159,10,.20)">
+        <div style="font-size:var(--sm);color:var(--orange);font-weight:500;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:8px">Solar Panels</div>
+        <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:14px">
+          <div style="font-family:var(--fm);font-size:48px;font-weight:600;color:var(--orange);line-height:1" id="panel-display">0.8</div>
+          <div style="font-size:var(--lg);color:var(--l3);font-weight:500">kWp</div>
+        </div>
+        <input type="range" id="cfg-panel-slider" min="0.1" max="20" step="0.1" value="0.8"
+          style="width:100%;height:8px;accent-color:var(--orange);cursor:pointer;margin-bottom:10px"
+          oninput="onPanelChange(this.value)" onchange="saveSettings()">
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="number" id="cfg-panel" value="0.8" min="0.1" max="20" step="0.1"
+            style="width:80px;padding:7px 10px;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,159,10,.25);border-radius:10px;color:var(--l1);font-family:var(--fm);font-size:var(--lg);font-weight:500;text-align:center;outline:none"
+            oninput="syncPanelNum(this.value)" onchange="saveSettings()">
+          <span style="font-size:var(--sm);color:var(--l3)">kWp peak</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Battery status summary strip -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+      <div style="background:rgba(48,209,88,.06);border-radius:var(--r16);padding:14px 16px;border:1px solid rgba(48,209,88,.18)">
+        <div style="font-size:var(--sm);color:var(--l3);margin-bottom:4px;font-weight:500">Available Now</div>
+        <div style="font-family:var(--fm);font-size:var(--xl);font-weight:600;color:var(--green)" id="stat-avail">—</div>
+      </div>
+      <div style="background:rgba(255,255,255,.04);border-radius:var(--r16);padding:14px 16px;border:1px solid rgba(255,255,255,.08)">
+        <div style="font-size:var(--sm);color:var(--l3);margin-bottom:4px;font-weight:500">Usable Capacity</div>
+        <div style="font-family:var(--fm);font-size:var(--xl);font-weight:600;color:var(--l2)" id="stat-usable">—</div>
+      </div>
+      <div style="background:rgba(255,69,58,.06);border-radius:var(--r16);padding:14px 16px;border:1px solid rgba(255,69,58,.18)">
+        <div style="font-size:var(--sm);color:var(--l3);margin-bottom:4px;font-weight:500">Reserve Floor</div>
+        <div style="font-family:var(--fm);font-size:var(--xl);font-weight:600;color:var(--red)" id="stat-reserve10">—</div>
+      </div>
+      <div style="background:rgba(255,159,10,.06);border-radius:var(--r16);padding:14px 16px;border:1px solid rgba(255,159,10,.18)">
+        <div style="font-size:var(--sm);color:var(--l3);margin-bottom:4px;font-weight:500">Warning Floor</div>
+        <div style="font-family:var(--fm);font-size:var(--xl);font-weight:600;color:var(--orange)" id="stat-reserve20">—</div>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <div style="font-size:var(--sm);color:var(--l3);font-weight:500">Duration</div>
+      <div style="display:flex;gap:6px;padding:4px;background:rgba(255,255,255,.07);border-radius:var(--rp)">
+        <button class="dur-btn active" onclick="setDuration(1,this)">1 Day</button>
+        <button class="dur-btn" onclick="setDuration(2,this)">2 Days</button>
+        <button class="dur-btn" onclick="setDuration(3,this)">3 Days</button>
+        <button class="dur-btn" onclick="setDuration(4,this)">4 Days</button>
+        <button class="dur-btn" onclick="setDuration(5,this)">5 Days</button>
+        <button class="dur-btn" onclick="setDuration(6,this)">6 Days</button>
+        <button class="dur-btn" onclick="setDuration(7,this)">7 Days</button>
+      </div>
+      <div style="flex:1"></div>
+      <div style="font-size:var(--xs);color:var(--l3)">Auto-saved</div>
+      <button class="btn-run" style="min-width:200px" onclick="runSimulation()">▶ Run Simulation</button>
+    </div>
+  </div>
+
+  <!-- Charts row -->
+  <div class="sim-layout">
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div class="section-label" style="margin-bottom:0">Battery SOC — <span id="soc-chart-label">7 Days</span></div>
+        <div style="display:flex;gap:6px;font-size:var(--sm);font-weight:500">
+          <span style="width:24px;height:3px;background:rgba(255,159,10,.6);border-radius:2px;display:inline-block;vertical-align:middle;margin-top:8px"></span>
+          <span style="color:var(--l3)">20% warning</span>
+          <span style="width:24px;height:3px;background:rgba(255,69,58,.7);border-radius:2px;display:inline-block;vertical-align:middle;margin-top:8px;margin-left:8px"></span>
+          <span style="color:var(--l3)">Reserve floor</span>
+        </div>
+      </div>
+      <div style="height:260px"><canvas id="soc-chart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="section-label" style="margin-bottom:16px">Daily Energy Balance</div>
+      <div style="height:260px"><canvas id="energy-chart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- LARGE Per-Appliance Breakdown card -->
+  <div class="card">
+    <div class="bd-header">
+      <div class="bd-title">
+        <div class="t1">Per-Appliance Energy Breakdown</div>
+        <div class="t2">Daily average · Day 1 of simulation · Click appliance for details</div>
+      </div>
+      <div class="bd-controls">
+        <button class="btn-dl" onclick="dlBreakdown()">↓ CSV</button>
+        <div class="view-toggle">
+          <button class="vtb active" onclick="setView('bar',this)">Bar Chart</button>
+          <button class="vtb" onclick="setView('table',this)">Table</button>
+        </div>
+      </div>
+    </div>
+    <div id="bv-bar"><div style="height:480px"><canvas id="app-bar-chart"></canvas></div></div>
+    <div id="bv-table" style="display:none">
+      <table class="bd-table">
+        <thead><tr>
+          <th>Appliance</th>
+          <th style="text-align:right">Effective W</th>
+          <th style="text-align:right">kWh / Day</th>
+          <th>Share of Total Load</th>
+        </tr></thead>
+        <tbody id="bd-tbody"><tr><td colspan="4" style="text-align:center;color:var(--l3);padding:36px;font-size:var(--text-lg)">Run a simulation first</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══ WEATHER ════════════════════════════════════════════════ -->
+<div id="tab-weather" class="page">
+  <div class="card" style="margin-bottom:var(--gap)">
+    <div class="section-label">7-Day Weather & Solar Plan</div>
+    <div class="day-grid" id="day-grid"></div>
+  </div>
+  <div class="card" id="day-editor" style="display:none">
+    <div class="section-label">Editing Day <span id="day-edit-num">1</span></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:var(--gap)">
+      <div class="field-group"><div class="field-label">Condition</div>
+        <select class="field-input" id="de-cond" onchange="syncCloud()">
+          <option value="sunny">Sunny (100% solar)</option>
+          <option value="partly">Partly Cloudy (60%)</option>
+          <option value="overcast">Overcast (25%)</option>
+          <option value="rainy">Rainy (5%)</option>
+        </select></div>
+      <div class="field-group"><div class="field-label">Temperature °C</div>
+        <input class="field-input" type="number" id="de-temp" value="22" min="-20" max="50"></div>
+      <div class="field-group"><div class="field-label">Cloud Cover %</div>
+        <input class="field-input" type="number" id="de-cloud" value="10" min="0" max="100"></div>
+      <div class="field-group"><div class="field-label">Sunrise</div>
+        <input class="field-input" type="time" id="de-rise" value="06:30"></div>
+      <div class="field-group"><div class="field-label">Sunset</div>
+        <input class="field-input" type="time" id="de-set" value="19:30"></div>
+      <div class="field-group" style="display:flex;align-items:flex-end">
+        <button class="btn-run" onclick="saveDay()" style="background:var(--blue);color:#fff">Save Day</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MQTT ═══════════════════════════════════════════════════ -->
+<div id="tab-mqtt" class="page">
+  <div class="mqtt-grid">
+    <div class="card">
+      <div class="section-label">Broker Connection</div>
+      <div class="field-group"><div class="field-label">Host</div><input class="field-input" id="mq-host" value="{{ mqtt_cfg.broker_host or 'localhost' }}"></div>
+      <div class="field-group"><div class="field-label">Port</div><input class="field-input" type="number" id="mq-port" value="{{ mqtt_cfg.broker_port or 1883 }}"></div>
+      <div class="field-group"><div class="field-label">Username</div><input class="field-input" id="mq-user" value="{{ mqtt_cfg.username or '' }}" placeholder="Optional"></div>
+      <div class="field-group"><div class="field-label">Password</div><input class="field-input" type="password" id="mq-pw" placeholder="Optional"></div>
+      <div class="field-group"><div class="field-label">Client ID</div><input class="field-input" id="mq-cid" value="{{ mqtt_cfg.client_id or 'rv_simulator' }}"></div>
+      <div class="field-group"><div class="field-label">Base Topic</div><input class="field-input" id="mq-topic" value="{{ mqtt_cfg.base_topic or 'rv/energy' }}"></div>
+      <div class="field-group"><div class="field-label">Publish Rate (seconds)</div><input class="field-input" type="number" id="mq-rate" value="{{ mqtt_cfg.publish_rate_s or 1.0 }}" min="0.1" max="60" step="0.1"></div>
+      <div class="field-group"><div class="field-label">QoS Level</div>
+        <select class="field-input" id="mq-qos">
+          <option value="0" {{ 'selected' if mqtt_cfg.qos==0 else '' }}>0 — At most once</option>
+          <option value="1" {{ 'selected' if mqtt_cfg.qos==1 else '' }}>1 — At least once</option>
+          <option value="2" {{ 'selected' if mqtt_cfg.qos==2 else '' }}>2 — Exactly once</option>
+        </select></div>
+      <button class="save-btn" onclick="saveMqtt()">Save MQTT Settings</button>
+    </div>
+    <div class="card">
+      <div class="section-label">Data to Publish</div>
+      <div class="chk-row"><input type="checkbox" id="mq-apps" {{ 'checked' if mqtt_cfg.send_appliances else '' }}><label for="mq-apps">Appliance data — Voltage, Current, Power per device</label></div>
+      <div class="chk-row"><input type="checkbox" id="mq-bat" {{ 'checked' if mqtt_cfg.send_battery else '' }}><label for="mq-bat">Battery telemetry — SOC %, kWh, reserve status</label></div>
+      <div class="chk-row"><input type="checkbox" id="mq-sol" {{ 'checked' if mqtt_cfg.send_solar else '' }}><label for="mq-sol">Solar generation — kW output, irradiance factor</label></div>
+      <div class="chk-row"><input type="checkbox" id="mq-sum" {{ 'checked' if mqtt_cfg.send_summary else '' }}><label for="mq-sum">Summary — stability score, energy totals</label></div>
+      <div class="chk-row"><input type="checkbox" id="mq-wx" {{ 'checked' if mqtt_cfg.send_weather else '' }}><label for="mq-wx">Weather — condition, temperature, cloud cover</label></div>
+      <div style="margin-top:24px;padding:20px;background:rgba(255,255,255,.03);border-radius:var(--r20)">
+        <div class="section-label" style="margin-bottom:14px">Topic Structure</div>
+        <div class="topic-mono">
+          rv/energy/registry<br>
+          rv/energy/appliances/{id}<br>
+          rv/energy/battery<br>
+          rv/energy/solar<br>
+          rv/energy/summary<br>
+          rv/energy/weather
+        </div>
+      </div>
+      <div style="margin-top:16px;padding:16px;background:rgba(255,159,10,.07);border:1.5px solid rgba(255,159,10,.22);border-radius:var(--r16);font-size:var(--text-base);color:var(--orange);line-height:1.6">
+        Dashboard available at <a href="http://localhost:5002" style="color:var(--blue);font-weight:500">localhost:5002</a> — receives all MQTT data above
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════════════════════════
+   SIMULATOR JS
+══════════════════════════════════════════════════════════ */
+const G = id => document.getElementById(id);
+const DOW = ['S','M','T','W','T','F','S'];
+const WX_ICONS = {sunny:'☀️',partly:'⛅',overcast:'🌥',rainy:'🌧'};
+const CLOUD_MAP = {sunny:5,partly:40,overcast:75,rainy:90};
+const CYCLES = ['constant','compressor','thermostat','wifi_traffic','display_sleep','motion_sensor','network_load','dimmer','wash_cycle'];
+
+let APPS=[], PROFILES={{ profiles|tojson }}, curFilter='all', simRunning=false, sse=null;
+let activeProfileName=null, editDay=null, lastBD=null;
+let weatherPlan={{ weather|tojson }};
+if(!weatherPlan.length) weatherPlan=Array.from({length:7},(_,i)=>({day_index:i,condition:'sunny',temp_c:22,cloud_pct:5,sunrise_hhmm:'06:30',sunset_hhmm:'19:30'}));
+
+// Charts
+let socChart,energyChart,appBarChart;
+const baseChartOpts={
+  responsive:true,maintainAspectRatio:false,
+  plugins:{legend:{display:false},tooltip:{
+    backgroundColor:'rgba(16,16,20,.95)',titleColor:'rgba(235,235,245,.55)',
+    bodyColor:'#fff',borderColor:'rgba(255,255,255,.10)',borderWidth:1,
+    padding:14,cornerRadius:12,bodyFont:{size:16,weight:'700'},titleFont:{size:12}}},
+  elements:{point:{radius:0,hoverRadius:6}},
+  animation:{duration:400,easing:'easeOutCubic'},
+  scales:{
+    x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'rgba(255,255,255,.30)',font:{size:13},maxTicksLimit:8},border:{display:false}},
+    y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'rgba(255,255,255,.30)',font:{size:13}},border:{display:false}}
+  }
+};
+
+// ── Nav ──────────────────────────────────────────────────
+function showTab(n,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.ntab').forEach(b=>b.classList.remove('active'));
+  G('tab-'+n).classList.add('active'); if(btn)btn.classList.add('active');
+  if(n==='weather') renderWeather();
+  if(n==='profiles') renderProfiles();
+}
+
+// ── Clock ───────────────────────────────────────────────
+setInterval(()=>{G('sb-time').textContent=new Date().toLocaleTimeString('en');},1000);
+
+// ── Appliance CRUD ──────────────────────────────────────
+async function loadAppliances(){
+  const r=await fetch('/api/appliances'); APPS=await r.json(); renderCards();
+}
+
+function filterCards(cat,btn){
+  curFilter=cat;
+  document.querySelectorAll('.filter-bar .flt').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); renderCards();
+}
+
+function computedFields(app){
+  const v=+app.voltage_v||120,a=+app.current_a||1,pf=+app.power_factor||0.95;
+  const eff=+app.efficiency_pct||90,dc=+app.duty_cycle_pct||100;
+  const apparent=v*a,real=apparent*pf,eff_w=real/Math.max(eff/100,.01),avg=eff_w*(dc/100);
+  return{apparent:apparent.toFixed(0),real:real.toFixed(0),eff_w:eff_w.toFixed(0),avg:avg.toFixed(0)};
+}
+
+function renderCards(){
+  const grid=G('cards-grid');
+  let list=APPS;
+  if(curFilter==='always_on') list=APPS.filter(a=>a.always_on);
+  else if(curFilter!=='all') list=APPS.filter(a=>a.cat===curFilter);
+
+  grid.innerHTML=list.map(app=>{
+    const cf=computedFields(app);
+    const clr=app.clr||'#0A84FF';
+    const isAlways=app.always_on;
+    const scheds=app.schedules||[];
+    const schedHtml=isAlways
+      ? `<div class="always-on-info">Always-on device using <strong>${app.cycle_pattern}</strong> cycle pattern — power varies automatically based on realistic usage. No schedule required.</div>`
+      : (scheds.map((s,i)=>renderSW(app.id,s,i)).join('')
+        || `<div style="font-size:var(--text-base);color:var(--l3);padding:12px">No time windows — device will not run during simulation</div>`);
+
+    return `<div class="app-card ${app.on?'':'off'}" id="card-${app.id}">
+      <div class="ch">
+        <div class="app-color-strip" style="background:${clr}"></div>
+        <div class="ch-left">
+          <div style="flex:1;min-width:0">
+            <input class="app-name-edit" id="aname-${app.id}" value="${esc(app.name)}" onblur="commitRename(${app.id},this)" onkeydown="if(event.key==='Enter')this.blur()">
+            <div class="app-cat-label">${app.cat} · ${app.cycle_pattern}</div>
+          </div>
+        </div>
+        <div class="tgl-wrap">
+          ${isAlways?'<span class="always-chip">24 hr</span>':''}
+          <label class="tgl"><input type="checkbox" ${app.on?'checked':''} onchange="toggleApp(${app.id},this.checked)"><div class="tgl-sl"></div></label>
+        </div>
+      </div>
+
+      <div class="cb">
+        <!-- Electrical parameters -->
+        <div class="section-label" style="margin-bottom:12px">Electrical Parameters</div>
+        <div class="pg">
+          <div class="pi"><label>Voltage (V)</label>
+            <input type="number" value="${app.voltage_v}" min="1" max="480" step="1" onchange="updateParam(${app.id},'voltage_v',this.value)"></div>
+          <div class="pi"><label>Current (A)</label>
+            <input type="number" value="${app.current_a}" min="0.01" max="200" step="0.01" onchange="updateParam(${app.id},'current_a',this.value)"></div>
+          <div class="pi"><label>Power Factor</label>
+            <input type="number" value="${app.power_factor}" min="0.1" max="1.0" step="0.01" onchange="updateParam(${app.id},'power_factor',this.value)"></div>
+          <div class="pi"><label>Efficiency (%)</label>
+            <input type="number" value="${app.efficiency_pct}" min="1" max="100" step="1" onchange="updateParam(${app.id},'efficiency_pct',this.value)"></div>
+          <div class="pi"><label>Avg Power (W)</label>
+            <input type="number" id="ap-avg-${app.id}" value="${app.avg_power_w}" readonly></div>
+          <div class="pi"><label>Cycle Pattern</label>
+            <select onchange="updateParam(${app.id},'cycle_pattern',this.value)">
+              ${CYCLES.map(c=>`<option value="${c}" ${app.cycle_pattern===c?'selected':''}>${c}</option>`).join('')}
+            </select></div>
+        </div>
+
+        <!-- Duty cycle slider -->
+        <div class="duty-row">
+          <div class="duty-header">
+            <span>Duty Cycle</span>
+            <span id="dc-val-${app.id}">${app.duty_cycle_pct}%</span>
+          </div>
+          <input type="range" min="1" max="100" value="${app.duty_cycle_pct}"
+            oninput="G('dc-val-${app.id}').textContent=this.value+'%'"
+            onchange="updateParam(${app.id},'duty_cycle_pct',this.value)">
+        </div>
+
+        <!-- Computed -->
+        <div class="comp-row">
+          <div class="comp-cell"><div class="comp-v" id="c-ap-${app.id}" style="color:var(--blue)">${cf.apparent} VA</div><div class="comp-l">Apparent</div></div>
+          <div class="comp-cell"><div class="comp-v" id="c-rw-${app.id}" style="color:var(--orange)">${cf.real} W</div><div class="comp-l">Real Power</div></div>
+          <div class="comp-cell"><div class="comp-v" id="c-avg-${app.id}" style="color:var(--green)">${cf.avg} W</div><div class="comp-l">Avg Draw</div></div>
+        </div>
+
+        <!-- Color picker -->
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+          <span style="font-size:var(--text-base);color:var(--l3);font-weight:500">Card Color</span>
+          <input type="color" value="${clr}" style="width:44px;height:36px;border:none;border-radius:10px;cursor:pointer;background:none;" onchange="updateParam(${app.id},'clr',this.value)">
+          <span style="font-size:var(--text-base);color:var(--l3);font-weight:500;margin-left:16px">Category</span>
+          <select style="padding:8px 14px;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.12);border-radius:12px;color:var(--l1);font-family:var(--f);font-size:var(--text-base);outline:none" onchange="updateParam(${app.id},'cat',this.value)">
+            <option value="high" ${app.cat==='high'?'selected':''}>High Power</option>
+            <option value="medium" ${app.cat==='medium'?'selected':''}>Medium</option>
+            <option value="low" ${app.cat==='low'?'selected':''}>Low</option>
+          </select>
+          <label style="display:flex;align-items:center;gap:8px;font-size:var(--text-base);color:var(--l2);cursor:pointer;margin-left:16px">
+            <input type="checkbox" ${isAlways?'checked':''} style="width:22px;height:22px;accent-color:var(--green)" onchange="updateParam(${app.id},'always_on',this.checked?1:0)"> Always-on
+          </label>
+        </div>
+
+        <!-- Scheduler -->
+        <div class="sched-section">
+          <div class="sched-header">
+            <span class="sched-title">Schedule Windows</span>
+            ${!isAlways?`<button class="btn-add-sched" onclick="addSW(${app.id})">+ Add Window</button>`:''}
+          </div>
+          <div id="sched-${app.id}">${schedHtml}</div>
+        </div>
+      </div>
+
+      <div class="card-footer">
+        <button class="btn-del-app" onclick="delApp(${app.id})">Delete Appliance</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+async function commitRename(aid,el){
+  const n=el.value.trim();if(!n){el.value=APPS.find(a=>a.id===aid)?.name||'';return;}
+  await fetch(`/api/appliances/${aid}/rename`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n})});
+  const app=APPS.find(a=>a.id===aid);if(app)app.name=n;showToast(`Renamed to "${n}" ✓`);
+}
+
+async function updateParam(aid,field,value){
+  const app=APPS.find(a=>a.id===aid);if(!app)return;
+  app[field]=isNaN(+value)?(value===''?value:(value==='1'||value==='true'?1:value==='0'||value==='false'?0:value)):+value;
+  const v=+app.voltage_v,a=+app.current_a,pf=+app.power_factor,eff=+app.efficiency_pct,dc=+app.duty_cycle_pct;
+  app.avg_power_w=+(v*a*pf/Math.max(eff/100,.01)*(dc/100)).toFixed(1);
+  await fetch('/api/appliances/'+aid,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(app)});
+  const cf=computedFields(app);
+  const s=(id,v)=>{const e=G(id);if(e)e.textContent=v;};
+  s(`c-ap-${aid}`,cf.apparent+' VA'); s(`c-rw-${aid}`,cf.real+' W'); s(`c-avg-${aid}`,cf.avg+' W');
+  const av=G('ap-avg-'+aid); if(av)av.value=app.avg_power_w;
+  // If always_on changed, re-render whole card
+  if(field==='always_on') loadAppliances();
+}
+
+async function toggleApp(aid,on){
+  await fetch(`/api/appliances/${aid}/toggle`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({on})});
+  const app=APPS.find(a=>a.id===aid);if(app)app.on=on;
+  const card=G('card-'+aid);if(card)card.classList.toggle('off',!on);
+  showToast(on?'Enabled':'Disabled');
+}
+
+async function addAppliance(){
+  const r=await fetch('/api/appliances',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({name:'New Appliance',cat:'medium',icon:'🔌',clr:'#0A84FF',
+      voltage_v:120,current_a:1.0,power_factor:0.95,efficiency_pct:90,
+      duty_cycle_pct:100,avg_power_w:112,always_on:0,cycle_pattern:'constant'})});
+  const app=await r.json();app.schedules=[];APPS.push(app);renderCards();
+  setTimeout(()=>{const el=G('aname-'+app.id);if(el){el.focus();el.select();}},120);
+  showToast('Appliance added — click name to rename');
+}
+
+async function delApp(aid){
+  if(!confirm('Delete this appliance?'))return;
+  await fetch('/api/appliances/'+aid,{method:'DELETE'});
+  APPS=APPS.filter(a=>a.id!==aid);renderCards();showToast('Deleted');
+}
+
+// ── Schedule windows ─────────────────────────────────────
+function renderSW(aid,s,i){
+  const dow=(s.days_of_week||'1111111').split('');
+  const dowH=DOW.map((d,j)=>`<button class="dow-btn ${dow[j]==='1'?'active':''}" onclick="toggleDow(${aid},${s.id},${j},this)">${d}</button>`).join('');
+  return `<div class="sched-win" id="sw-${s.id}">
+    <button class="sw-delete" onclick="delSW(${s.id},${aid})">×</button>
+    <div class="sw-row">
+      <span class="sw-label">From</span>
+      <input class="sw-input" type="time" value="${s.start_hhmm||'08:00'}" onchange="saveSW(${s.id},{start_hhmm:this.value})">
+      <span class="sw-label">to</span>
+      <input class="sw-input" type="time" value="${s.end_hhmm||'09:00'}" onchange="saveSW(${s.id},{end_hhmm:this.value})">
+      <span class="sw-label">active</span>
+      <input class="sw-input" type="number" value="${s.active_minutes||30}" min="1" max="720" style="width:80px" onchange="saveSW(${s.id},{active_minutes:+this.value})">
+      <span class="sw-label">min</span>
+    </div>
+    <div class="sw-row">
+      <span class="sw-label">Label</span>
+      <input class="sw-input wide" type="text" value="${esc(s.label||'')}" placeholder="e.g. Morning brew" onchange="saveSW(${s.id},{label:this.value})">
+    </div>
+    <div style="margin-top:10px"><span style="font-size:var(--text-sm);color:var(--l3);font-weight:500;margin-right:10px">Active days:</span>
+      <div class="dow-grid">${dowH}</div></div>
+  </div>`;
+}
+
+async function toggleDow(aid,sid,idx,btn){
+  const sw=G('sw-'+sid);const btns=sw.querySelectorAll('.dow-btn');
+  btns[idx].classList.toggle('active');
+  const dow=Array.from(btns).map(b=>b.classList.contains('active')?'1':'0').join('');
+  await saveSW(sid,{days_of_week:dow});
+}
+async function saveSW(sid,patch){
+  await fetch('/api/schedules/'+sid,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(patch)});
+}
+async function addSW(aid){
+  const r=await fetch(`/api/appliances/${aid}/schedules`,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({start_hhmm:'08:00',end_hhmm:'09:00',active_minutes:30,label:''})});
+  const s=await r.json();
+  const app=APPS.find(a=>a.id===aid);if(app){app.schedules=app.schedules||[];app.schedules.push(s);}
+  const ctn=G('sched-'+aid);
+  if(ctn){
+    const empty=ctn.querySelector('div[style]');if(empty)empty.remove();
+    const tmp=document.createElement('div');tmp.innerHTML=renderSW(aid,s,0);
+    ctn.appendChild(tmp.firstElementChild);
+  }
+  showToast('Schedule window added');
+}
+async function delSW(sid,aid){
+  await fetch('/api/schedules/'+sid,{method:'DELETE'});
+  const el=G('sw-'+sid);if(el)el.remove();
+  const app=APPS.find(a=>a.id===aid);
+  if(app&&app.schedules) app.schedules=app.schedules.filter(s=>s.id!==sid);
+  showToast('Removed');
+}
+
+// ── Profiles ─────────────────────────────────────────────
+function renderProfiles(){
+  const grid=G('profiles-grid');
+  grid.innerHTML=PROFILES.map(p=>{
+    const isActive=activeProfileName===p.name;
+    const isPreset=p.is_preset;
+    return `<div class="prof-card ${isActive?'active':''}" id="pc-${p.name}">
+      <div class="prof-card-top">
+        <div class="prof-icon-row">
+          <div class="prof-icon-box" contenteditable="${!isPreset}" id="pico-${p.name}" 
+            onblur="${!isPreset?`saveProfileField('${p.name}','icon',this.textContent)`:''}"
+            style="${isPreset?'cursor:default':''}">${esc(p.icon||'🙂')}</div>
+          <div class="prof-header">
+            <input class="prof-label-edit" id="plbl-${p.name}" value="${esc(p.label)}" ${isPreset?'readonly':''} 
+              onblur="${!isPreset?`saveProfileField('${p.name}','label',this.value)`:''}"
+              style="${isPreset?'pointer-events:none':''}">
+            ${isPreset?`<div class="preset-badge">PRESET — READ ONLY</div>`:`<div style="font-size:var(--text-sm);color:var(--l3);margin-top:6px;padding-left:8px">Custom profile — all fields editable</div>`}
+          </div>
+        </div>
+        <textarea class="prof-desc-edit" rows="2" id="pdesc-${p.name}" ${isPreset?'readonly':''} 
+          onblur="${!isPreset?`saveProfileField('${p.name}','description',this.value)`:''}"
+          style="${isPreset?'pointer-events:none':''}">${esc(p.description)}</textarea>
+        <div class="prof-params">
+          <div class="pp"><label>Occupants</label>
+            <input type="number" id="pocc-${p.name}" value="${p.occupants}" min="1" max="20" ${isPreset?'readonly':''}
+              onchange="${!isPreset?`saveProfileField('${p.name}','occupants',+this.value)`:''}"
+              style="${isPreset?'color:var(--l3)':''}"></div>
+          <div class="pp"><label>Experience</label>
+            <select id="pexp-${p.name}" ${isPreset?'disabled':''} onchange="${!isPreset?`saveProfileField('${p.name}','experience',this.value)`:''}">
+              <option value="expert" ${p.experience==='expert'?'selected':''}>Expert</option>
+              <option value="normal" ${p.experience==='normal'?'selected':''}>Normal</option>
+              <option value="new" ${p.experience==='new'?'selected':''}>New to RV</option>
+            </select></div>
+          <div class="pp"><label>Load Factor</label>
+            <input type="number" id="plf-${p.name}" value="${p.load_factor}" min="0.3" max="2.5" step="0.05" ${isPreset?'readonly':''}
+              onchange="${!isPreset?`saveProfileField('${p.name}','load_factor',+this.value)`:''}"
+              style="${isPreset?'color:var(--l3)':''}"></div>
+          <!-- Battery & Solar are set globally in Simulate tab settings, not per-profile -->
+          <div class="pp" style="display:flex;align-items:center;justify-content:center;gap:8px;font-size:var(--text-base);color:var(--l2)">
+            ${isActive?'<span style="color:var(--green);font-weight:500;font-size:var(--text-lg)">✓ Active</span>':''}
+          </div>
+        </div>
+      </div>
+      <div class="prof-card-actions">
+        <button class="btn-apply-profile" onclick="applyProfile('${p.name}')">
+          ${isActive?'Re-Apply Profile':'Apply Profile'}
+        </button>
+        ${!isPreset?`<button class="btn-save-profile" onclick="saveProfileAll('${p.name}')">Save Changes</button>
+                    <button class="btn-del-profile" onclick="deleteProfile('${p.name}')">Delete</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function saveProfileField(name, field, value){
+  const prof=PROFILES.find(p=>p.name===name);if(!prof||prof.is_preset)return;
+  prof[field]=value;
+  await fetch(`/api/profiles/${name}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(prof)});
+}
+
+async function saveProfileAll(name){
+  const p=PROFILES.find(x=>x.name===name);if(!p||p.is_preset)return;
+  p.label       = G('plbl-'+name)?.value || p.label;
+  p.icon        = G('pico-'+name)?.textContent?.trim() || p.icon;
+  p.description = G('pdesc-'+name)?.value || p.description;
+  p.occupants   = +(G('pocc-'+name)?.value)||p.occupants;
+  p.experience  = G('pexp-'+name)?.value || p.experience;
+  p.load_factor = +(G('plf-'+name)?.value)||p.load_factor;
+  // Battery cap and panel kWp are managed globally in Simulate settings
+  await fetch(`/api/profiles/${name}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
+  renderProfiles();showToast('Profile saved ✓');
+}
+
+async function applyProfile(name){
+  const r=await fetch(`/api/profiles/${name}/apply`,{method:'POST'});
+  if(!r.ok){showToast('Could not apply','err');return;}
+  const d=await r.json();
+  activeProfileName=name;
+  // Update UI fields
+  const setV=(id,v)=>{const e=G(id);if(e)e.value=v;};
+  setV('cfg-bat',   d.battery_cap_kwh||45);
+  setV('cfg-panel', d.panel_kwp||0.8);
+  // Persist the new values to DB settings
+  await fetch('/api/settings',{method:'PUT',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({battery_cap_kwh:d.battery_cap_kwh||45,panel_kwp:d.panel_kwp||0.8,
+      starting_soc:+G('cfg-soc').value||87,load_factor:1.0})});
+  // Recalculate SOC display with new battery capacity
+  updateSOCDisplay(+G('cfg-soc').value||87, d.battery_cap_kwh||45);
+  await loadAppliances();renderProfiles();showToast(`Profile "${name}" applied ✓`);
+}
+
+async function deleteProfile(name){
+  if(!confirm(`Delete profile "${name}"?`))return;
+  const r=await fetch(`/api/profiles/${name}`,{method:'DELETE'});
+  if(r.ok){PROFILES=PROFILES.filter(p=>p.name!==name);if(activeProfileName===name)activeProfileName=null;renderProfiles();showToast('Deleted');}
+  else showToast('Cannot delete preset','err');
+}
+
+async function createNewProfile(){
+  const name='custom_'+Date.now();
+  const payload={name,label:'New Profile',icon:'🏕',description:'My custom RV profile',
+    occupants:2,experience:'normal',load_factor:1.0,battery_cap_kwh:45,panel_kwp:0.8,app_overrides:[]};
+  const r=await fetch('/api/profiles',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  if(r.ok){const p=await r.json();PROFILES.push(p);renderProfiles();showToast('New profile created — edit parameters above');}
+  else showToast('Error creating profile','err');
+}
+
+// ── Settings persistence ──────────────────────────────────
+const SIM_CFG = {{ sim_cfg|tojson }};
+let saveSettingsTimer = null;
+let simDays = 7;
+let reservePct = 10;
+
+async function loadSettings(){
+  const r = await fetch('/api/settings');
+  if(!r.ok) return;
+  const d = await r.json();
+  applySettings(d);
+}
+
+function applySettings(d){
+  const bat = d.battery_cap_kwh || 45;
+  const pan = d.panel_kwp || 0.8;
+  const soc = d.starting_soc || 87;
+  const res = d.reserve_pct || 10;
+
+  const setV = (id,v) => { const e=G(id); if(e) e.value=v; };
+  // SOC
+  setV('cfg-soc', soc); setV('cfg-soc-num', soc);
+  // Battery
+  setV('cfg-bat', bat); setV('cfg-bat-slider', bat);
+  const bd=G('bat-display'); if(bd) bd.textContent=bat;
+  // Reserve
+  reservePct = res;
+  setV('cfg-reserve', res); setV('cfg-reserve-slider', res);
+  const rd=G('res-display'); if(rd) rd.textContent=res;
+  // Panel
+  setV('cfg-panel', pan); setV('cfg-panel-slider', pan);
+  const pd=G('panel-display'); if(pd) pd.textContent=(+pan).toFixed(1);
+
+  updateSOCDisplay(soc, bat, res);
+}
+
+function saveSettings(){
+  clearTimeout(saveSettingsTimer);
+  saveSettingsTimer = setTimeout(async () => {
+    const bat = +G('cfg-bat').value || 45;
+    const pan = +G('cfg-panel').value || 0.8;
+    const soc = +G('cfg-soc').value || 87;
+    const res = +G('cfg-reserve').value || 10;
+    const payload = { battery_cap_kwh:bat, panel_kwp:pan, starting_soc:soc, load_factor:1.0, reserve_pct:res };
+    const r = await fetch('/api/settings', {
+      method:'PUT', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if(r.ok){
+      const d = await r.json();
+      updateSOCStats(bat, soc, res);
+    }
+  }, 400);
+}
+
+// SOC controls
+function onSOCChange(val){
+  const soc=+val, bat=+G('cfg-bat').value||45, res=+G('cfg-reserve').value||10;
+  const num=G('cfg-soc-num'); if(num) num.value=soc;
+  updateSOCDisplay(soc, bat, res);
+}
+function syncSOCNum(val){
+  const soc=Math.max(10,Math.min(100,+val||87));
+  const sl=G('cfg-soc'); if(sl) sl.value=soc;
+  updateSOCDisplay(soc, +G('cfg-bat').value||45, +G('cfg-reserve').value||10);
+}
+
+// Battery capacity controls
+function onBatCapChange(val){
+  const bat=+val||45;
+  const num=G('cfg-bat'); if(num) num.value=bat;
+  const d=G('bat-display'); if(d) d.textContent=bat;
+  updateSOCDisplay(+G('cfg-soc').value||87, bat, +G('cfg-reserve').value||10);
+}
+function syncBatNum(val){
+  const bat=Math.max(5,Math.min(500,+val||45));
+  const sl=G('cfg-bat-slider'); if(sl) sl.value=bat;
+  const d=G('bat-display'); if(d) d.textContent=bat;
+  updateSOCDisplay(+G('cfg-soc').value||87, bat, +G('cfg-reserve').value||10);
+}
+
+// Reserve controls
+function onReserveChange(val){
+  const res=+val||10;
+  reservePct=res;
+  const num=G('cfg-reserve'); if(num) num.value=res;
+  const d=G('res-display'); if(d) d.textContent=res;
+  updateSOCDisplay(+G('cfg-soc').value||87, +G('cfg-bat').value||45, res);
+}
+function syncReserveNum(val){
+  const res=Math.max(5,Math.min(30,+val||10));
+  reservePct=res;
+  const sl=G('cfg-reserve-slider'); if(sl) sl.value=res;
+  const d=G('res-display'); if(d) d.textContent=res;
+  updateSOCDisplay(+G('cfg-soc').value||87, +G('cfg-bat').value||45, res);
+}
+
+// Panel controls
+function onPanelChange(val){
+  const pan=(+val||0.8).toFixed(1);
+  const num=G('cfg-panel'); if(num) num.value=pan;
+  const d=G('panel-display'); if(d) d.textContent=pan;
+}
+function syncPanelNum(val){
+  const pan=Math.max(0.1,Math.min(20,+val||0.8));
+  const sl=G('cfg-panel-slider'); if(sl) sl.value=pan;
+  const d=G('panel-display'); if(d) d.textContent=pan.toFixed(1);
+}
+
+// Duration selector — updates chart label
+function setDuration(days, btn){
+  simDays=days;
+  document.querySelectorAll('.dur-btn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  const lbl=G('soc-chart-label');
+  if(lbl) lbl.textContent=days===1?'1 Day':`${days} Days`;
+}
+
+function updateSOCDisplay(soc, batCap, resPct){
+  const reserve = resPct || reservePct || 10;
+  const available  = batCap * (soc / 100) * 0.95;
+  const usable     = batCap * 0.95;
+  const resFloor   = batCap * (reserve / 100);
+  const warnFloor  = batCap * 0.20;
+
+  const disp = G('soc-display');
+  if(disp){ disp.textContent = soc.toFixed(0)+'%'; }
+
+  const kd = G('soc-kwh-display');
+  if(kd) kd.textContent = available.toFixed(1)+' kWh available';
+
+  const badge = G('soc-status-badge');
+  if(badge){
+    const belowReserve = soc <= reserve;
+    if(belowReserve||soc<10) { badge.textContent='Critical'; badge.style.cssText='padding:4px 12px;border-radius:999px;font-size:var(--sm);font-weight:500;background:rgba(255,69,58,.15);color:var(--red);border:1px solid rgba(255,69,58,.30);white-space:nowrap'; }
+    else if(soc < 20)  { badge.textContent='Low'; badge.style.cssText='padding:4px 12px;border-radius:999px;font-size:var(--sm);font-weight:500;background:rgba(255,69,58,.12);color:var(--red);border:1px solid rgba(255,69,58,.25);white-space:nowrap'; }
+    else if(soc < 35)  { badge.textContent='Warning'; badge.style.cssText='padding:4px 12px;border-radius:999px;font-size:var(--sm);font-weight:500;background:rgba(255,159,10,.12);color:var(--orange);border:1px solid rgba(255,159,10,.25);white-space:nowrap'; }
+    else if(soc < 60)  { badge.textContent='Fair'; badge.style.cssText='padding:4px 12px;border-radius:999px;font-size:var(--sm);font-weight:500;background:rgba(10,132,255,.12);color:var(--blue);border:1px solid rgba(10,132,255,.25);white-space:nowrap'; }
+    else               { badge.textContent='Good'; badge.style.cssText='padding:4px 12px;border-radius:999px;font-size:var(--sm);font-weight:500;background:rgba(48,209,88,.12);color:var(--green);border:1px solid rgba(48,209,88,.25);white-space:nowrap'; }
+  }
+
+  const socColor = soc > 50 ? 'var(--green)' : soc > 20 ? 'var(--orange)' : 'var(--red)';
+  if(disp) disp.style.color = socColor;
+
+  updateSOCStats(batCap, soc, reserve);
+}
+
+function updateSOCStats(batCap, soc, resPct){
+  const reserve = resPct || reservePct || 10;
+  const available = batCap*(soc/100)*0.95;
+  const usable    = batCap*0.95;
+  const resFloor  = batCap*(reserve/100);
+  const warnFloor = batCap*0.20;
+  const set=(id,v)=>{const e=G(id);if(e)e.textContent=(+v).toFixed(1)+' kWh';};
+  set('stat-avail',    available);
+  set('stat-usable',   usable);
+  set('stat-reserve10',resFloor);
+  set('stat-reserve20',warnFloor);
+}
+
+// ── Simulation ─────────────────────────────────────────────
+let bdData=null;
+function setView(v,btn){
+  document.querySelectorAll('.view-toggle .vtb').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  G('bv-bar').style.display=v==='bar'?'':'none';
+  G('bv-table').style.display=v==='table'?'':'none';
+}
+function dlBreakdown(){
+  if(!bdData){showToast('Run simulation first','err');return;}
+  const rows=[['Appliance','Category','Eff_W','kWh_Day','Share_Pct']];
+  bdData.forEach(a=>rows.push([a.name,a.cat,a.eff_w,a.kwh,a.pct]));
+  const el=document.createElement('a');
+  el.href='data:text/csv;charset=utf-8,'+encodeURIComponent(rows.map(r=>r.join(',')).join('\n'));
+  el.download='rv-breakdown.csv';el.click();
+}
+
+async function runSimulation(){
+  showToast('Running…');
+  const r=await fetch('/api/simulate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    battery_capacity_kwh:+G('cfg-bat').value,panel_kwp:+G('cfg-panel').value,
+    start_soc:+G('cfg-soc').value/100,plan_name:'Default Plan',days:simDays
+  })});
+  const data=await r.json();const results=data.days;
+  showToast('Complete ✓');
+
+  // SOC chart — uses simDays + configured reserve%
+  const sL=[],sD=[];
+  results.slice(0,simDays).forEach((d,di)=>d.soc_hourly.forEach((v,h)=>{sL.push(`D${di+1} ${h}:00`);sD.push(v);}));
+  const resLinePct = +G('cfg-reserve').value || reservePct || 10;
+  if(socChart)socChart.destroy();
+  const sc=G('soc-chart');
+  if(sc)socChart=new Chart(sc.getContext('2d'),{type:'line',data:{labels:sL,datasets:[
+    {data:sD,borderColor:'#30D158',backgroundColor:'rgba(48,209,88,.07)',fill:true,tension:.4,borderWidth:2.5,
+     label:'Battery SOC',pointRadius:0,pointHoverRadius:5},
+    {data:sL.map(()=>20),borderColor:'rgba(255,159,10,.60)',borderDash:[6,4],borderWidth:2,
+     label:'Warning 20%',pointRadius:0},
+    {data:sL.map(()=>resLinePct),borderColor:'rgba(255,69,58,.72)',borderDash:[3,4],borderWidth:2,
+     label:`Reserve ${resLinePct}%`,pointRadius:0},
+  ]},options:{...baseChartOpts,
+    plugins:{legend:{display:true,position:'top',align:'start',
+      labels:{color:'rgba(255,255,255,.55)',font:{size:13,weight:'500'},usePointStyle:true,padding:16}},
+    tooltip:{...baseChartOpts.plugins.tooltip,mode:'index',intersect:false}},
+    scales:{...baseChartOpts.scales,y:{...baseChartOpts.scales.y,min:0,max:100,ticks:{...baseChartOpts.scales.y.ticks,callback:v=>v+'%'}}}}});
+
+  // Load vs Solar — curved bars with legend
+  const dL=results.map((_,i)=>`Day ${i+1}`);
+  if(energyChart)energyChart.destroy();
+  const ec=G('energy-chart');
+  if(ec)energyChart=new Chart(ec.getContext('2d'),{
+    type:'bar',
+    data:{labels:dL,datasets:[
+      {data:results.map(d=>d.total_solar_kwh),label:'Solar Generated',
+       backgroundColor:'rgba(255,159,10,.6)',borderColor:'#FF9F0A',borderWidth:2,
+       borderRadius:10,borderSkipped:false},
+      {data:results.map(d=>d.total_load_kwh),label:'Total Load',
+       backgroundColor:'rgba(10,132,255,.5)',borderColor:'#0A84FF',borderWidth:2,
+       borderRadius:10,borderSkipped:false},
+    ]},
+    options:{
+      ...baseChartOpts,
+      plugins:{
+        legend:{
+          display:true,
+          labels:{color:'rgba(255,255,255,.60)',font:{size:14,weight:'600'},
+            padding:20,usePointStyle:true,pointStyleWidth:14}
+        }
+      }
+    }
+  });
+
+  // Breakdown — large 480px horizontal bar chart
+  const firstDay=results[0];const ae=firstDay.app_energy_kwh||{};
+  const ids=Object.keys(ae).filter(k=>+ae[k]>0);
+  const totalKwh=ids.reduce((s,id)=>s+(+ae[id]),0);
+  const names=ids.map(id=>{const a=APPS.find(x=>x.id==id);return a?a.name:'App '+id;});
+  const clrs=ids.map(id=>{const a=APPS.find(x=>x.id==id);return a?.clr||'#0A84FF';});
+
+  if(appBarChart)appBarChart.destroy();
+  const abc=G('app-bar-chart');
+  if(abc)appBarChart=new Chart(abc.getContext('2d'),{
+    type:'bar',
+    data:{labels:names,datasets:[{
+      data:ids.map(id=>ae[id]),
+      backgroundColor:clrs.map(c=>c+'BB'),borderColor:clrs,
+      borderWidth:2,borderRadius:6,borderSkipped:false,
+    }]},
+    options:{
+      ...baseChartOpts,indexAxis:'y',
+      plugins:{legend:{display:false},tooltip:{...baseChartOpts.plugins.tooltip,callbacks:{
+        label:ctx=>{const p=totalKwh>0?(ctx.raw/totalKwh*100).toFixed(1):'0';
+          return ` ${ctx.raw.toFixed(3)} kWh/day  (${p}% of load)`;}}
+      }},
+      scales:{
+        x:{...baseChartOpts.scales.x,ticks:{...baseChartOpts.scales.x.ticks,callback:v=>v.toFixed(2)+' kWh'}},
+        y:{...baseChartOpts.scales.y,ticks:{...baseChartOpts.scales.y.ticks,font:{size:15},color:'rgba(255,255,255,.72)'}}
+      }
+    }
+  });
+
+  // Breakdown table
+  bdData=ids.map(id=>{const a=APPS.find(x=>x.id==id);const kwh=+ae[id];
+    return{name:a?a.name:'App '+id,cat:a?.cat||'—',icon:a?.icon||'🔌',clr:a?.clr||'#0A84FF',
+      eff_w:+(a?.avg_power_w||0),kwh:+kwh.toFixed(3),pct:totalKwh>0?(kwh/totalKwh*100).toFixed(1):'0'};
+  }).sort((a,b)=>b.kwh-a.kwh);
+  const tbody=G('bd-tbody');
+  if(tbody&&bdData.length){
+    const maxK=bdData[0].kwh||1;
+    tbody.innerHTML=bdData.map(a=>`<tr>
+      <td style="font-size:var(--text-xl);font-weight:500">
+        <span style="margin-right:12px;font-size:22px">${a.icon}</span>${a.name}
+        <span style="font-size:var(--text-sm);color:var(--l3);margin-left:10px;font-weight:500">${a.cat}</span>
+      </td>
+      <td style="text-align:right;font-family:var(--fm);font-size:var(--text-lg);font-weight:500;color:${a.clr}">${a.eff_w.toFixed(0)} W</td>
+      <td style="text-align:right;font-family:var(--fm);font-size:var(--text-xl);font-weight:600">${a.kwh}</td>
+      <td><div class="share-bar">
+        <div class="share-track"><div class="share-fill" style="width:${Math.min(100,a.kwh/maxK*100).toFixed(1)}%;background:${a.clr}"></div></div>
+        <span class="share-pct">${a.pct}%</span></div></td>
+    </tr>`).join('');
+  }
+}
+
+// ── Live sim ─────────────────────────────────────────────
+async function toggleLive(){
+  if(!simRunning){
+    const r=await fetch('/api/simulate/live/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      battery_capacity_kwh:+G('cfg-bat').value,panel_kwp:+G('cfg-panel').value,
+      start_soc:+G('cfg-soc').value/100,plan_name:'Default Plan',days:simDays
+    })});
+    if(r.ok){
+      simRunning=true;
+      G('live-btn').className='btn-live stop';G('live-btn').textContent='⏹ Stop';
+      G('live-badge').className='sbadge live';G('live-badge').textContent='LIVE';
+      connectSSE();showToast('Live simulation started');
+    }
+  } else {
+    await fetch('/api/simulate/live/stop',{method:'POST'});
+    simRunning=false;
+    G('live-btn').className='btn-live start';G('live-btn').textContent='▶ Start Live Sim';
+    G('live-badge').className='sbadge off';G('live-badge').textContent='OFFLINE';
+    if(sse){sse.close();sse=null;}showToast('Stopped');
+  }
+}
+function connectSSE(){
+  if(sse)sse.close();
+  sse=new EventSource('/api/simulate/live/stream');
+  sse.onmessage=e=>{
+    const d=JSON.parse(e.data);if(d.type!=='step')return;
+    const si=d.si_score||0,sc=si>=7?'var(--green)':si>=5?'var(--orange)':'var(--red)';
+    const set=(id,v,c)=>{const e2=G(id);if(e2){e2.textContent=v;if(c)e2.style.color=c;}};
+    set('ls-soc',(d.soc_pct||0).toFixed(1)+'%',d.soc_pct>50?'var(--green)':d.soc_pct>20?'var(--orange)':'var(--red)');
+    set('ls-sol',(d.solar_kw||0).toFixed(3));set('ls-ld',(d.load_kw||0).toFixed(3));
+    set('ls-si',si.toFixed(2),sc);set('ls-day','Day '+(d.day+1));
+    G('sim-status').textContent=`Day ${d.day+1} · Step ${d.step}`;
+  };
+  sse.onerror=()=>{if(simRunning)setTimeout(connectSSE,3000);};
+}
+
+// ── Weather ──────────────────────────────────────────────
+function renderWeather(){
+  const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  G('day-grid').innerHTML=weatherPlan.map((d,i)=>`
+    <div class="day-card ${editDay===i?'active':''}" onclick="selectDay(${i})">
+      <div class="day-num">Day ${i+1} · ${dayNames[i%7]}</div>
+      <span class="day-wx-icon">${WX_ICONS[d.condition]||'☀️'}</span>
+      <div class="day-cond">${d.condition}</div>
+      <div class="day-temp">${d.temp_c}°C</div>
+      <div class="day-times">🌅${d.sunrise_hhmm} 🌇${d.sunset_hhmm}</div>
+    </div>`).join('');
+}
+function selectDay(i){
+  editDay=i;const d=weatherPlan[i];
+  G('day-editor').style.display='block';G('day-edit-num').textContent=i+1;
+  G('de-cond').value=d.condition;G('de-temp').value=d.temp_c;
+  G('de-cloud').value=d.cloud_pct;G('de-rise').value=d.sunrise_hhmm;G('de-set').value=d.sunset_hhmm;
+  renderWeather();
+}
+function syncCloud(){G('de-cloud').value=CLOUD_MAP[G('de-cond').value]||10;}
+async function saveDay(){
+  if(editDay===null)return;
+  const patch={condition:G('de-cond').value,temp_c:+G('de-temp').value,
+    cloud_pct:+G('de-cloud').value,sunrise_hhmm:G('de-rise').value,sunset_hhmm:G('de-set').value};
+  await fetch(`/api/weather/Default Plan/${editDay}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(patch)});
+  Object.assign(weatherPlan[editDay],patch);renderWeather();showToast('Day '+(editDay+1)+' saved ✓');
+}
+
+// ── MQTT ─────────────────────────────────────────────────
+async function saveMqtt(){
+  const d={broker_host:G('mq-host').value,broker_port:+G('mq-port').value,
+    username:G('mq-user').value,password:G('mq-pw').value,client_id:G('mq-cid').value,
+    base_topic:G('mq-topic').value,publish_rate_s:+G('mq-rate').value,qos:+G('mq-qos').value,retain:0,
+    send_appliances:G('mq-apps').checked?1:0,send_battery:G('mq-bat').checked?1:0,
+    send_solar:G('mq-sol').checked?1:0,send_summary:G('mq-sum').checked?1:0,
+    send_weather:G('mq-wx').checked?1:0};
+  const r=await fetch('/api/mqtt/settings',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});
+  if(r.ok)showToast('MQTT settings saved ✓');else showToast('Save failed','err');
+}
+
+// ── Toast ─────────────────────────────────────────────────
+function showToast(msg,type='ok'){
+  const el=G('toast');el.textContent=msg;el.className='toast '+type;
+  requestAnimationFrame(()=>el.classList.add('show'));setTimeout(()=>el.classList.remove('show'),2800);
+}
+
+// ── Init ──────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadAppliances();
+  // Load persisted settings (SOC, battery cap, panel) from DB
+  await loadSettings();
+  // Apply server-side rendered values as fallback
+  applySettings(SIM_CFG);
+  // Load settings from DB again (authoritative) - may differ from template cache
+  await loadSettings();
+});
+</script>
+</body>
+</html>

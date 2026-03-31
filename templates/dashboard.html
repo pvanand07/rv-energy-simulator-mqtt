@@ -1,0 +1,1321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>RV Energy Dashboard — ACFuture</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+/* ══════════════════════════════════════════════════════════════
+   ELEVATICS AI — RV ENERGY DASHBOARD
+   iPad / HMI Optimised — Large Text · Touch Friendly · High Contrast
+   Base: 20px · Values: 32-48px · Heroes: 80px · Min touch: 52px
+════════════════════════════════════════════════════════════════ */
+:root{
+  --f:-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',sans-serif;
+  --fd:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',sans-serif;
+  --fm:'SF Mono','Menlo','Monaco','Courier New',monospace;
+  --bg:#000;--bg2:#0d0d10;--bg3:#1c1c1e;--bg4:#2c2c2e;
+  --l1:#fff;--l2:rgba(235,235,245,.75);--l3:rgba(235,235,245,.48);--l4:rgba(235,235,245,.22);--l5:rgba(235,235,245,.08);
+  --sep:rgba(84,84,88,.55);
+  --blue:#0A84FF;--green:#30D158;--orange:#FF9F0A;--red:#FF453A;--teal:#5AC8F5;--purple:#BF5AF2;
+  --glass:rgba(28,28,30,.82);--gb:rgba(255,255,255,.09);--gh:rgba(255,255,255,.14);
+  --r16:16px;--r20:20px;--r28:28px;--r36:36px;--rp:999px;
+  --sh:0 4px 48px rgba(0,0,0,.65),0 1px 0 rgba(255,255,255,.05) inset;
+  --gap:20px;--gap-lg:28px;
+  /* Type scale — 2x larger than standard web */
+  --xs:14px;--sm:17px;--base:20px;--lg:24px;--xl:32px;--xxl:44px;--hero:80px;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{background:var(--bg);color:var(--l1);font-family:var(--f);font-size:var(--base);
+  line-height:1.5;-webkit-font-smoothing:antialiased}
+body{min-height:100vh}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 100% 40% at 50% 0%,rgba(10,84,255,.10) 0%,transparent 65%)}
+main,nav,.sb{position:relative;z-index:1}
+
+/* ── STATUS BAR ─────────────────────────────────────────────── */
+.sb{height:44px;display:flex;align-items:center;gap:14px;padding:0 28px;
+  background:rgba(0,0,0,.94);border-bottom:1px solid var(--sep);
+  font-size:var(--sm);color:var(--l3);font-family:var(--fm)}
+.dot{width:8px;height:8px;border-radius:50%}
+@keyframes breathe{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:1;transform:scale(1.3)}}
+.dot.live{background:var(--green);animation:breathe 2s ease-in-out infinite}.dot.off{background:var(--red)}
+.vsep{width:1px;height:16px;background:var(--sep)}
+.badge{padding:3px 12px;border-radius:var(--rp);font-size:var(--xs);font-weight:500;letter-spacing:.8px}
+.badge.live{background:rgba(48,209,88,.15);color:var(--green);border:1px solid rgba(48,209,88,.32)}
+.badge.off{background:rgba(255,69,58,.10);color:var(--red);border:1px solid rgba(255,69,58,.28)}
+
+/* ── NAV ─────────────────────────────────────────────────────── */
+nav{position:sticky;top:0;z-index:200;height:68px;
+  background:rgba(0,0,0,.88);backdrop-filter:blur(40px) saturate(180%);border-bottom:1px solid var(--sep)}
+.ni{max-width:1600px;margin:0 auto;height:100%;padding:0 28px;
+  display:flex;align-items:center;justify-content:space-between;gap:20px}
+.brand-wordmark{font-family:var(--fd);font-size:22px;font-weight:600;letter-spacing:-.5px}
+.brand-wordmark span{color:var(--blue)}
+.brand-sub{font-size:var(--xs);color:var(--l3);letter-spacing:1.5px;text-transform:uppercase;font-weight:600;margin-top:2px}
+.ntabs{display:flex;gap:2px;padding:4px;background:rgba(255,255,255,.07);border-radius:var(--rp)}
+.ntab{padding:10px 24px;border-radius:var(--rp);font-size:var(--base);font-weight:600;
+  cursor:pointer;border:none;background:transparent;color:var(--l3);font-family:var(--f);
+  transition:all .2s;white-space:nowrap;min-height:44px;display:flex;align-items:center}
+.ntab:hover{color:var(--l2)}.ntab.active{background:rgba(255,255,255,.15);color:var(--l1)}
+.nr{display:flex;align-items:center;gap:12px;flex-shrink:0}
+.nstat{display:flex;align-items:center;gap:10px;padding:8px 16px;
+  background:var(--glass);border:1px solid var(--gb);border-radius:var(--rp)}
+.nstat-v{font-family:var(--fm);font-size:var(--lg);font-weight:600;line-height:1}
+.nstat-l{font-size:var(--xs);color:var(--l3);font-weight:500;text-transform:uppercase;letter-spacing:.6px;margin-top:2px}
+.btn-mqtt{padding:10px 20px;border-radius:var(--rp);font-size:var(--base);font-weight:500;
+  cursor:pointer;border:1.5px solid rgba(10,132,255,.40);background:rgba(10,132,255,.12);color:var(--blue);
+  font-family:var(--f);transition:all .18s;min-height:44px}
+.btn-mqtt:hover{background:rgba(10,132,255,.22)}
+
+/* ── LAYOUT ─────────────────────────────────────────────────── */
+main{max-width:1600px;margin:0 auto;padding:28px}
+.page{display:none}.page.active{display:block}
+
+/* ── CARDS ──────────────────────────────────────────────────── */
+.card{background:var(--glass);border:1px solid var(--gb);border-radius:var(--r28);
+  backdrop-filter:blur(20px);box-shadow:var(--sh);padding:28px;position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(135deg,rgba(255,255,255,.03) 0%,transparent 55%)}
+.section-label{font-size:var(--sm);font-weight:500;color:var(--l3);
+  text-transform:uppercase;letter-spacing:2px;margin-bottom:16px}
+.ch{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:12px;flex-wrap:wrap}
+.ctitle{font-size:var(--sm);font-weight:500;color:var(--l3);text-transform:uppercase;letter-spacing:2px}
+.ccontrols{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+
+/* ── TIME WINDOW ────────────────────────────────────────────── */
+.tw{display:flex;gap:2px;padding:3px;background:rgba(255,255,255,.07);border-radius:var(--rp)}
+.twb{padding:8px 16px;border-radius:var(--rp);font-size:var(--base);font-weight:500;
+  cursor:pointer;border:none;background:transparent;color:var(--l3);font-family:var(--f);
+  transition:all .15s;min-height:40px}
+.twb:hover{color:var(--l2)}.twb.active{background:rgba(255,255,255,.15);color:var(--l1)}
+
+/* ── CSV BUTTON ─────────────────────────────────────────────── */
+.csvb{display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--rp);
+  font-size:var(--base);font-weight:500;cursor:pointer;border:1.5px solid var(--sep);
+  background:rgba(255,255,255,.05);color:var(--l3);font-family:var(--f);transition:all .15s;min-height:40px}
+.csvb:hover{background:rgba(255,255,255,.10);color:var(--l2);border-color:rgba(255,255,255,.22)}
+
+/* ── GRIDS ───────────────────────────────────────────────────── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)}
+.ghero{display:grid;grid-template-columns:2.5fr 1fr 1fr 1fr;gap:var(--gap)}
+
+/* ── HERO METRICS ───────────────────────────────────────────── */
+.hcard{background:var(--glass);border:1px solid var(--gb);border-radius:var(--r28);
+  padding:32px 36px;box-shadow:var(--sh)}
+.hlbl{font-size:var(--sm);font-weight:500;color:var(--l3);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px}
+.hval{font-family:var(--fm);font-size:var(--hero);font-weight:600;line-height:.9;
+  letter-spacing:-3px;margin-bottom:10px}
+.hval.green{color:var(--green)}.hval.orange{color:var(--orange)}.hval.red{color:var(--red)}
+.hsub{font-size:var(--base);color:var(--l2);font-weight:500}
+
+.mcard{background:var(--glass);border:1px solid var(--gb);border-radius:var(--r28);
+  padding:28px 20px;text-align:center;box-shadow:var(--sh);
+  display:flex;flex-direction:column;align-items:center;justify-content:center}
+.mval{font-family:var(--fm);font-size:var(--xxl);font-weight:600;line-height:1;margin-bottom:10px;letter-spacing:-1px}
+.mlbl{font-size:var(--sm);font-weight:500;color:var(--l3);text-transform:uppercase;letter-spacing:1.5px}
+.msub{font-size:var(--base);color:var(--l3);margin-top:6px}
+
+/* ── SOC BAR ─────────────────────────────────────────────────── */
+.soc-wrap{margin:16px 0 8px}
+.soc-track{height:14px;background:rgba(255,255,255,.07);border-radius:var(--rp);overflow:visible;position:relative}
+.soc-fill{height:100%;border-radius:var(--rp);transition:width 1s cubic-bezier(.34,1.56,.64,1),background .5s}
+.soc-fill::after{content:'';position:absolute;right:-2px;top:-5px;width:24px;height:24px;
+  border-radius:50%;background:inherit;box-shadow:0 0 16px currentColor;opacity:.8}
+.soc-marks{position:relative;height:28px;margin-top:6px}
+.sm{position:absolute;font-size:var(--base);font-weight:500;transform:translateX(-50%)}
+.sm.s0{left:0;transform:none;color:var(--l4);font-weight:600}
+.sm.s10{left:10%;color:var(--red)}
+.sm.s20{left:20%;color:var(--orange)}
+.sm.s100{right:0;transform:none;color:var(--l4);font-weight:600}
+
+/* ── ALERTS ──────────────────────────────────────────────────── */
+.alert{display:flex;align-items:flex-start;gap:14px;padding:18px 22px;
+  border-radius:var(--r20);margin-bottom:12px;font-size:var(--lg);line-height:1.5;font-weight:600}
+.adot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:7px}
+.alert.critical{background:rgba(255,69,58,.10);border:1.5px solid rgba(255,69,58,.28);color:#FF6B6B}
+.alert.critical .adot{background:var(--red);box-shadow:0 0 10px var(--red)}
+.alert.warning{background:rgba(255,159,10,.10);border:1.5px solid rgba(255,159,10,.28);color:#FFBE5C}
+.alert.warning .adot{background:var(--orange);box-shadow:0 0 10px var(--orange)}
+.alert.info{background:rgba(10,132,255,.08);border:1.5px solid rgba(10,132,255,.25);color:#6DD5FA}
+.alert.info .adot{background:var(--blue)}
+.alert.ok{background:rgba(48,209,88,.07);border:1.5px solid rgba(48,209,88,.22);color:#7AE8A0}
+.alert.ok .adot{background:var(--green)}
+
+/* ── APPLIANCE GRID ──────────────────────────────────────────── */
+.app-grid{display:grid;grid-template-columns:1fr;gap:var(--gap)}
+
+/* Per-appliance card — full width, clear separation, no overlap */
+.app-chart-card{
+  background:var(--glass);border:1px solid var(--gb);border-radius:var(--r28);
+  overflow:hidden;box-shadow:var(--sh);
+}
+/* Horizontal layout: identity panel left, chart right */
+.acard-inner{
+  display:grid;grid-template-columns:300px 1fr;
+  min-height:240px;
+}
+/* Left identity panel */
+.aleft{
+  padding:24px;border-right:1px solid var(--sep);
+  display:flex;flex-direction:column;justify-content:space-between;gap:14px;
+  background:rgba(0,0,0,.18);
+}
+/* Card color accent bar at very left */
+.aclr-bar{width:5px;flex-shrink:0;border-radius:0 0 0 0}
+/* Appliance name + meta */
+.aname{font-size:var(--xl);font-weight:500;line-height:1.25;margin-bottom:4px;word-break:break-word}
+.ameta{font-size:var(--sm);color:var(--l3);font-weight:500;margin-bottom:0}
+/* 3 value chips in a row */
+.aval-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.avchip{background:rgba(255,255,255,.05);border-radius:var(--r16);padding:12px 8px;text-align:center;border:1px solid rgba(255,255,255,.06)}
+.avnum{font-family:var(--fm);font-size:var(--lg);font-weight:500;line-height:1;margin-bottom:4px}
+.avlbl{font-size:11px;color:var(--l3);font-weight:500;text-transform:uppercase;letter-spacing:.8px}
+/* Mode tabs */
+.amode-tabs{display:flex;gap:4px;flex-wrap:wrap}
+.atab{padding:7px 14px;border-radius:var(--rp);font-size:var(--sm);font-weight:500;
+  cursor:pointer;border:1px solid var(--sep);background:transparent;color:var(--l3);
+  font-family:var(--f);transition:all .15s;white-space:nowrap}
+.atab:hover{color:var(--l2)}
+.atab.active{background:rgba(255,255,255,.12);color:var(--l1);border-color:rgba(255,255,255,.20)}
+/* Right chart panel */
+.aright{
+  padding:20px 24px;display:flex;flex-direction:column;gap:10px;min-width:0;
+}
+/* Legend row */
+.alegend{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+.ald{display:flex;align-items:center;gap:6px;font-size:var(--sm);color:var(--l2);font-weight:500;white-space:nowrap}
+.aldd{width:20px;height:3px;border-radius:2px;flex-shrink:0}
+/* Chart container — fixed height, no overflow */
+.achart-wrap{flex:1;min-height:160px;position:relative}
+
+/* ── LIVE TABLE ──────────────────────────────────────────────── */
+.dtable{width:100%;border-collapse:collapse}
+.dtable thead tr{border-bottom:1.5px solid var(--sep)}
+.dtable th{font-size:var(--base);font-weight:600;color:var(--l3);text-transform:uppercase;
+  letter-spacing:1.5px;padding:12px 16px;text-align:left}
+.dtable td{padding:16px 16px;border-bottom:1px solid rgba(255,255,255,.04);
+  font-size:var(--lg);vertical-align:middle}
+.dtable tr:last-child td{border-bottom:none}
+.dtable tr:hover td{background:rgba(255,255,255,.025)}
+.mnum{font-family:var(--fm);font-size:var(--lg);font-weight:600}
+.sbar{display:flex;align-items:center;gap:12px}
+.strack{flex:1;height:8px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden}
+.sfill{height:100%;border-radius:4px;transition:width .8s ease}
+.spct{font-family:var(--fm);font-size:var(--base);color:var(--l3);min-width:44px;text-align:right;font-weight:500}
+
+/* ── STABILITY GAUGE ─────────────────────────────────────────── */
+.gauge-wrap{display:flex;flex-direction:column;align-items:center;padding:10px 0}
+.pillars{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;margin-top:20px}
+.pcell{background:rgba(255,255,255,.04);border-radius:var(--r20);padding:18px}
+.ptop{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px}
+.plbl{font-size:var(--base);color:var(--l3);text-transform:uppercase;letter-spacing:1px;font-weight:600}
+.pval{font-family:var(--fm);font-size:var(--xxl);font-weight:600}
+.ptrack{height:6px;background:rgba(255,255,255,.07);border-radius:3px}
+.pfill{height:100%;border-radius:3px;transition:width 1s ease}
+.psub{font-size:var(--sm);color:var(--l4);margin-top:6px;font-weight:600}
+
+/* ── GRADE TABLE ─────────────────────────────────────────────── */
+.gtable{width:100%;border-collapse:collapse}
+.gtable thead tr{border-bottom:1.5px solid var(--sep)}
+.gtable th{font-size:var(--base);font-weight:600;color:var(--l3);text-transform:uppercase;
+  letter-spacing:1.5px;padding:12px 14px;text-align:left}
+.gtable td{padding:16px 14px;border-bottom:1px solid rgba(255,255,255,.04);font-size:var(--lg)}
+.gtable tr:last-child td{border-bottom:none}
+.gletter{font-family:var(--fm);font-size:var(--xl);font-weight:600;width:48px}
+
+/* ── EMPTY STATE ─────────────────────────────────────────────── */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:80px 40px;text-align:center;gap:16px}
+.empty-ico{font-size:64px;line-height:1}
+.empty-title{font-family:var(--fd);font-size:var(--xl);font-weight:600;color:var(--l2)}
+.empty-desc{font-size:var(--base);color:var(--l3);line-height:1.7;max-width:500px}
+.empty-link{color:var(--blue);font-weight:500;text-decoration:none}
+
+/* ── MODAL ───────────────────────────────────────────────────── */
+.mov{position:fixed;inset:0;background:rgba(0,0,0,.80);z-index:600;
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .22s}
+.mov.open{opacity:1;pointer-events:all}
+.mbox{width:min(500px,92vw);background:var(--bg3);border:1px solid rgba(255,255,255,.12);
+  border-radius:var(--r36);padding:36px;box-shadow:0 24px 80px rgba(0,0,0,.80);
+  transform:scale(.96) translateY(12px);transition:transform .28s cubic-bezier(.32,.72,0,1)}
+.mov.open .mbox{transform:scale(1) translateY(0)}
+.mtitle{font-family:var(--fd);font-size:var(--xl);font-weight:600;margin-bottom:22px}
+.mf{margin-bottom:16px}
+.mlbl{display:block;font-size:var(--sm);font-weight:600;color:var(--l3);
+  text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.mi{width:100%;padding:14px 16px;background:rgba(255,255,255,.07);
+  border:1.5px solid rgba(255,255,255,.12);border-radius:var(--r16);
+  color:var(--l1);font-family:var(--f);font-size:var(--lg);font-weight:600;
+  outline:none;transition:border-color .18s}
+.mi:focus{border-color:var(--blue)}
+.mr{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.mbtns{display:flex;gap:12px;margin-top:22px}
+.bprim{flex:1;padding:15px;background:var(--blue);border:none;border-radius:var(--r16);
+  color:#fff;font-size:var(--lg);font-weight:600;font-family:var(--f);cursor:pointer}
+.bsec{padding:15px 22px;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.12);
+  border-radius:var(--r16);color:var(--l1);font-size:var(--lg);font-family:var(--f);cursor:pointer}
+
+@media(max-width:1100px){.ghero{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}.app-grid{grid-template-columns:1fr}}
+@media(max-width:720px){.ghero{grid-template-columns:1fr};main{padding:16px};.ntabs{display:none}}
+
+/* ── datetime-local input color fix ──────────────────────────── */
+input[type='datetime-local']{color-scheme:dark}
+input[type='datetime-local']:focus{border-color:var(--blue) !important}
+</style>
+</head>
+<body>
+
+<div class="sb">
+  <div class="dot off" id="cdot"></div>
+  <span>ACFuture · RV Energy Dashboard</span>
+  <div class="vsep"></div><span id="sbstatus">Connecting…</span>
+  <div class="vsep"></div><span id="sbtime">--:--:--</span>
+  <div style="margin-left:auto"></div>
+  <div class="badge off" id="dbadge">NO DATA</div>
+</div>
+
+<nav><div class="ni">
+  <div>
+    <div class="brand-wordmark">ACFuture</div>
+    <div class="brand-sub">Real-Time MQTT Dashboard</div>
+  </div>
+  <div class="ntabs">
+    <button class="ntab active" onclick="showTab('realtime',this)">Real-Time</button>
+    <button class="ntab" onclick="showTab('appliances',this)">Appliances</button>
+    <button class="ntab" onclick="showTab('stability',this)">Stability</button>
+    <button class="ntab" onclick="showTab('history',this)">History</button>
+  </div>
+  <div class="nr">
+    <div class="nstat"><div>
+      <div class="nstat-v" id="nav-soc" style="color:var(--green)">—%</div>
+      <div class="nstat-l">Battery</div>
+    </div></div>
+    <div class="nstat"><div>
+      <div class="nstat-v" id="nav-si" style="color:var(--blue)">—/10</div>
+      <div class="nstat-l">Stability</div>
+    </div></div>
+    <button class="btn-mqtt" onclick="openMod()">MQTT Settings</button>
+  </div>
+</div></nav>
+
+<main>
+
+<!-- ══ REAL-TIME ══════════════════════════════════════════════ -->
+<div id="tab-realtime" class="page active">
+  <div id="empty-state" class="card">
+    <div class="empty-state">
+      <div class="empty-ico">📡</div>
+      <div class="empty-title">Waiting for MQTT data</div>
+      <div class="empty-desc">
+        Start the Simulator at <a class="empty-link" href="http://localhost:5001" target="_blank">localhost:5001</a>
+        and click <strong>▶ Start Live Sim</strong>.<br>
+        Data streams here in real time over MQTT.
+      </div>
+    </div>
+  </div>
+
+  <div id="live-content" style="display:none">
+    <!-- HERO METRICS -->
+    <div class="ghero" style="margin-bottom:var(--gap)">
+      <div class="hcard">
+        <div class="hlbl">Battery State of Charge</div>
+        <div class="hval green" id="h-soc">—</div>
+        <div class="soc-wrap">
+          <div class="soc-track"><div class="soc-fill" id="soc-fill" style="width:0%;background:var(--green)"></div></div>
+          <div class="soc-marks">
+            <span class="sm s0">0%</span>
+            <span class="sm s10">10% ⚠</span>
+            <span class="sm s20">20%</span>
+            <span class="sm s100">100%</span>
+          </div>
+        </div>
+        <div class="hsub" id="h-res"></div>
+      </div>
+      <div class="mcard"><div class="mlbl">Solar</div><div class="mval" id="h-sol" style="color:var(--orange)">—</div><div class="msub">kW generating</div></div>
+      <div class="mcard"><div class="mlbl">Load</div><div class="mval" id="h-ld" style="color:var(--blue)">—</div><div class="msub">kW consuming</div></div>
+      <div class="mcard"><div class="mlbl" id="h-net-l">Net</div><div class="mval" id="h-net">—</div><div class="msub" id="h-net-m">—</div></div>
+    </div>
+
+    <!-- Alerts -->
+    <div id="alerts-wrap" style="margin-bottom:var(--gap)"></div>
+
+    <!-- Charts -->
+    <div class="g2" style="margin-bottom:var(--gap)">
+      <div class="card">
+        <div class="ch">
+          <div class="ctitle">Battery SOC</div>
+          <div class="ccontrols">
+            <div class="tw" id="tw-soc">
+              <button class="twb" onclick="setTW('soc','15m',this)">15m</button>
+              <button class="twb" onclick="setTW('soc','1h',this)">1h</button>
+              <button class="twb active" onclick="setTW('soc','all',this)">All</button>
+            </div>
+            <button class="csvb" onclick="dlCSV('soc')">↓ CSV</button>
+          </div>
+        </div>
+        <div style="height:220px"><canvas id="rt-soc"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="ch">
+          <div class="ctitle">Solar vs Load</div>
+          <div class="ccontrols">
+            <div class="tw" id="tw-pw">
+              <button class="twb" onclick="setTW('pw','15m',this)">15m</button>
+              <button class="twb" onclick="setTW('pw','1h',this)">1h</button>
+              <button class="twb active" onclick="setTW('pw','all',this)">All</button>
+            </div>
+            <button class="csvb" onclick="dlCSV('pw')">↓ CSV</button>
+          </div>
+        </div>
+        <div style="height:220px"><canvas id="rt-pw"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Live table -->
+    <div class="card">
+      <div class="ch">
+        <div class="ctitle">Live Appliance Consumption</div>
+        <button class="csvb" onclick="dlCSV('live')" style="padding:8px 20px">↓ Export CSV</button>
+      </div>
+      <table class="dtable">
+        <thead><tr>
+          <th>Appliance</th><th style="text-align:right">Voltage</th>
+          <th style="text-align:right">Current</th><th style="text-align:right">Power</th>
+          <th>Share of Load</th>
+        </tr></thead>
+        <tbody id="rt-tbody"><tr><td colspan="5" style="text-align:center;color:var(--l3);padding:36px">Waiting for data…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══ APPLIANCES ═════════════════════════════════════════════ -->
+<div id="tab-appliances" class="page">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--gap-lg);flex-wrap:wrap;gap:14px">
+    <div>
+      <div style="font-family:var(--fd);font-size:var(--xxl);font-weight:600;margin-bottom:6px">Per-Appliance Telemetry</div>
+      <div style="font-size:var(--base);color:var(--l3);font-weight:500">Real-time V / A / W · Updated on every MQTT message</div>
+    </div>
+    <div style="display:flex;gap:12px;align-items:center">
+      <div class="tw" id="tw-apps">
+        <button class="twb" onclick="setGTW('15m',this)">15m</button>
+        <button class="twb" onclick="setGTW('1h',this)">1h</button>
+        <button class="twb active" onclick="setGTW('all',this)">All</button>
+      </div>
+      <button class="csvb" onclick="dlCSV('all-apps')" style="padding:10px 22px;font-size:var(--lg)">↓ Export All</button>
+    </div>
+  </div>
+  <div id="app-grid" class="app-grid"></div>
+</div>
+
+<!-- ══ STABILITY ══════════════════════════════════════════════ -->
+<div id="tab-stability" class="page">
+  <div class="g2">
+    <div class="card" style="display:flex;flex-direction:column;align-items:center">
+      <div class="ch" style="width:100%">
+        <div class="ctitle">Stability Score 0–10</div>
+        <button class="csvb" onclick="dlCSV('si')">↓ CSV</button>
+      </div>
+      <div class="gauge-wrap" style="width:100%">
+        <svg overflow="visible" viewBox="0 0 320 280" width="320" height="280">
+          <path id="si-bg" fill="none" stroke="rgba(255,255,255,.06)" stroke-linecap="round"/>
+          <path id="si-arc" fill="none" stroke-linecap="round"/>
+          <text id="si-num" x="160" y="162" text-anchor="middle" dominant-baseline="middle"
+            font-family="-apple-system,BlinkMacSystemFont" font-size="88" font-weight="900" fill="white">—</text>
+          <text id="si-sub" x="160" y="210" text-anchor="middle"
+            font-family="-apple-system,BlinkMacSystemFont" font-size="18" font-weight="600" fill="rgba(235,235,245,.50)">Waiting for data…</text>
+          <text x="44" y="262" text-anchor="middle" fill="rgba(235,235,245,.20)" font-size="16" font-family="SF Mono,Menlo,monospace">0</text>
+          <text x="276" y="262" text-anchor="middle" fill="rgba(235,235,245,.20)" font-size="16" font-family="SF Mono,Menlo,monospace">10</text>
+        </svg>
+        <div class="pillars" style="width:90%;max-width:400px">
+          <div class="pcell">
+            <div class="ptop"><span class="plbl" style="color:var(--blue)">Autonomy</span><span class="pval" id="pv1" style="color:var(--blue)">—</span></div>
+            <div class="ptrack"><div class="pfill" id="pb1" style="background:var(--blue);width:0%"></div></div>
+            <div class="psub">max 3.5 pts</div>
+          </div>
+          <div class="pcell">
+            <div class="ptop"><span class="plbl" style="color:var(--orange)">Solar</span><span class="pval" id="pv2" style="color:var(--orange)">—</span></div>
+            <div class="ptrack"><div class="pfill" id="pb2" style="background:var(--orange);width:0%"></div></div>
+            <div class="psub">max 3.0 pts</div>
+          </div>
+          <div class="pcell">
+            <div class="ptop"><span class="plbl" style="color:var(--green)">Safety</span><span class="pval" id="pv3" style="color:var(--green)">—</span></div>
+            <div class="ptrack"><div class="pfill" id="pb3" style="background:var(--green);width:0%"></div></div>
+            <div class="psub">max 2.0 pts</div>
+          </div>
+          <div class="pcell">
+            <div class="ptop"><span class="plbl" style="color:var(--teal)">Reserve</span><span class="pval" id="pv4" style="color:var(--teal)">—</span></div>
+            <div class="ptrack"><div class="pfill" id="pb4" style="background:var(--teal);width:0%"></div></div>
+            <div class="psub">max 1.5 pts</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:var(--gap)">
+      <div class="card">
+        <div class="ch">
+          <div class="ctitle">Score History</div>
+          <div class="ccontrols">
+            <div class="tw" id="tw-si">
+              <button class="twb" onclick="setTW('si','15m',this)">15m</button>
+              <button class="twb" onclick="setTW('si','1h',this)">1h</button>
+              <button class="twb active" onclick="setTW('si','all',this)">All</button>
+            </div>
+            <button class="csvb" onclick="dlCSV('si-hist')">↓ CSV</button>
+          </div>
+        </div>
+        <div style="height:220px"><canvas id="si-chart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="ctitle" style="margin-bottom:18px">Grade Reference</div>
+        <table class="gtable">
+          <thead><tr><th>Grade</th><th>Score</th><th>Status</th><th>Action Required</th></tr></thead>
+          <tbody>
+            <tr><td><span class="gletter" style="color:#30D158">S</span></td><td style="font-family:var(--fm)">9–10</td><td>Exceptional</td><td style="color:#30D158;font-weight:500">None — gold standard</td></tr>
+            <tr><td><span class="gletter" style="color:#34C759">A</span></td><td style="font-family:var(--fm)">8–8.9</td><td>Excellent</td><td style="color:#34C759;font-weight:500">Monitor only</td></tr>
+            <tr><td><span class="gletter" style="color:var(--teal)">B</span></td><td style="font-family:var(--fm)">7–7.9</td><td>Good</td><td style="color:var(--teal)">Schedule at peak solar</td></tr>
+            <tr><td><span class="gletter" style="color:var(--blue)">C</span></td><td style="font-family:var(--fm)">6–6.9</td><td>Fair</td><td style="color:var(--blue)">Monitor, plan ahead</td></tr>
+            <tr><td><span class="gletter" style="color:var(--orange)">D</span></td><td style="font-family:var(--fm)">5–5.9</td><td>Poor</td><td style="color:var(--orange)">Shed non-essential loads</td></tr>
+            <tr style="background:rgba(255,69,58,.05)">
+              <td><span class="gletter" style="color:var(--red)">F</span></td>
+              <td style="font-family:var(--fm);color:var(--red)">0–4.9</td>
+              <td style="color:var(--red);font-weight:600">Critical</td>
+              <td style="color:var(--red);font-weight:600">Connect shore power NOW</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ HISTORY ════════════════════════════════════════════════ -->
+<div id="tab-history" class="page">
+  <!-- Date/time range selector -->
+  <div class="card" style="margin-bottom:var(--gap)">
+    <div class="ctitle" style="margin-bottom:20px">Time Range Filter</div>
+    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:var(--base);color:var(--l3);font-weight:500;white-space:nowrap">From</span>
+        <input type="datetime-local" id="hist-from"
+          style="padding:12px 14px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);border-radius:var(--r16);color:var(--l1);font-family:var(--f);font-size:var(--base);outline:none;transition:border-color .18s;min-width:220px"
+          onchange="applyHistRange()">
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:var(--base);color:var(--l3);font-weight:500;white-space:nowrap">To</span>
+        <input type="datetime-local" id="hist-to"
+          style="padding:12px 14px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);border-radius:var(--r16);color:var(--l1);font-family:var(--f);font-size:var(--base);outline:none;transition:border-color .18s;min-width:220px"
+          onchange="applyHistRange()">
+      </div>
+      <div style="display:flex;gap:8px;padding:4px;background:rgba(255,255,255,.07);border-radius:var(--rp)">
+        <button class="twb" onclick="setHistPreset('15m',this)">15 min</button>
+        <button class="twb" onclick="setHistPreset('1h',this)">1 hr</button>
+        <button class="twb" onclick="setHistPreset('6h',this)">6 hr</button>
+        <button class="twb" onclick="setHistPreset('12h',this)">12 hr</button>
+        <button class="twb active" onclick="setHistPreset('all',this)">All Data</button>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px">
+        <button class="csvb" onclick="dlHistCSV()" style="font-size:var(--base);padding:10px 20px">↓ Export All CSV</button>
+        <button onclick="refreshHist()" style="padding:10px 22px;border-radius:var(--rp);background:var(--blue);border:none;color:#fff;font-size:var(--base);font-weight:500;cursor:pointer;min-height:44px">Refresh</button>
+      </div>
+    </div>
+    <!-- Range summary -->
+    <div id="hist-range-info" style="margin-top:14px;font-size:var(--sm);color:var(--l3);font-weight:500"></div>
+  </div>
+
+  <div class="g2">
+    <div class="card">
+      <div class="ch">
+        <div class="ctitle">Battery SOC</div>
+        <button class="csvb" onclick="dlCSV('hsoc')">↓ CSV</button>
+      </div>
+      <div style="height:280px"><canvas id="h-soc-c"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="ch">
+        <div class="ctitle">Solar vs Load</div>
+        <button class="csvb" onclick="dlCSV('hpw')">↓ CSV</button>
+      </div>
+      <div style="height:280px"><canvas id="h-pw-c"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Per-appliance history (loads on demand) -->
+  <div id="app-hist-section" style="margin-top:var(--gap)">
+    <div class="card">
+      <div class="ctitle" style="margin-bottom:16px">Appliance Power History</div>
+      <div id="app-hist-grid"></div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<div class="mov" id="modal" onclick="cMBg(event)">
+  <div class="mbox">
+    <div class="mtitle">MQTT Broker Settings</div>
+    <div class="mf"><label class="mlbl">Host</label><input class="mi" id="cm-host" value="localhost"></div>
+    <div class="mr">
+      <div class="mf"><label class="mlbl">Port</label><input class="mi" id="cm-port" type="number" value="1883"></div>
+      <div class="mf"><label class="mlbl">Base Topic</label><input class="mi" id="cm-topic" value="rv/energy"></div>
+    </div>
+    <div class="mr">
+      <div class="mf"><label class="mlbl">Username</label><input class="mi" id="cm-user" placeholder="optional"></div>
+      <div class="mf"><label class="mlbl">Password</label><input class="mi" id="cm-pw" type="password" placeholder="optional"></div>
+    </div>
+    <div class="mbtns">
+      <button class="bsec" onclick="G('modal').classList.remove('open')">Cancel</button>
+      <button class="bprim" onclick="reconnect()">Connect</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════
+   DASHBOARD JS — iPad / HMI Optimised
+══════════════════════════════════════════════════════════ */
+const G = id => document.getElementById(id);
+const MAX = 1440;
+const COLORS = ['#FF9F0A','#0A84FF','#30D158','#FF453A','#BF5AF2','#5AC8F5','#FFD60A','#FF6B6B','#AC8E68','#30D158'];
+const GRADES = {S:'Exceptional',A:'Excellent',B:'Good',C:'Fair',D:'Poor',F:'Critical'};
+
+let sse=null, simSSE=null, hasData=false;
+let chartRefs={}, appCRefs={}, appMode={};
+let socBuf=[], pwBuf=[], siBuf=[];
+let TW={soc:'all',pw:'all',si:'all',hsoc:'all',hpw:'all'}, globalTW='all';
+let appState={};  // {aid: {meta, vBuf, aBuf, wBuf, latest}}
+let latestSI={score:0,grade:'F'};
+
+const baseOpts={
+  responsive:true,maintainAspectRatio:false,
+  plugins:{legend:{display:false},tooltip:{
+    backgroundColor:'rgba(16,16,20,.96)',titleColor:'rgba(235,235,245,.55)',
+    bodyColor:'#fff',borderColor:'rgba(255,255,255,.10)',borderWidth:1,
+    padding:16,cornerRadius:14,bodyFont:{size:18,weight:'700'},titleFont:{size:13}}},
+  elements:{point:{radius:0,hoverRadius:7}},
+  animation:{duration:300,easing:'easeOutCubic'},
+  scales:{
+    x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'rgba(255,255,255,.30)',font:{size:14},maxTicksLimit:8},border:{display:false}},
+    y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'rgba(255,255,255,.30)',font:{size:14}},border:{display:false}}
+  }
+};
+
+function showTab(n,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.ntab').forEach(b=>b.classList.remove('active'));
+  G('tab-'+n).classList.add('active');if(btn)btn.classList.add('active');
+  if(n==='appliances') renderGrid();
+  if(n==='stability')  refreshSI();
+  if(n==='history')    refreshHist();
+}
+
+// ── SSE ──────────────────────────────────────────────────
+function connectSSE(){
+  if(sse)sse.close();
+  sse=new EventSource('/api/stream');
+  sse.onopen=()=>setConn(true);
+  sse.onmessage=e=>{try{dispatch(JSON.parse(e.data));}catch(ex){}};
+  sse.onerror=()=>{setConn(false);setTimeout(connectSSE,3000);};
+
+  // Also connect directly to simulator's live stream so SOC updates
+  // appear in the dashboard without relying solely on MQTT.
+  connectSimProxy();
+}
+
+function connectSimProxy(){
+  if(simSSE) simSSE.close();
+  simSSE = new EventSource('/api/sim-stream-proxy');
+  simSSE.onmessage = e => {
+    try {
+      const d = JSON.parse(e.data);
+      // Proxy delivers pre-formatted battery/solar/appliance events
+      if(d.type === 'battery' || d.type === 'solar' || d.type === 'appliance' || d.type === 'registry') {
+        dispatch(d);
+      }
+    } catch(ex){}
+  };
+  simSSE.onerror = () => {
+    // Simulator may not be running — retry quietly
+    setTimeout(connectSimProxy, 5000);
+  };
+}
+function setConn(on){
+  G('cdot').className='dot '+(on?'live':'off');
+  if(!on)G('sbstatus').textContent='Reconnecting…';
+}
+
+function dispatch(d){
+  if(d.type==='connected'){G('sbstatus').textContent='Connected · ready for MQTT data';return;}
+
+  if(d.type==='registry'){
+    (d.appliances||[]).forEach(a=>{
+      const aid=String(a.id);
+      if(!appState[aid])appState[aid]={meta:{},vBuf:[],aBuf:[],wBuf:[],latest:null};
+      appState[aid].meta={name:a.name||'App '+aid,icon:a.icon||'',clr:a.clr||'#0A84FF',cat:a.cat||'medium'};
+    });
+    if(Object.keys(appState).length)showData();
+    renderGrid();return;
+  }
+
+  if(d.type==='appliance'){
+    const aid=String(d.id);
+    if(!appState[aid])appState[aid]={meta:{},vBuf:[],aBuf:[],wBuf:[],latest:null};
+    if(d.name)appState[aid].meta={name:d.name,icon:d.icon||'',clr:d.clr||'#0A84FF',cat:d.cat||'medium'};
+    const ts=fmt(d.ts),s=appState[aid];
+    const vv=+d.v||0,av=+d.a||0,wv=+d.w||0;
+    s.vBuf.push({ts,v:vv});if(s.vBuf.length>MAX)s.vBuf.shift();
+    s.aBuf.push({ts,a:av});if(s.aBuf.length>MAX)s.aBuf.shift();
+    s.wBuf.push({ts,w:wv});if(s.wBuf.length>MAX)s.wBuf.shift();
+    s.latest={v:vv,a:av,w:wv,ts};
+    updateTable();
+    if(G('tab-appliances').classList.contains('active'))liveCard(aid);
+    else ensureCard(aid);
+    showData();return;
+  }
+
+  if(d.type==='battery'){
+    const soc=+d.soc_pct||0,net=+d.net_kw||0;
+    const sc=soc>50?'var(--green)':soc>20?'var(--orange)':'var(--red)';
+    const set=(id,v,c)=>{const e=G(id);if(e){e.textContent=v;if(c)e.style.color=c;}};
+    set('h-soc',soc.toFixed(1)+'%',sc);
+    const sf=G('soc-fill');if(sf){sf.style.width=soc+'%';sf.style.background=sc;}
+    const hr=G('h-res');if(hr)hr.textContent=d.reserve_hit?'⚠ Reserve floor active — 10% protection mode':'';
+    set('h-net',(net>=0?'+':'')+net.toFixed(3),net>=0?'var(--green)':'var(--red)');
+    G('h-net-m').textContent=net>=0?'Charging battery':'Drawing from battery';
+    const ns=G('nav-soc');if(ns){ns.textContent=soc.toFixed(0)+'%';ns.style.color=sc;}
+    const ts=fmt(d.ts);
+    socBuf.push({ts,v:soc});if(socBuf.length>MAX)socBuf.shift();
+    buildAlerts(soc,latestSI.score,latestSI.grade,d.reserve_hit);
+    buildRTCharts();G('sbstatus').textContent='Updated '+ts+' · SOC '+soc.toFixed(1)+'%';
+    showData();return;
+  }
+
+  if(d.type==='solar'){
+    const s=+d.solar_kw||0,l=+d.load_kw||0;
+    const set=(id,v)=>{const e=G(id);if(e)e.textContent=v;};
+    set('h-sol',s.toFixed(3));set('h-ld',l.toFixed(3));
+    const ts=fmt(d.ts);
+    pwBuf.push({ts,s,l});if(pwBuf.length>MAX)pwBuf.shift();
+    buildRTCharts();return;
+  }
+}
+
+function fmt(ts){try{return new Date(ts).toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}catch(e){return new Date().toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}}
+
+function showData(){
+  if(!hasData){hasData=true;G('empty-state').style.display='none';G('live-content').style.display='block';G('dbadge').className='badge live';G('dbadge').textContent='LIVE';}
+}
+
+// ── Alerts ────────────────────────────────────────────────
+function buildAlerts(soc,si,grade,res){
+  const a=[];
+  if(soc<10||res)a.push({t:'critical',m:'Battery at hard reserve floor (10%) — cell protection active. Connect shore power immediately.'});
+  else if(soc<20)a.push({t:'critical',m:`Battery critically low at ${soc.toFixed(0)}% — connect shore power now.`});
+  else if(soc<35)a.push({t:'warning',m:`Battery at ${soc.toFixed(0)}% — consider reducing non-essential loads.`});
+  if(si<5)a.push({t:'critical',m:`Stability Score ${(+si).toFixed(1)}/10 (Grade F) — system cannot sustain itself.`});
+  else if(si<7)a.push({t:'warning',m:`Stability Score ${(+si).toFixed(1)}/10 (Grade ${grade}) — review energy balance.`});
+  if(!a.length)a.push({t:'ok',m:'All systems nominal — energy balance is healthy.'});
+  G('alerts-wrap').innerHTML=a.map(x=>`<div class="alert ${x.t}"><div class="adot"></div><span>${x.m}</span></div>`).join('');
+}
+
+// ── Time windows ──────────────────────────────────────────
+function setTW(k,w,btn){
+  TW[k]=w;const wrap=G('tw-'+k);
+  if(wrap)wrap.querySelectorAll('.twb').forEach(b=>b.classList.toggle('active',b===btn));
+  if(k==='soc'||k==='pw')buildRTCharts();
+  if(k==='si'){if(G('tab-stability').classList.contains('active'))refreshSI();}
+  if(k.startsWith('h'))refreshHist();
+}
+function setGTW(w,btn){
+  globalTW=w;const wrap=G('tw-apps');
+  if(wrap)wrap.querySelectorAll('.twb').forEach(b=>b.classList.toggle('active',b===btn));
+  Object.keys(appState).forEach(aid=>liveCard(aid));
+}
+function fBuf(buf,w){
+  if(w==='all')return buf;
+  const ms={'15m':900000,'1h':3600000,'6h':21600000}[w];if(!ms)return buf;
+  const nowMs=(new Date().getHours()*3600+new Date().getMinutes()*60+new Date().getSeconds())*1000;
+  return buf.filter(p=>{try{const pp=p.ts.split(':').map(Number);const ptMs=(pp[0]*3600+pp[1]*60+pp[2])*1000;return(nowMs-ptMs)<=ms;}catch(e){return true;}});
+}
+
+// ── RT Charts ─────────────────────────────────────────────
+function buildRTCharts(){
+  const sf=fBuf(socBuf,TW.soc),sl=sf.map(p=>p.ts);
+  if(!chartRefs.soc){
+    const c=G('rt-soc');if(!c)return;
+    chartRefs.soc=new Chart(c.getContext('2d'),{type:'line',data:{labels:sl,datasets:[
+      {data:sf.map(p=>p.v),borderColor:'#30D158',backgroundColor:'rgba(48,209,88,.07)',fill:true,tension:.45,borderWidth:2.5},
+      {data:sl.map(()=>20),borderColor:'rgba(255,159,10,.55)',borderDash:[6,4],borderWidth:2,pointRadius:0},
+      {data:sl.map(()=>10),borderColor:'rgba(255,69,58,.65)',borderDash:[3,4],borderWidth:2,pointRadius:0},
+    ]},options:{...baseOpts,scales:{...baseOpts.scales,y:{...baseOpts.scales.y,min:0,max:100,ticks:{...baseOpts.scales.y.ticks,callback:v=>v+'%'}}}}});
+  } else {
+    chartRefs.soc.data.labels=sl;chartRefs.soc.data.datasets[0].data=sf.map(p=>p.v);
+    chartRefs.soc.data.datasets[1].data=sl.map(()=>20);chartRefs.soc.data.datasets[2].data=sl.map(()=>10);
+    chartRefs.soc.update('none');
+  }
+  const pf=fBuf(pwBuf,TW.pw),pl=pf.map(p=>p.ts);
+  if(!chartRefs.pw){
+    const c=G('rt-pw');if(!c)return;
+    chartRefs.pw=new Chart(c.getContext('2d'),{type:'line',data:{labels:pl,datasets:[
+      {data:pf.map(p=>p.s),borderColor:'#FF9F0A',backgroundColor:'rgba(255,159,10,.07)',fill:true,tension:.45,borderWidth:2.5},
+      {data:pf.map(p=>p.l),borderColor:'#0A84FF',backgroundColor:'rgba(10,132,255,.06)',fill:true,tension:.45,borderWidth:2.5},
+    ]},options:baseOpts});
+  } else {
+    chartRefs.pw.data.labels=pl;chartRefs.pw.data.datasets[0].data=pf.map(p=>p.s);
+    chartRefs.pw.data.datasets[1].data=pf.map(p=>p.l);chartRefs.pw.update('none');
+  }
+}
+
+// ── Live table ────────────────────────────────────────────
+function updateTable(){
+  const tb=G('rt-tbody');if(!tb)return;
+  const entries=Object.entries(appState).filter(([,s])=>s.latest);
+  if(!entries.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--l3);padding:40px;font-size:var(--base)">No appliance data yet</td></tr>';return;}
+  const maxW=Math.max(...entries.map(([,s])=>s.latest?.w||0),.01);
+  tb.innerHTML=entries.map(([aid,s],i)=>{
+    const l=s.latest,m=s.meta||{},clr=m.clr||COLORS[i%COLORS.length];
+    const pct=Math.min(100,(l.w/maxW)*100).toFixed(1);
+    return `<tr>
+      <td style="font-size:var(--xl);font-weight:500"><span style="margin-right:12px">${m.icon||''}</span>${m.name||'App '+aid}
+        <span style="font-size:var(--sm);color:var(--l3);margin-left:10px;font-weight:500">${m.cat||''}</span></td>
+      <td style="text-align:right"><span class="mnum" style="color:var(--l2)">${(+l.v).toFixed(1)} V</span></td>
+      <td style="text-align:right"><span class="mnum" style="color:var(--teal)">${(+l.a).toFixed(3)} A</span></td>
+      <td style="text-align:right"><span class="mnum" style="color:${clr};font-size:var(--xl)">${(+l.w).toFixed(1)} W</span></td>
+      <td><div class="sbar"><div class="strack"><div class="sfill" style="width:${pct}%;background:${clr}"></div></div>
+          <span class="spct">${pct}%</span></div></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Appliance Charts ──────────────────────────────────────
+function renderGrid(){
+  const grid=G('app-grid');if(!grid)return;
+  const aids=Object.keys(appState);
+  if(!aids.length){
+    grid.innerHTML=`<div class="card"><div class="empty-state">
+      <div class="empty-ico">📡</div>
+      <div class="empty-title">No appliance data</div>
+      <div class="empty-desc">Start the simulator at <a class="empty-link" href="http://localhost:5001" target="_blank">localhost:5001</a> and click ▶ Start Live Sim</div>
+    </div></div>`;return;
+  }
+  aids.forEach((aid,i)=>ensureCard(aid,i));
+  grid.querySelectorAll('[id^="acard-"]').forEach(c=>{
+    if(!appState[c.id.replace('acard-','')])c.remove();
+  });
+}
+
+function ensureCard(aid,ci){
+  const grid=G('app-grid');if(!grid)return;
+  if(G('acard-'+aid))return;
+  const s=appState[aid]||{meta:{},vBuf:[],aBuf:[],wBuf:[],latest:null};
+  const m=s.meta||{},l=s.latest;
+  const i=ci!==undefined?ci:Object.keys(appState).indexOf(aid);
+  const clr=m.clr||COLORS[i%COLORS.length];
+  const card=document.createElement('div');
+  card.className='app-chart-card';card.id='acard-'+aid;
+  // Color bar left edge via border
+  card.style.borderLeft=`5px solid ${clr}`;
+
+  card.innerHTML=`
+    <div class="acard-inner">
+      <!-- LEFT: identity, live values, controls -->
+      <div class="aleft">
+        <div>
+          <div class="aname" id="aname-${aid}">${m.name||'App '+aid}</div>
+          <div class="ameta" id="ameta-${aid}">${m.cat||'—'}</div>
+        </div>
+
+        <div class="aval-row">
+          <div class="avchip">
+            <div class="avnum" id="aw-${aid}" style="color:${clr}">${l?l.w.toFixed(1):'—'}</div>
+            <div class="avlbl">Watts</div>
+          </div>
+          <div class="avchip">
+            <div class="avnum" id="aa-${aid}" style="color:var(--teal)">${l?l.a.toFixed(3):'—'}</div>
+            <div class="avlbl">Amps</div>
+          </div>
+          <div class="avchip">
+            <div class="avnum" id="av-${aid}" style="color:rgba(235,235,245,.60)">${l?l.v.toFixed(1):'—'}</div>
+            <div class="avlbl">Volts</div>
+          </div>
+        </div>
+
+        <div class="amode-tabs">
+          <button class="atab active" onclick="swMode('${aid}','all',this)">All</button>
+          <button class="atab" onclick="swMode('${aid}','w',this)">Power</button>
+          <button class="atab" onclick="swMode('${aid}','a',this)">Current</button>
+          <button class="atab" onclick="swMode('${aid}','v',this)">Voltage</button>
+        </div>
+
+        <button class="csvb" onclick="dlCSV('app-${aid}')" style="align-self:flex-start;padding:7px 14px;font-size:var(--sm)">↓ CSV</button>
+      </div>
+
+      <!-- RIGHT: chart with legend -->
+      <div class="aright">
+        <div class="alegend" id="leg-${aid}">
+          <div class="ald"><div class="aldd" style="background:${clr}"></div>Power (W)</div>
+          <div class="ald"><div class="aldd" style="background:#5AC8F5;border-top:2px dashed #5AC8F5;background:none;border-radius:0"></div>Current (A×10)</div>
+          <div class="ald"><div class="aldd" style="background:rgba(255,255,255,.35)"></div>Voltage (V)</div>
+        </div>
+        <div class="achart-wrap">
+          <canvas id="ac-${aid}" style="display:block;width:100%;height:100%"></canvas>
+        </div>
+      </div>
+    </div>`;
+  grid.appendChild(card);
+  appMode[aid]='all';
+  // Small defer so canvas gets its layout dimensions
+  requestAnimationFrame(()=>buildChart(aid,'all'));
+}
+
+function liveCard(aid){
+  if(!G('acard-'+aid)){ensureCard(aid);return;}
+  const s=appState[aid];if(!s)return;
+  const m=s.meta||{},l=s.latest;
+  const set=(id,v)=>{const e=G(id);if(e)e.textContent=v;};
+  set('aname-'+aid,m.name||'App '+aid);
+  set('ameta-'+aid,m.cat||'—');
+  if(l){
+    set('aw-'+aid,(+l.w).toFixed(1));
+    set('aa-'+aid,(+l.a).toFixed(3));
+    set('av-'+aid,(+l.v).toFixed(1));
+  }
+  // Only rebuild chart every 5 updates to keep rendering smooth
+  const tick=(s._tick=(s._tick||0)+1);
+  if(tick%5===1 || !appCRefs[aid]) buildChart(aid,appMode[aid]||'all');
+  else if(appCRefs[aid]){
+    // Fast path: just push new data point
+    const mode=appMode[aid]||'all';
+    const rawBuf=mode==='w'?s.wBuf:mode==='a'?s.aBuf:mode==='v'?s.vBuf:s.wBuf;
+    const buf=fBuf(rawBuf,globalTW);
+    if(appCRefs[aid].data.labels.length!==buf.length){
+      buildChart(aid,mode); // full rebuild if length changed
+    } else {
+      appCRefs[aid].update('none');
+    }
+  }
+}
+
+function swMode(aid,mode,btn){
+  appMode[aid]=mode;
+  const card=G('acard-'+aid);
+  if(card)card.querySelectorAll('.atab').forEach(b=>b.classList.toggle('active',b===btn));
+  const m=appState[aid]?.meta||{},clr=m.clr||'#0A84FF';
+  const leg=G('leg-'+aid);
+  if(leg){
+    if(mode==='w')
+      leg.innerHTML=`<div class="ald"><div class="aldd" style="background:${clr}"></div>Power (W)</div>`;
+    else if(mode==='a')
+      leg.innerHTML=`<div class="ald"><div class="aldd" style="background:#5AC8F5"></div>Current (A)</div>`;
+    else if(mode==='v')
+      leg.innerHTML=`<div class="ald"><div class="aldd" style="background:rgba(255,255,255,.4)"></div>Voltage (V)</div>`;
+    else
+      leg.innerHTML=`<div class="ald"><div class="aldd" style="background:${clr}"></div>Power (W)</div><div class="ald"><div class="aldd" style="background:#5AC8F5;border-top:2px dashed #5AC8F5;background:none;border-radius:0"></div>Current (A×10)</div><div class="ald"><div class="aldd" style="background:rgba(255,255,255,.35)"></div>Voltage (V)</div>`;
+  }
+  buildChart(aid,mode);
+}
+
+function buildChart(aid,mode){
+  const s=appState[aid];if(!s)return;
+  mode=mode||appMode[aid]||'all';appMode[aid]=mode;
+  const m=s.meta||{},clr=m.clr||'#0A84FF';
+  const c=G('ac-'+aid);if(!c)return;
+
+  // Ensure canvas container has a measured height
+  const wrap=c.parentElement;
+  if(wrap&&wrap.offsetHeight<10){
+    wrap.style.height='180px';
+  }
+
+  // Destroy existing chart gracefully
+  if(appCRefs[aid]){try{appCRefs[aid].destroy();}catch(e){}delete appCRefs[aid];}
+
+  // Helper: clr → rgba bg
+  function bg(hex,a){
+    try{const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return `rgba(${r},${g},${b},${a})`;}
+    catch(e){return `rgba(10,132,255,${a})`;}
+  }
+
+  // Shared chart options — clean, readable
+  const sharedOpts={
+    responsive:true,maintainAspectRatio:false,
+    animation:{duration:400,easing:'easeOutQuart'},
+    interaction:{mode:'index',intersect:false},
+    plugins:{
+      legend:{display:false},  // We render our own legend in HTML
+      tooltip:{
+        backgroundColor:'rgba(12,12,16,.96)',
+        titleColor:'rgba(235,235,245,.55)',
+        bodyColor:'#fff',
+        borderColor:'rgba(255,255,255,.12)',
+        borderWidth:1,
+        padding:14,
+        cornerRadius:12,
+        bodyFont:{size:16,weight:'500'},
+        titleFont:{size:12,weight:'500'},
+        callbacks:{
+          title:items=>items[0]?.label||'',
+          label:ctx=>{
+            const v=ctx.raw;
+            if(ctx.datasetIndex===0) return ` Power: ${(+v).toFixed(1)} W`;
+            if(ctx.datasetIndex===1) return ` Current: ${(+v/10).toFixed(3)} A`;
+            return ` Voltage: ${(+v).toFixed(1)} V`;
+          }
+        }
+      }
+    },
+    scales:{
+      x:{
+        grid:{color:'rgba(255,255,255,.04)',drawTicks:false},
+        ticks:{color:'rgba(255,255,255,.32)',font:{size:12},maxTicksLimit:6,maxRotation:0},
+        border:{display:false}
+      }
+    }
+  };
+
+  if(mode==='all'){
+    const wBuf=fBuf(s.wBuf,globalTW);
+    const aBuf=fBuf(s.aBuf,globalTW);
+    const vBuf=fBuf(s.vBuf,globalTW);
+    // Align lengths — use shortest buffer
+    const len=Math.min(wBuf.length,aBuf.length,vBuf.length);
+    const labels=wBuf.slice(-len).map(p=>p.ts);
+
+    appCRefs[aid]=new Chart(c.getContext('2d'),{
+      type:'line',
+      data:{labels,datasets:[
+        {
+          data:wBuf.slice(-len).map(p=>p.w),
+          borderColor:clr,
+          backgroundColor:bg(clr,0.10),
+          fill:true,tension:.4,borderWidth:2.5,
+          pointRadius:0,pointHoverRadius:5,
+          yAxisID:'yW',order:3
+        },
+        {
+          data:aBuf.slice(-len).map(p=>p.a*10),
+          borderColor:'#5AC8F5',
+          borderDash:[6,3],
+          fill:false,tension:.4,borderWidth:2,
+          pointRadius:0,pointHoverRadius:5,
+          yAxisID:'yW',order:2
+        },
+        {
+          data:vBuf.slice(-len).map(p=>p.v),
+          borderColor:'rgba(255,255,255,.35)',
+          borderDash:[2,5],
+          fill:false,tension:.3,borderWidth:1.5,
+          pointRadius:0,pointHoverRadius:4,
+          yAxisID:'yV',order:1
+        },
+      ]},
+      options:{...sharedOpts,
+        scales:{
+          ...sharedOpts.scales,
+          yW:{
+            position:'left',
+            grid:{color:'rgba(255,255,255,.04)',drawTicks:false},
+            ticks:{color:'rgba(255,255,255,.32)',font:{size:12},callback:v=>v<1?v.toFixed(1):Math.round(v)},
+            border:{display:false}
+          },
+          yV:{
+            position:'right',
+            grid:{display:false},
+            ticks:{color:'rgba(255,255,255,.22)',font:{size:11},callback:v=>v.toFixed(0)+'V'},
+            border:{display:false}
+          }
+        }
+      }
+    });
+    return;
+  }
+
+  // Single-series mode
+  const rawBuf=mode==='w'?s.wBuf:mode==='a'?s.aBuf:s.vBuf;
+  const buf=fBuf(rawBuf,globalTW);
+  const labels=buf.map(p=>p.ts);
+  const vals=buf.map(p=>p[mode]);
+  const borderColor=mode==='w'?clr:mode==='a'?'#5AC8F5':'rgba(255,255,255,.55)';
+  const bgColor=mode==='w'?bg(clr,0.10):mode==='a'?'rgba(90,200,245,.08)':'rgba(255,255,255,.04)';
+
+  appCRefs[aid]=new Chart(c.getContext('2d'),{
+    type:'line',
+    data:{labels,datasets:[{
+      data:vals,
+      borderColor,
+      backgroundColor:bgColor,
+      fill:true,tension:.4,borderWidth:2.5,
+      pointRadius:0,pointHoverRadius:5,
+    }]},
+    options:{...sharedOpts,
+      plugins:{...sharedOpts.plugins,
+        tooltip:{...sharedOpts.plugins.tooltip,
+          callbacks:{
+            title:items=>items[0]?.label||'',
+            label:ctx=>{
+              const v=ctx.raw;
+              if(mode==='w') return ` Power: ${(+v).toFixed(1)} W`;
+              if(mode==='a') return ` Current: ${(+v).toFixed(3)} A`;
+              return ` Voltage: ${(+v).toFixed(1)} V`;
+            }
+          }
+        }
+      },
+      scales:{
+        ...sharedOpts.scales,
+        y:{
+          grid:{color:'rgba(255,255,255,.04)',drawTicks:false},
+          ticks:{color:'rgba(255,255,255,.32)',font:{size:12}},
+          border:{display:false}
+        }
+      }
+    }
+  });
+}
+
+// ── Stability ─────────────────────────────────────────────
+function p2xy(cx,cy,r,deg){const rad=(deg-90)*Math.PI/180;return[cx+r*Math.cos(rad),cy+r*Math.sin(rad)];}
+function arcPath(cx,cy,r,s,sw){if(sw<=0)return'';const w=Math.min(sw,359.99);const[ax,ay]=p2xy(cx,cy,r,s);const[bx,by]=p2xy(cx,cy,r,s+w);return`M${ax.toFixed(2)} ${ay.toFixed(2)} A${r} ${r} 0 ${w>180?1:0} 1 ${bx.toFixed(2)} ${by.toFixed(2)}`;}
+function siCol(s){return s>=9?'#30D158':s>=8?'#34C759':s>=7?'#5AC8F5':s>=6?'#0A84FF':s>=5?'#FF9F0A':'#FF453A';}
+function drawGauge(score,grade){
+  const cx=160,cy=155,r=110,sw=22,sd=225,st=270;
+  const bg=G('si-bg'),fi=G('si-arc'),gn=G('si-num'),gs=G('si-sub');
+  if(!bg)return;
+  bg.setAttribute('d',arcPath(cx,cy,r,sd,st));bg.setAttribute('stroke-width',sw);
+  const fs=(Math.min(10,Math.max(0,score))/10)*st;
+  fi.setAttribute('d',arcPath(cx,cy,r,sd,fs));fi.setAttribute('stroke',siCol(score));fi.setAttribute('stroke-width',sw);
+  if(gn){gn.textContent=score.toFixed(1);gn.setAttribute('fill',siCol(score));}
+  if(gs)gs.textContent=`Grade ${grade} — ${GRADES[grade]||''}`;
+  const ns=G('nav-si');if(ns){ns.textContent=score.toFixed(1)+'/10';ns.style.color=siCol(score);}
+  latestSI={score,grade};
+}
+
+async function refreshSI(){
+  const r=await fetch('/api/stability');const d=await r.json();
+  const score=d.si_score||d.score||0,grade=d.si_grade||d.grade||'F';
+  drawGauge(score,grade);
+  [['pv1','pb1',d.p1,3.5,'var(--blue)'],['pv2','pb2',d.p2,3.0,'var(--orange)'],
+   ['pv3','pb3',d.p3,2.0,'var(--green)'],['pv4','pb4',d.p4,1.5,'var(--teal)']].forEach(([vi,bi,v,max,c])=>{
+    const ve=G(vi);if(ve)ve.textContent=(v||0).toFixed(2);
+    const be=G(bi);if(be){be.style.width=Math.round(((v||0)/max)*100)+'%';be.style.background=c;}
+  });
+  const ts=new Date().toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  siBuf.push({ts,v:score});if(siBuf.length>MAX)siBuf.shift();
+  const sf=fBuf(siBuf,TW.si),sl=sf.map(p=>p.ts);
+  if(!chartRefs.si){
+    const c=G('si-chart');if(!c)return;
+    chartRefs.si=new Chart(c.getContext('2d'),{type:'line',data:{labels:sl,datasets:[
+      {data:sf.map(p=>p.v),borderColor:'#0A84FF',backgroundColor:'rgba(10,132,255,.07)',fill:true,tension:.45,borderWidth:2.5},
+      {data:sl.map(()=>5),borderColor:'rgba(255,69,58,.35)',borderDash:[6,4],borderWidth:2,pointRadius:0},
+    ]},options:{...baseOpts,scales:{...baseOpts.scales,y:{...baseOpts.scales.y,min:0,max:10}}}});
+  } else {
+    chartRefs.si.data.labels=sl;chartRefs.si.data.datasets[0].data=sf.map(p=>p.v);
+    chartRefs.si.data.datasets[1].data=sl.map(()=>5);chartRefs.si.update('none');
+  }
+}
+
+// ── History with date/time range filter ───────────────────
+let histFromMs=null, histToMs=null;
+
+function setHistPreset(preset,btn){
+  document.querySelectorAll('#tab-history .twb').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  const now=new Date();
+  if(preset==='all'){histFromMs=null;histToMs=null;G('hist-from').value='';G('hist-to').value='';}
+  else{
+    const ms={'15m':900000,'1h':3600000,'6h':21600000,'12h':43200000}[preset]||0;
+    histFromMs=now.getTime()-ms; histToMs=null;
+    // Fill date inputs
+    const fromDt=new Date(histFromMs);
+    G('hist-from').value=fromDt.toISOString().slice(0,16);
+    G('hist-to').value='';
+  }
+  updateHistRangeInfo();
+  refreshHist();
+}
+
+function applyHistRange(){
+  const fv=G('hist-from').value, tv=G('hist-to').value;
+  histFromMs=fv?new Date(fv).getTime():null;
+  histToMs  =tv?new Date(tv).getTime():null;
+  // Clear preset active state
+  document.querySelectorAll('#tab-history .twb').forEach(b=>b.classList.remove('active'));
+  updateHistRangeInfo();
+  refreshHist();
+}
+
+function updateHistRangeInfo(){
+  const el=G('hist-range-info');if(!el)return;
+  if(!histFromMs&&!histToMs){el.textContent='Showing all recorded data (up to 1440 points)';return;}
+  const fStr=histFromMs?new Date(histFromMs).toLocaleString('en'):'beginning';
+  const tStr=histToMs?new Date(histToMs).toLocaleString('en'):'now';
+  const pts=filterHistBuf(socBuf).length;
+  el.textContent=`Showing data from ${fStr} to ${tStr} · ${pts} data points`;
+}
+
+function filterHistBuf(buf){
+  if(!histFromMs&&!histToMs)return buf;
+  return buf.filter(p=>{
+    try{
+      const ts=new Date(p.ts).getTime();
+      if(isNaN(ts)){
+        // Time-string format "HH:MM:SS" — convert relative to today
+        const pp=p.ts.split(':').map(Number);
+        const todayMs=new Date().setHours(0,0,0,0);
+        const ptMs=todayMs+(pp[0]*3600+pp[1]*60+(pp[2]||0))*1000;
+        return(!histFromMs||ptMs>=histFromMs)&&(!histToMs||ptMs<=histToMs);
+      }
+      return(!histFromMs||ts>=histFromMs)&&(!histToMs||ts<=histToMs);
+    }catch(e){return true;}
+  });
+}
+
+function dlHistCSV(){
+  const bh=filterHistBuf(socBuf);
+  const sh=filterHistBuf(pwBuf);
+  const rows=[['Timestamp','SOC_%','Solar_kW','Load_kW']];
+  const maxLen=Math.max(bh.length,sh.length);
+  for(let i=0;i<maxLen;i++){
+    rows.push([bh[i]?.ts||sh[i]?.ts||'', bh[i]?.v||'', sh[i]?.s||'', sh[i]?.l||'']);
+  }
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(rows.map(r=>r.join(',')).join('\n'));
+  a.download='rv-history.csv';a.click();
+}
+
+async function refreshHist(){
+  const [br,sr]=await Promise.all([fetch('/api/history/battery?n=2000'),fetch('/api/history/solar?n=2000')]);
+  const bhAll=await br.json(),shAll=await sr.json();
+
+  // Filter by selected range
+  function filterByRange(arr){
+    if(!histFromMs&&!histToMs)return arr;
+    return arr.filter(p=>{
+      try{const t=new Date(p.ts).getTime();return(!histFromMs||t>=histFromMs)&&(!histToMs||t<=histToMs);}
+      catch(e){return true;}
+    });
+  }
+  const bh=filterByRange(bhAll), sh=filterByRange(shAll);
+  updateHistRangeInfo();
+
+  const mkTs=s=>{try{return new Date(s).toLocaleString('en',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});}catch(e){return s;}};
+  const bl=bh.map(p=>mkTs(p.ts));
+
+  if(chartRefs.hSoc)chartRefs.hSoc.destroy();
+  const c1=G('h-soc-c');if(c1){
+    chartRefs.hSoc=new Chart(c1.getContext('2d'),{type:'line',data:{labels:bl,datasets:[
+      {data:bh.map(p=>p.soc),borderColor:'#30D158',backgroundColor:'rgba(48,209,88,.07)',fill:true,tension:.4,borderWidth:2.5,label:'SOC %',pointRadius:0},
+      {data:bl.map(()=>20),borderColor:'rgba(255,159,10,.50)',borderDash:[6,4],borderWidth:1.5,pointRadius:0,label:'20% Warning'},
+      {data:bl.map(()=>10),borderColor:'rgba(255,69,58,.60)',borderDash:[3,4],borderWidth:1.5,pointRadius:0,label:'10% Floor'},
+    ]},options:{...baseOpts,
+      plugins:{legend:{display:true,position:'top',labels:{color:'rgba(255,255,255,.55)',font:{size:13,weight:'500'},usePointStyle:true,padding:16}}},
+      scales:{...baseOpts.scales,y:{...baseOpts.scales.y,min:0,max:100,ticks:{...baseOpts.scales.y.ticks,callback:v=>v+'%'}}}}});
+  }
+
+  const sl=sh.map(p=>mkTs(p.ts));
+  if(chartRefs.hPw)chartRefs.hPw.destroy();
+  const c2=G('h-pw-c');if(c2){
+    chartRefs.hPw=new Chart(c2.getContext('2d'),{type:'line',data:{labels:sl,datasets:[
+      {data:sh.map(p=>p.solar_kw),borderColor:'#FF9F0A',backgroundColor:'rgba(255,159,10,.07)',fill:true,tension:.4,borderWidth:2.5,label:'Solar (kW)',pointRadius:0},
+      {data:sh.map(p=>p.load_kw), borderColor:'#0A84FF',backgroundColor:'rgba(10,132,255,.06)',fill:true,tension:.4,borderWidth:2.5,label:'Load (kW)',pointRadius:0},
+    ]},options:{...baseOpts,
+      plugins:{legend:{display:true,position:'top',labels:{color:'rgba(255,255,255,.55)',font:{size:13,weight:'500'},usePointStyle:true,padding:16}}}}});
+  }
+
+  // Build per-appliance history mini-charts
+  const histGrid=G('app-hist-grid');
+  if(histGrid&&Object.keys(appState).length){
+    histGrid.innerHTML='<div style="display:grid;grid-template-columns:1fr;gap:14px">'
+      +Object.entries(appState).map(([aid,s])=>`
+        <div style="padding:16px;background:rgba(255,255,255,.04);border-radius:var(--r16)">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <div style="width:4px;height:32px;background:${s.meta.clr||'#0A84FF'};border-radius:2px"></div>
+            <span style="font-size:var(--lg);font-weight:500">${s.meta.name||'App '+aid}</span>
+            <span style="font-size:var(--sm);color:var(--l3);margin-left:4px">${s.meta.cat||''}</span>
+          </div>
+          <div style="height:100px"><canvas id="ah-${aid}"></canvas></div>
+        </div>`).join('')+'</div>';
+    // Draw mini-charts
+    Object.entries(appState).forEach(([aid,s])=>{
+      const filtered=filterByRange(s.wBuf.map(p=>({...p,ts_orig:p.ts})));
+      const c3=G('ah-'+aid);if(!c3)return;
+      new Chart(c3.getContext('2d'),{type:'line',data:{
+        labels:filtered.map(p=>mkTs(p.ts)),
+        datasets:[{data:filtered.map(p=>p.w),borderColor:s.meta.clr||'#0A84FF',
+          backgroundColor:(s.meta.clr||'#0A84FF').replace(')',',.07)').replace('rgba(','rgba('),
+          fill:true,tension:.4,borderWidth:2,pointRadius:0,label:'Power (W)'}]
+      },options:{...baseOpts,animation:false,
+        plugins:{legend:{display:true,position:'top',labels:{color:'rgba(255,255,255,.50)',font:{size:11},usePointStyle:true}}}}});
+    });
+  }
+}
+
+// ── CSV ───────────────────────────────────────────────────
+function dlCSV(key){
+  let rows=[],fn='rv-'+key+'.csv';
+  if(key==='soc')      rows=[['Timestamp','SOC_%'],...fBuf(socBuf,TW.soc).map(p=>[p.ts,p.v])];
+  else if(key==='pw')  rows=[['Timestamp','Solar_kW','Load_kW'],...fBuf(pwBuf,TW.pw).map(p=>[p.ts,p.s,p.l])];
+  else if(key==='si')  rows=[['Timestamp','Score'],...fBuf(siBuf,TW.si).map(p=>[p.ts,p.v])];
+  else if(key==='si-hist') rows=[['Timestamp','Score'],...siBuf.map(p=>[p.ts,p.v])];
+  else if(key==='hsoc')rows=[['Timestamp','SOC_%'],...socBuf.map(p=>[p.ts,p.v])];
+  else if(key==='hpw') rows=[['Timestamp','Solar_kW','Load_kW'],...pwBuf.map(p=>[p.ts,p.s,p.l])];
+  else if(key==='live'){
+    rows=[['Appliance','Category','Voltage_V','Current_A','Power_W']];
+    Object.entries(appState).filter(([,s])=>s.latest).forEach(([aid,s])=>{
+      const l=s.latest,m=s.meta||{};rows.push([m.name||aid,m.cat||'',l.v,l.a,l.w]);
+    });
+  } else if(key==='all-apps'){
+    rows=[['Timestamp','Appliance','Voltage_V','Current_A','Power_W']];
+    Object.entries(appState).forEach(([aid,s])=>{
+      const buf=fBuf(s.wBuf,globalTW),m=s.meta||{};
+      buf.forEach((wp,i)=>rows.push([wp.ts,m.name||aid,s.vBuf[i]?.v||0,s.aBuf[i]?.a||0,wp.w]));
+    });
+    fn='rv-all-appliances.csv';
+  } else if(key.startsWith('app-')){
+    const aid=key.replace('app-',''),s=appState[aid];if(!s)return;
+    const m=s.meta||{};fn='rv-'+((m.name||aid).replace(/\s+/g,'-').toLowerCase())+'.csv';
+    rows=[['Timestamp','Voltage_V','Current_A','Power_W']];
+    const len=Math.min(s.vBuf.length,s.aBuf.length,s.wBuf.length);
+    for(let i=0;i<len;i++)rows.push([s.wBuf[i].ts,s.vBuf[i].v,s.aBuf[i].a,s.wBuf[i].w]);
+  }
+  if(!rows.length)return;
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(rows.map(r=>r.join(',')).join('\n'));
+  a.download=fn;a.click();
+}
+
+// ── Modal ─────────────────────────────────────────────────
+function openMod(){G('modal').classList.add('open');}
+function cMBg(e){if(e.target===G('modal'))G('modal').classList.remove('open');}
+async function reconnect(){
+  const cfg={broker_host:G('cm-host').value,broker_port:+G('cm-port').value,
+    username:G('cm-user').value,password:G('cm-pw').value,base_topic:G('cm-topic').value};
+  await fetch('/api/connect',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)});
+  G('modal').classList.remove('open');connectSSE();
+}
+
+// ── Init ──────────────────────────────────────────────────
+setInterval(()=>{G('sbtime').textContent=new Date().toLocaleTimeString('en');},1000);
+setInterval(()=>{
+  if(G('tab-appliances').classList.contains('active'))renderGrid();
+  if(G('tab-stability').classList.contains('active'))refreshSI();
+},5000);
+
+document.addEventListener('DOMContentLoaded',()=>{
+  drawGauge(0,'F');connectSSE();
+  fetch('http://localhost:5001/api/appliances').then(r=>r.ok?r.json():[]).then(apps=>{
+    apps.forEach(a=>{
+      const aid=String(a.id);
+      if(!appState[aid])appState[aid]={meta:{},vBuf:[],aBuf:[],wBuf:[],latest:null};
+      appState[aid].meta={name:a.name,icon:a.icon||'',clr:a.clr||'#0A84FF',cat:a.cat||'medium'};
+    });
+    if(apps.length){showData();renderGrid();}
+  }).catch(()=>{});
+});
+</script>
+</body>
+</html>
