@@ -310,7 +310,7 @@ input[type='datetime-local']:focus{border-color:var(--blue) !important}
       <div class="empty-ico">📡</div>
       <div class="empty-title">Waiting for MQTT data</div>
       <div class="empty-desc">
-        Start the Simulator at <a class="empty-link" href="https://rv-energy-sim-mqtt.elevatics.site/" target="_blank">Simulator</a>
+        Start the Simulator at <a class="empty-link" href="{{ simulator_url }}" target="_blank">Simulator</a>
         and click <strong>▶ Start Live Sim</strong>.<br>
         Data streams here in real time over MQTT.
       </div>
@@ -558,10 +558,10 @@ input[type='datetime-local']:focus{border-color:var(--blue) !important}
 <div class="mov" id="modal" onclick="cMBg(event)">
   <div class="mbox">
     <div class="mtitle">MQTT Broker Settings</div>
-    <div class="mf"><label class="mlbl">Host</label><input class="mi" id="cm-host" value="localhost"></div>
+    <div class="mf"><label class="mlbl">Host</label><input class="mi" id="cm-host" value="{{ mqtt_host }}"></div>
     <div class="mr">
-      <div class="mf"><label class="mlbl">Port</label><input class="mi" id="cm-port" type="number" value="1883"></div>
-      <div class="mf"><label class="mlbl">Base Topic</label><input class="mi" id="cm-topic" value="rv/energy"></div>
+      <div class="mf"><label class="mlbl">Port</label><input class="mi" id="cm-port" type="number" value="{{ mqtt_port }}"></div>
+      <div class="mf"><label class="mlbl">Base Topic</label><input class="mi" id="cm-topic" value="{{ mqtt_topic }}"></div>
     </div>
     <div class="mr">
       <div class="mf"><label class="mlbl">Username</label><input class="mi" id="cm-user" placeholder="optional"></div>
@@ -657,7 +657,6 @@ function dispatch(d){
       if(!appState[aid])appState[aid]={meta:{},vBuf:[],aBuf:[],wBuf:[],latest:null};
       appState[aid].meta={name:a.name||'App '+aid,icon:a.icon||'',clr:a.clr||'#0A84FF',cat:a.cat||'medium'};
     });
-    if(Object.keys(appState).length)showData();
     renderGrid();return;
   }
 
@@ -799,7 +798,7 @@ function renderGrid(){
     grid.innerHTML=`<div class="card"><div class="empty-state">
       <div class="empty-ico">📡</div>
       <div class="empty-title">No appliance data</div>
-      <div class="empty-desc">Start the simulator at <a class="empty-link" href="https://rv-energy-sim-mqtt.elevatics.site/" target="_blank">Simulator</a> and click ▶ Start Live Sim</div>
+      <div class="empty-desc">Start the simulator at <a class="empty-link" href="{{ simulator_url }}" target="_blank">Simulator</a> and click ▶ Start Live Sim</div>
     </div></div>`;return;
   }
   aids.forEach((aid,i)=>ensureCard(aid,i));
@@ -1307,13 +1306,13 @@ setInterval(()=>{
 
 document.addEventListener('DOMContentLoaded',()=>{
   drawGauge(0,'F');connectSSE();
-  fetch('https://rv-energy-sim-mqtt.elevatics.site/api/appliances').then(r=>r.ok?r.json():[]).then(apps=>{
+  fetch('{{ simulator_url }}/api/appliances').then(r=>r.ok?r.json():[]).then(apps=>{
     apps.forEach(a=>{
       const aid=String(a.id);
       if(!appState[aid])appState[aid]={meta:{},vBuf:[],aBuf:[],wBuf:[],latest:null};
       appState[aid].meta={name:a.name,icon:a.icon||'',clr:a.clr||'#0A84FF',cat:a.cat||'medium'};
     });
-    if(apps.length){showData();renderGrid();}
+    if(apps.length){renderGrid();}
   }).catch(()=>{});
 });
 </script>

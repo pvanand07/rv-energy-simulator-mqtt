@@ -13,7 +13,7 @@ FIX: On startup the dashboard fetches appliance names from the simulator
      MQTT registry messages (rv/energy/registry) also update the metadata.
 """
 from __future__ import annotations
-import asyncio, json, logging, time
+import asyncio, json, logging, os, time
 from collections import defaultdict, deque
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
@@ -22,6 +22,7 @@ from markupsafe import Markup
 
 import uvicorn
 import httpx
+from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -31,6 +32,7 @@ from app.mqtt_service import add_dashboard_queue, remove_dashboard_queue, start_
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)-8s %(name)s %(message)s")
 logger = logging.getLogger("rv.dashboard")
+load_dotenv()
 
 # ── In-memory time-series buffers ─────────────────────────────────────────────
 MAX_HISTORY = 1440   # 24 h @ 1 pt/min
@@ -47,7 +49,10 @@ latest: dict = {
     "last_update": "—", "connected": False,
 }
 
-SIMULATOR_URL = "http://localhost:5001"
+SIMULATOR_URL = os.getenv("SIMULATOR_URL", "http://localhost:5001").rstrip("/")
+DEFAULT_MQTT_HOST = os.getenv("MQTT_BROKER_HOST", "localhost")
+DEFAULT_MQTT_PORT = int(os.getenv("MQTT_BROKER_PORT", "1883"))
+DEFAULT_MQTT_TOPIC = os.getenv("MQTT_BASE_TOPIC", "rv/energy")
 
 # ── Stability Score ───────────────────────────────────────────────────────────
 def _compute_si(soc_pct: float, solar_kw: float, load_kw: float, net_kw: float) -> dict:
@@ -233,8 +238,8 @@ def _rem_from_dashboard(q: asyncio.Queue):
 # ── Lifespan ──────────────────────────────────────────────────────────────────
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    cfg = {"broker_host": "localhost", "broker_port": 1883,
-           "username": "", "password": "", "base_topic": "rv/energy"}
+    cfg = {"broker_host": DEFAULT_MQTT_HOST, "broker_port": DEFAULT_MQTT_PORT,
+           "username": "", "password": "", "base_topic": DEFAULT_MQTT_TOPIC}
     loop = asyncio.get_event_loop()
     start_subscriber(cfg, loop)
     # Seed appliance metadata from simulator API
@@ -372,7 +377,7 @@ async def sim_stream_proxy():
         yield f"data: {json.dumps({'type':'proxy_connected'})}\n\n"
         try:
             async with httpx.AsyncClient(timeout=None) as client:
-                async with client.stream("GET", "http://localhost:5001/api/simulate/live/stream") as resp:
+                async with client.stream("GET", f"{SIMULATOR_URL}/api/simulate/live/stream") as resp:
                     async for line in resp.aiter_lines():
                         if line.startswith("data: "):
                             payload = line[6:]
@@ -415,7 +420,13 @@ async def sim_stream_proxy():
 
 @dash.get("/")
 async def home(request: Request):
-    return templates.TemplateResponse(request, "dashboard.html", {"status": latest})
+    return templates.TemplateResponse(request, "dashboard.html", {
+        "status": latest,
+        "simulator_url": SIMULATOR_URL,
+        "mqtt_host": DEFAULT_MQTT_HOST,
+        "mqtt_port": DEFAULT_MQTT_PORT,
+        "mqtt_topic": DEFAULT_MQTT_TOPIC,
+    })
 
 
 if __name__ == "__main__":
@@ -424,7 +435,7 @@ if __name__ == "__main__":
     print("  MQTT Subscriber + Real-Time Charts + Stability Score")
     print("═" * 58)
     print("  Open  → http://localhost:5002")
-    print("  Data  ← MQTT localhost:1883  rv/energy/#")
-    print("  Names ← GET  localhost:5001/api/appliances")
+    print(f"  Data  ← MQTT {DEFAULT_MQTT_HOST}:{DEFAULT_MQTT_PORT}  {DEFAULT_MQTT_TOPIC}/#")
+    print(f"  Names ← GET  {SIMULATOR_URL}/api/appliances")
     print("═" * 58 + "\n")
     uvicorn.run("broker_dashboard:dash", host="0.0.0.0", port=5002, reload=False, log_level="info")
