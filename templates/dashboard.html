@@ -310,7 +310,7 @@ input[type='datetime-local']:focus{border-color:var(--blue) !important}
       <div class="empty-ico">📡</div>
       <div class="empty-title">Waiting for MQTT data</div>
       <div class="empty-desc">
-        Start the Simulator at <a class="empty-link" href="http://localhost:5001" target="_blank">localhost:5001</a>
+        Start the Simulator at <a class="empty-link" href="/simulator/" target="_blank">Simulator</a>
         and click <strong>▶ Start Live Sim</strong>.<br>
         Data streams here in real time over MQTT.
       </div>
@@ -799,7 +799,7 @@ function renderGrid(){
     grid.innerHTML=`<div class="card"><div class="empty-state">
       <div class="empty-ico">📡</div>
       <div class="empty-title">No appliance data</div>
-      <div class="empty-desc">Start the simulator at <a class="empty-link" href="http://localhost:5001" target="_blank">localhost:5001</a> and click ▶ Start Live Sim</div>
+      <div class="empty-desc">Start the simulator at <a class="empty-link" href="/simulator/" target="_blank">Simulator</a> and click ▶ Start Live Sim</div>
     </div></div>`;return;
   }
   aids.forEach((aid,i)=>ensureCard(aid,i));
@@ -1307,7 +1307,7 @@ setInterval(()=>{
 
 document.addEventListener('DOMContentLoaded',()=>{
   drawGauge(0,'F');connectSSE();
-  fetch('http://localhost:5001/api/appliances').then(r=>r.ok?r.json():[]).then(apps=>{
+  fetch('/simulator/api/appliances').then(r=>r.ok?r.json():[]).then(apps=>{
     apps.forEach(a=>{
       const aid=String(a.id);
       if(!appState[aid])appState[aid]={meta:{},vBuf:[],aBuf:[],wBuf:[],latest:null};
