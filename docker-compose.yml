@@ -18,5 +18,20 @@ services:
       - simulator
     restart: unless-stopped
 
+  dbgate:
+    image: dbgate/dbgate
+    ports:
+      - "3000:3000"
+    volumes:
+      - sim-data:/app/data
+      - dbgate-data:/root/.dbgate
+    environment:
+      CONNECTIONS: sqlite_db
+      ENGINE_sqlite_db: sqlite@dbgate-plugin-sqlite
+      LABEL_sqlite_db: RV Simulator DB
+      FILE_sqlite_db: /app/data/simulator.db
+    restart: unless-stopped
+
 volumes:
   sim-data:
+  dbgate-data:
