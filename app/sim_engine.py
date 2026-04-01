@@ -12,7 +12,7 @@ Each 30-second step computes:
 CYCLE PATTERNS (simulate realistic power modes)
 -------------------------------------------------
   constant      - uniform draw when active
-  compressor    - fridge: ON 22/90 steps (24%), OFF at 0.06x (fan only)
+  compressor    - mini-fridge: ON 18/90 steps (20%), OFF at 0.10x (controls)
   thermostat    - water heater/AC: cycles to maintain setpoint, stable phase
   wifi_traffic  - router: 90% idle (0.5x), 10% burst (3x) random
   display_sleep - HMI: 22:00-06:00 at 0.08x, rest at 1.0x
@@ -69,11 +69,16 @@ def solar_irr(h: float, sunrise_h: float, sunset_h: float) -> float:
 # Returns a multiplier 0.0 - N that scales the rated power
 # -----------------------------------------------------------------------------
 def _pattern_compressor(step: int, rng: random.Random) -> float:
-    """Fridge compressor: ON 22/90 steps (~24%), then fan-only 0.06x"""
+    """RV mini-fridge compressor profile.
+
+    Uses a short startup surge then a lower steady compressor draw.
+    """
     phase = step % 90
-    if phase < 22:
-        return 3.5 + rng.uniform(-0.2, 0.2)  # startup spike included
-    return 0.06 + rng.uniform(0, 0.01)
+    if phase < 2:
+        return 2.1 + rng.uniform(-0.15, 0.15)  # startup surge (~30-60s)
+    if phase < 18:
+        return 1.10 + rng.uniform(-0.10, 0.10)  # running compressor
+    return 0.10 + rng.uniform(0.0, 0.03)        # thermostat/controls idle
 
 def _pattern_thermostat(step: int, rng: random.Random) -> float:
     """Water heater / AC: stable 120-step thermostat cycle (50 ON, 70 OFF).
