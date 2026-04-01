@@ -1247,38 +1247,32 @@ async function delSW(sid,aid){
 function renderProfiles(){
   const html=PROFILES.map(p=>{
     const isActive=activeProfileName===p.name;
-    const isPreset=p.is_preset;
     return `<div class="prof-card ${isActive?'active':''}" id="pc-${p.name}">
       <div class="prof-card-top">
         <div class="prof-icon-row">
-          <div class="prof-icon-box" contenteditable="${!isPreset}" id="pico-${p.name}" 
-            onblur="${!isPreset?`saveProfileField('${p.name}','icon',this.textContent)`:''}"
-            style="${isPreset?'cursor:default':''}">${esc(p.icon||'🙂')}</div>
+          <div class="prof-icon-box" contenteditable="true" id="pico-${p.name}" 
+            onblur="saveProfileField('${p.name}','icon',this.textContent)">${esc(p.icon||'🙂')}</div>
           <div class="prof-header">
-            <input class="prof-label-edit" id="plbl-${p.name}" value="${esc(p.label)}" ${isPreset?'readonly':''} 
-              onblur="${!isPreset?`saveProfileField('${p.name}','label',this.value)`:''}"
-              style="${isPreset?'pointer-events:none':''}">
-            ${isPreset?`<div class="preset-badge">PRESET — READ ONLY</div>`:`<div style="font-size:var(--text-sm);color:var(--l3);margin-top:6px;padding-left:8px">Custom profile — all fields editable</div>`}
+            <input class="prof-label-edit" id="plbl-${p.name}" value="${esc(p.label)}" 
+              onblur="saveProfileField('${p.name}','label',this.value)">
+            <div style="font-size:var(--text-sm);color:var(--l3);margin-top:6px;padding-left:8px">Profile fields are editable</div>
           </div>
         </div>
-        <textarea class="prof-desc-edit" rows="2" id="pdesc-${p.name}" ${isPreset?'readonly':''} 
-          onblur="${!isPreset?`saveProfileField('${p.name}','description',this.value)`:''}"
-          style="${isPreset?'pointer-events:none':''}">${esc(p.description)}</textarea>
+        <textarea class="prof-desc-edit" rows="2" id="pdesc-${p.name}" 
+          onblur="saveProfileField('${p.name}','description',this.value)">${esc(p.description)}</textarea>
         <div class="prof-params">
           <div class="pp"><label>Occupants</label>
-            <input type="number" id="pocc-${p.name}" value="${p.occupants}" min="1" max="20" ${isPreset?'readonly':''}
-              onchange="${!isPreset?`saveProfileField('${p.name}','occupants',+this.value)`:''}"
-              style="${isPreset?'color:var(--l3)':''}"></div>
+            <input type="number" id="pocc-${p.name}" value="${p.occupants}" min="1" max="20"
+              onchange="saveProfileField('${p.name}','occupants',+this.value)"></div>
           <div class="pp"><label>Experience</label>
-            <select id="pexp-${p.name}" ${isPreset?'disabled':''} onchange="${!isPreset?`saveProfileField('${p.name}','experience',this.value)`:''}">
+            <select id="pexp-${p.name}" onchange="saveProfileField('${p.name}','experience',this.value)">
               <option value="expert" ${p.experience==='expert'?'selected':''}>Expert</option>
               <option value="normal" ${p.experience==='normal'?'selected':''}>Normal</option>
               <option value="new" ${p.experience==='new'?'selected':''}>New to RV</option>
             </select></div>
           <div class="pp"><label>Load Factor</label>
-            <input type="number" id="plf-${p.name}" value="${p.load_factor}" min="0.3" max="2.5" step="0.05" ${isPreset?'readonly':''}
-              onchange="${!isPreset?`saveProfileField('${p.name}','load_factor',+this.value)`:''}"
-              style="${isPreset?'color:var(--l3)':''}"></div>
+            <input type="number" id="plf-${p.name}" value="${p.load_factor}" min="0.3" max="2.5" step="0.05"
+              onchange="saveProfileField('${p.name}','load_factor',+this.value)"></div>
           <!-- Battery & Solar are set globally in Simulate tab settings, not per-profile -->
           <div class="pp" style="display:flex;align-items:center;justify-content:center;gap:8px;font-size:var(--text-base);color:var(--l2)">
             ${isActive?'<span style="color:var(--green);font-weight:500;font-size:var(--text-lg)">✓ Active</span>':''}
@@ -1289,8 +1283,8 @@ function renderProfiles(){
         <button class="btn-apply-profile" onclick="applyProfile('${p.name}')">
           ${isActive?'Re-Apply Profile':'Apply Profile'}
         </button>
-        ${!isPreset?`<button class="btn-save-profile" onclick="saveProfileAll('${p.name}')">Save Changes</button>
-                    <button class="btn-del-profile" onclick="deleteProfile('${p.name}')">Delete</button>`:''}
+        <button class="btn-save-profile" onclick="saveProfileAll('${p.name}')">Save Changes</button>
+        ${!p.is_preset?`<button class="btn-del-profile" onclick="deleteProfile('${p.name}')">Delete</button>`:''}
       </div>
     </div>`;
   }).join('');
@@ -1298,13 +1292,13 @@ function renderProfiles(){
 }
 
 async function saveProfileField(name, field, value){
-  const prof=PROFILES.find(p=>p.name===name);if(!prof||prof.is_preset)return;
+  const prof=PROFILES.find(p=>p.name===name);if(!prof)return;
   prof[field]=value;
   await fetch(`/api/profiles/${name}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(prof)});
 }
 
 async function saveProfileAll(name){
-  const p=PROFILES.find(x=>x.name===name);if(!p||p.is_preset)return;
+  const p=PROFILES.find(x=>x.name===name);if(!p)return;
   p.label       = G('plbl-'+name)?.value || p.label;
   p.icon        = G('pico-'+name)?.textContent?.trim() || p.icon;
   p.description = G('pdesc-'+name)?.value || p.description;
