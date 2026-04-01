@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>RV Energy Simulator — ACFuture</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
 <style>
+[v-cloak]{display:none!important}
 /* ══════════════════════════════════════════════════════════════
    ELEVATICS AI — RV ENERGY SIMULATOR
    iPad / HMI Design System
@@ -655,18 +657,18 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
 }
 </style>
 </head>
-<body>
+<body id="app" v-cloak>
 
 <!-- STATUS BAR -->
 <div class="sb">
-  <div class="dot live"></div>
+  <div class="dot" :class="ui.connected ? 'live' : 'off'"></div>
   <span>ACFuture · RV Energy Simulator</span>
   <div class="vsep"></div>
-  <span id="sim-status">Idle</span>
+  <span id="sim-status">[[ ui.simStatus ]]</span>
   <div class="vsep"></div>
-  <span id="sb-time">--:--:--</span>
+  <span id="sb-time">[[ ui.clock ]]</span>
   <div style="margin-left:auto"></div>
-  <div class="sbadge off" id="live-badge">OFFLINE</div>
+  <div class="sbadge" :class="simRunning ? 'live' : 'off'" id="live-badge">[[ simRunning ? 'LIVE' : 'OFFLINE' ]]</div>
 </div>
 
 <!-- NAV -->
@@ -678,54 +680,54 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
     </div>
   </div>
   <div class="ntabs">
-    <button class="ntab active" onclick="showTab('configure',this)">Configure</button>
-    <button class="ntab" onclick="showTab('profiles',this)">Profiles</button>
-    <button class="ntab" onclick="showTab('simulate',this)">Simulate</button>
-    <button class="ntab" onclick="showTab('weather',this)">Weather</button>
-    <button class="ntab" onclick="showTab('mqtt',this)">MQTT</button>
+    <button class="ntab" :class="{active:activeTab==='configure'}" @click="showTab('configure')">Configure</button>
+    <button class="ntab" :class="{active:activeTab==='profiles'}" @click="showTab('profiles')">Profiles</button>
+    <button class="ntab" :class="{active:activeTab==='simulate'}" @click="showTab('simulate')">Simulate</button>
+    <button class="ntab" :class="{active:activeTab==='weather'}" @click="showTab('weather')">Weather</button>
+    <button class="ntab" :class="{active:activeTab==='mqtt'}" @click="showTab('mqtt')">MQTT</button>
   </div>
   <div class="nr">
-    <button class="btn-live start" id="live-btn" onclick="toggleLive()">▶ Start Live Sim</button>
+    <button class="btn-live" :class="simRunning ? 'stop' : 'start'" id="live-btn" @click="toggleLive()">[[ simRunning ? '⏹ Stop' : '▶ Start Live Sim' ]]</button>
   </div>
 </div></nav>
 
 <main>
 
 <!-- ══ CONFIGURE ═════════════════════════════════════════════ -->
-<div id="tab-configure" class="page active">
+<div id="tab-configure" class="page" :class="{active:activeTab==='configure'}">
   <div class="toolbar">
     <div class="filter-bar">
-      <button class="flt active" onclick="filterCards('all',this)">All Appliances</button>
-      <button class="flt" onclick="filterCards('high',this)">High Power</button>
-      <button class="flt" onclick="filterCards('medium',this)">Medium</button>
-      <button class="flt" onclick="filterCards('low',this)">Low</button>
-      <button class="flt" onclick="filterCards('always_on',this)">Always-On</button>
+      <button class="flt active" @click="filterCards('all',$event.currentTarget)">All Appliances</button>
+      <button class="flt" @click="filterCards('high',$event.currentTarget)">High Power</button>
+      <button class="flt" @click="filterCards('medium',$event.currentTarget)">Medium</button>
+      <button class="flt" @click="filterCards('low',$event.currentTarget)">Low</button>
+      <button class="flt" @click="filterCards('always_on',$event.currentTarget)">Always-On</button>
     </div>
-    <button class="btn-add" onclick="addAppliance()">+ Add Appliance</button>
+    <button class="btn-add" @click="addAppliance">+ Add Appliance</button>
   </div>
-  <div class="cards-grid" id="cards-grid"></div>
+  <div class="cards-grid" id="cards-grid" v-html="cardsHtml"></div>
 </div>
 
 <!-- ══ PROFILES ══════════════════════════════════════════════ -->
-<div id="tab-profiles" class="page">
+<div id="tab-profiles" class="page" :class="{active:activeTab==='profiles'}">
   <div class="profiles-header">
     <div class="profiles-title">
       <div class="t1">RV User Profiles</div>
       <div class="t2">Select, edit, or create a profile to configure your simulation. All parameters are editable inline.</div>
     </div>
-    <button class="btn-new-profile" onclick="createNewProfile()">+ New Custom Profile</button>
+    <button class="btn-new-profile" @click="createNewProfile">+ New Custom Profile</button>
   </div>
-  <div class="profiles-grid" id="profiles-grid"></div>
+  <div class="profiles-grid" id="profiles-grid" v-html="profilesHtml"></div>
 </div>
 
 <!-- ══ SIMULATE ═══════════════════════════════════════════════ -->
-<div id="tab-simulate" class="page">
+<div id="tab-simulate" class="page" :class="{active:activeTab==='simulate'}">
   <div class="live-strip">
-    <div class="ls-card"><div class="ls-val" id="ls-soc" style="color:var(--green)">—</div><div class="ls-lbl">SOC %</div></div>
-    <div class="ls-card"><div class="ls-val" id="ls-sol" style="color:var(--orange)">—</div><div class="ls-lbl">Solar kW</div></div>
-    <div class="ls-card"><div class="ls-val" id="ls-ld" style="color:var(--blue)">—</div><div class="ls-lbl">Load kW</div></div>
-    <div class="ls-card"><div class="ls-val" id="ls-si">—</div><div class="ls-lbl">Stability</div></div>
-    <div class="ls-card"><div class="ls-val" id="ls-day" style="color:var(--l3)">—</div><div class="ls-lbl">Sim Day</div></div>
+    <div class="ls-card"><div class="ls-val" id="ls-soc" :style="{color:ui.liveSocColor}">[[ ui.liveSoc ]]</div><div class="ls-lbl">SOC %</div></div>
+    <div class="ls-card"><div class="ls-val" id="ls-sol" style="color:var(--orange)">[[ ui.liveSolar ]]</div><div class="ls-lbl">Solar kW</div></div>
+    <div class="ls-card"><div class="ls-val" id="ls-ld" style="color:var(--blue)">[[ ui.liveLoad ]]</div><div class="ls-lbl">Load kW</div></div>
+    <div class="ls-card"><div class="ls-val" id="ls-si" :style="{color:ui.liveSiColor}">[[ ui.liveSi ]]</div><div class="ls-lbl">Stability</div></div>
+    <div class="ls-card"><div class="ls-val" id="ls-day" style="color:var(--l3)">[[ ui.liveDay ]]</div><div class="ls-lbl">Sim Day</div></div>
   </div>
 
   <!-- Battery & Solar Configuration — full-width card above charts -->
@@ -742,11 +744,11 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
         <div style="font-size:var(--sm);color:var(--l3);margin-bottom:14px" id="soc-kwh-display">39.2 kWh available</div>
         <input type="range" id="cfg-soc" min="10" max="100" step="1" value="87"
           style="width:100%;height:8px;accent-color:var(--green);cursor:pointer;margin-bottom:10px"
-          oninput="onSOCChange(this.value)" onchange="saveSettings()">
+          @input="onSOCChange($event.target.value)" @change="saveSettings()">
         <div style="display:flex;align-items:center;gap:8px">
           <input type="number" id="cfg-soc-num" value="87" min="10" max="100" step="1"
             style="width:72px;padding:7px 10px;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.12);border-radius:10px;color:var(--l1);font-family:var(--fm);font-size:var(--lg);font-weight:500;text-align:center;outline:none"
-            oninput="syncSOCNum(this.value)" onchange="saveSettings()">
+            @input="syncSOCNum($event.target.value)" @change="saveSettings()">
           <span style="font-size:var(--sm);color:var(--l3)">%</span>
           <div id="soc-status-badge" style="margin-left:auto;padding:4px 12px;border-radius:var(--rp);font-size:var(--sm);font-weight:500;background:rgba(48,209,88,.12);color:var(--green);border:1px solid rgba(48,209,88,.25);white-space:nowrap">Good</div>
         </div>
@@ -761,11 +763,11 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
         </div>
         <input type="range" id="cfg-bat-slider" min="5" max="500" step="5" value="45"
           style="width:100%;height:8px;accent-color:var(--blue);cursor:pointer;margin-bottom:10px"
-          oninput="onBatCapChange(this.value)" onchange="saveSettings()">
+          @input="onBatCapChange($event.target.value)" @change="saveSettings()">
         <div style="display:flex;align-items:center;gap:8px">
           <input type="number" id="cfg-bat" value="45" min="5" max="500" step="5"
             style="width:80px;padding:7px 10px;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.12);border-radius:10px;color:var(--l1);font-family:var(--fm);font-size:var(--lg);font-weight:500;text-align:center;outline:none"
-            oninput="syncBatNum(this.value)" onchange="saveSettings()">
+            @input="syncBatNum($event.target.value)" @change="saveSettings()">
           <span style="font-size:var(--sm);color:var(--l3)">kWh</span>
         </div>
       </div>
@@ -779,11 +781,11 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
         </div>
         <input type="range" id="cfg-reserve-slider" min="5" max="30" step="1" value="10"
           style="width:100%;height:8px;accent-color:var(--red);cursor:pointer;margin-bottom:10px"
-          oninput="onReserveChange(this.value)" onchange="saveSettings()">
+          @input="onReserveChange($event.target.value)" @change="saveSettings()">
         <div style="display:flex;align-items:center;gap:8px">
           <input type="number" id="cfg-reserve" value="10" min="5" max="30" step="1"
             style="width:72px;padding:7px 10px;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,69,58,.25);border-radius:10px;color:var(--l1);font-family:var(--fm);font-size:var(--lg);font-weight:500;text-align:center;outline:none"
-            oninput="syncReserveNum(this.value)" onchange="saveSettings()">
+            @input="syncReserveNum($event.target.value)" @change="saveSettings()">
           <span style="font-size:var(--sm);color:var(--l3)">% hard floor</span>
         </div>
       </div>
@@ -797,11 +799,11 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
         </div>
         <input type="range" id="cfg-panel-slider" min="0.1" max="20" step="0.1" value="0.8"
           style="width:100%;height:8px;accent-color:var(--orange);cursor:pointer;margin-bottom:10px"
-          oninput="onPanelChange(this.value)" onchange="saveSettings()">
+          @input="onPanelChange($event.target.value)" @change="saveSettings()">
         <div style="display:flex;align-items:center;gap:8px">
           <input type="number" id="cfg-panel" value="0.8" min="0.1" max="20" step="0.1"
             style="width:80px;padding:7px 10px;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,159,10,.25);border-radius:10px;color:var(--l1);font-family:var(--fm);font-size:var(--lg);font-weight:500;text-align:center;outline:none"
-            oninput="syncPanelNum(this.value)" onchange="saveSettings()">
+            @input="syncPanelNum($event.target.value)" @change="saveSettings()">
           <span style="font-size:var(--sm);color:var(--l3)">kWp peak</span>
         </div>
       </div>
@@ -830,17 +832,17 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
     <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
       <div style="font-size:var(--sm);color:var(--l3);font-weight:500">Duration</div>
       <div style="display:flex;gap:6px;padding:4px;background:rgba(255,255,255,.07);border-radius:var(--rp)">
-        <button class="dur-btn active" onclick="setDuration(1,this)">1 Day</button>
-        <button class="dur-btn" onclick="setDuration(2,this)">2 Days</button>
-        <button class="dur-btn" onclick="setDuration(3,this)">3 Days</button>
-        <button class="dur-btn" onclick="setDuration(4,this)">4 Days</button>
-        <button class="dur-btn" onclick="setDuration(5,this)">5 Days</button>
-        <button class="dur-btn" onclick="setDuration(6,this)">6 Days</button>
-        <button class="dur-btn" onclick="setDuration(7,this)">7 Days</button>
+        <button class="dur-btn active" @click="setDuration(1,$event.currentTarget)">1 Day</button>
+        <button class="dur-btn" @click="setDuration(2,$event.currentTarget)">2 Days</button>
+        <button class="dur-btn" @click="setDuration(3,$event.currentTarget)">3 Days</button>
+        <button class="dur-btn" @click="setDuration(4,$event.currentTarget)">4 Days</button>
+        <button class="dur-btn" @click="setDuration(5,$event.currentTarget)">5 Days</button>
+        <button class="dur-btn" @click="setDuration(6,$event.currentTarget)">6 Days</button>
+        <button class="dur-btn" @click="setDuration(7,$event.currentTarget)">7 Days</button>
       </div>
       <div style="flex:1"></div>
       <div style="font-size:var(--xs);color:var(--l3)">Auto-saved</div>
-      <button class="btn-run" style="min-width:200px" onclick="runSimulation()">▶ Run Simulation</button>
+      <button class="btn-run" style="min-width:200px" @click="runSimulation">▶ Run Simulation</button>
     </div>
   </div>
 
@@ -872,10 +874,10 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
         <div class="t2">Daily average · Day 1 of simulation · Click appliance for details</div>
       </div>
       <div class="bd-controls">
-        <button class="btn-dl" onclick="dlBreakdown()">↓ CSV</button>
+        <button class="btn-dl" @click="dlBreakdown">↓ CSV</button>
         <div class="view-toggle">
-          <button class="vtb active" onclick="setView('bar',this)">Bar Chart</button>
-          <button class="vtb" onclick="setView('table',this)">Table</button>
+          <button class="vtb active" @click="setView('bar',$event.currentTarget)">Bar Chart</button>
+          <button class="vtb" @click="setView('table',$event.currentTarget)">Table</button>
         </div>
       </div>
     </div>
@@ -895,16 +897,24 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
 </div>
 
 <!-- ══ WEATHER ════════════════════════════════════════════════ -->
-<div id="tab-weather" class="page">
+<div id="tab-weather" class="page" :class="{active:activeTab==='weather'}">
   <div class="card" style="margin-bottom:var(--gap)">
     <div class="section-label">7-Day Weather & Solar Plan</div>
-    <div class="day-grid" id="day-grid"></div>
+    <div class="day-grid" id="day-grid">
+      <div class="day-card" :class="{active:editDay===i}" v-for="(d, i) in weatherPlan" :key="i" @click="selectDay(i)">
+        <div class="day-num">Day [[ i+1 ]] · [[ dayNames[i%7] ]]</div>
+        <span class="day-wx-icon">[[ wxIcons[d.condition] || '☀️' ]]</span>
+        <div class="day-cond">[[ d.condition ]]</div>
+        <div class="day-temp">[[ d.temp_c ]]°C</div>
+        <div class="day-times">🌅[[ d.sunrise_hhmm ]] 🌇[[ d.sunset_hhmm ]]</div>
+      </div>
+    </div>
   </div>
   <div class="card" id="day-editor" style="display:none">
     <div class="section-label">Editing Day <span id="day-edit-num">1</span></div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:var(--gap)">
       <div class="field-group"><div class="field-label">Condition</div>
-        <select class="field-input" id="de-cond" onchange="syncCloud()">
+        <select class="field-input" id="de-cond" @change="syncCloud()">
           <option value="sunny">Sunny (100% solar)</option>
           <option value="partly">Partly Cloudy (60%)</option>
           <option value="overcast">Overcast (25%)</option>
@@ -919,14 +929,14 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
       <div class="field-group"><div class="field-label">Sunset</div>
         <input class="field-input" type="time" id="de-set" value="19:30"></div>
       <div class="field-group" style="display:flex;align-items:flex-end">
-        <button class="btn-run" onclick="saveDay()" style="background:var(--blue);color:#fff">Save Day</button>
+        <button class="btn-run" @click="saveDay" style="background:var(--blue);color:#fff">Save Day</button>
       </div>
     </div>
   </div>
 </div>
 
 <!-- ══ MQTT ═══════════════════════════════════════════════════ -->
-<div id="tab-mqtt" class="page">
+<div id="tab-mqtt" class="page" :class="{active:activeTab==='mqtt'}">
   <div class="mqtt-grid">
     <div class="card">
       <div class="section-label">Broker Connection</div>
@@ -943,7 +953,7 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
           <option value="1" {{ 'selected' if mqtt_cfg.qos==1 else '' }}>1 — At least once</option>
           <option value="2" {{ 'selected' if mqtt_cfg.qos==2 else '' }}>2 — Exactly once</option>
         </select></div>
-      <button class="save-btn" onclick="saveMqtt()">Save MQTT Settings</button>
+      <button class="save-btn" @click="saveMqtt">Save MQTT Settings</button>
     </div>
     <div class="card">
       <div class="section-label">Data to Publish</div>
@@ -986,6 +996,7 @@ const CYCLES = ['constant','compressor','thermostat','wifi_traffic','display_sle
 let APPS=[], PROFILES={{ profiles|tojson }}, curFilter='all', simRunning=false, sse=null;
 let activeProfileName=null, editDay=null, lastBD=null;
 let weatherPlan={{ weather|tojson }};
+let vueApp=null;
 if(!weatherPlan.length) weatherPlan=Array.from({length:7},(_,i)=>({day_index:i,condition:'sunny',temp_c:22,cloud_pct:5,sunrise_hhmm:'06:30',sunset_hhmm:'19:30'}));
 
 // Charts
@@ -1005,16 +1016,14 @@ const baseChartOpts={
 };
 
 // ── Nav ──────────────────────────────────────────────────
-function showTab(n,btn){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.ntab').forEach(b=>b.classList.remove('active'));
-  G('tab-'+n).classList.add('active'); if(btn)btn.classList.add('active');
+function showTab(n){
+  if(vueApp)vueApp.activeTab=n;
   if(n==='weather') renderWeather();
   if(n==='profiles') renderProfiles();
 }
 
 // ── Clock ───────────────────────────────────────────────
-setInterval(()=>{G('sb-time').textContent=new Date().toLocaleTimeString('en');},1000);
+setInterval(()=>{if(vueApp)vueApp.ui.clock=new Date().toLocaleTimeString('en');},1000);
 
 // ── Appliance CRUD ──────────────────────────────────────
 async function loadAppliances(){
@@ -1035,12 +1044,11 @@ function computedFields(app){
 }
 
 function renderCards(){
-  const grid=G('cards-grid');
   let list=APPS;
   if(curFilter==='always_on') list=APPS.filter(a=>a.always_on);
   else if(curFilter!=='all') list=APPS.filter(a=>a.cat===curFilter);
 
-  grid.innerHTML=list.map(app=>{
+  const html=list.map(app=>{
     const cf=computedFields(app);
     const clr=app.clr||'#0A84FF';
     const isAlways=app.always_on;
@@ -1133,6 +1141,7 @@ function renderCards(){
       </div>
     </div>`;
   }).join('');
+  if(vueApp)vueApp.cardsHtml=html;
 }
 
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
@@ -1236,41 +1245,34 @@ async function delSW(sid,aid){
 
 // ── Profiles ─────────────────────────────────────────────
 function renderProfiles(){
-  const grid=G('profiles-grid');
-  grid.innerHTML=PROFILES.map(p=>{
+  const html=PROFILES.map(p=>{
     const isActive=activeProfileName===p.name;
-    const isPreset=p.is_preset;
     return `<div class="prof-card ${isActive?'active':''}" id="pc-${p.name}">
       <div class="prof-card-top">
         <div class="prof-icon-row">
-          <div class="prof-icon-box" contenteditable="${!isPreset}" id="pico-${p.name}" 
-            onblur="${!isPreset?`saveProfileField('${p.name}','icon',this.textContent)`:''}"
-            style="${isPreset?'cursor:default':''}">${esc(p.icon||'🙂')}</div>
+          <div class="prof-icon-box" contenteditable="true" id="pico-${p.name}" 
+            onblur="saveProfileField('${p.name}','icon',this.textContent)">${esc(p.icon||'🙂')}</div>
           <div class="prof-header">
-            <input class="prof-label-edit" id="plbl-${p.name}" value="${esc(p.label)}" ${isPreset?'readonly':''} 
-              onblur="${!isPreset?`saveProfileField('${p.name}','label',this.value)`:''}"
-              style="${isPreset?'pointer-events:none':''}">
-            ${isPreset?`<div class="preset-badge">PRESET — READ ONLY</div>`:`<div style="font-size:var(--text-sm);color:var(--l3);margin-top:6px;padding-left:8px">Custom profile — all fields editable</div>`}
+            <input class="prof-label-edit" id="plbl-${p.name}" value="${esc(p.label)}" 
+              onblur="saveProfileField('${p.name}','label',this.value)">
+            <div style="font-size:var(--text-sm);color:var(--l3);margin-top:6px;padding-left:8px">Profile fields are editable</div>
           </div>
         </div>
-        <textarea class="prof-desc-edit" rows="2" id="pdesc-${p.name}" ${isPreset?'readonly':''} 
-          onblur="${!isPreset?`saveProfileField('${p.name}','description',this.value)`:''}"
-          style="${isPreset?'pointer-events:none':''}">${esc(p.description)}</textarea>
+        <textarea class="prof-desc-edit" rows="2" id="pdesc-${p.name}" 
+          onblur="saveProfileField('${p.name}','description',this.value)">${esc(p.description)}</textarea>
         <div class="prof-params">
           <div class="pp"><label>Occupants</label>
-            <input type="number" id="pocc-${p.name}" value="${p.occupants}" min="1" max="20" ${isPreset?'readonly':''}
-              onchange="${!isPreset?`saveProfileField('${p.name}','occupants',+this.value)`:''}"
-              style="${isPreset?'color:var(--l3)':''}"></div>
+            <input type="number" id="pocc-${p.name}" value="${p.occupants}" min="1" max="20"
+              onchange="saveProfileField('${p.name}','occupants',+this.value)"></div>
           <div class="pp"><label>Experience</label>
-            <select id="pexp-${p.name}" ${isPreset?'disabled':''} onchange="${!isPreset?`saveProfileField('${p.name}','experience',this.value)`:''}">
+            <select id="pexp-${p.name}" onchange="saveProfileField('${p.name}','experience',this.value)">
               <option value="expert" ${p.experience==='expert'?'selected':''}>Expert</option>
               <option value="normal" ${p.experience==='normal'?'selected':''}>Normal</option>
               <option value="new" ${p.experience==='new'?'selected':''}>New to RV</option>
             </select></div>
           <div class="pp"><label>Load Factor</label>
-            <input type="number" id="plf-${p.name}" value="${p.load_factor}" min="0.3" max="2.5" step="0.05" ${isPreset?'readonly':''}
-              onchange="${!isPreset?`saveProfileField('${p.name}','load_factor',+this.value)`:''}"
-              style="${isPreset?'color:var(--l3)':''}"></div>
+            <input type="number" id="plf-${p.name}" value="${p.load_factor}" min="0.3" max="2.5" step="0.05"
+              onchange="saveProfileField('${p.name}','load_factor',+this.value)"></div>
           <!-- Battery & Solar are set globally in Simulate tab settings, not per-profile -->
           <div class="pp" style="display:flex;align-items:center;justify-content:center;gap:8px;font-size:var(--text-base);color:var(--l2)">
             ${isActive?'<span style="color:var(--green);font-weight:500;font-size:var(--text-lg)">✓ Active</span>':''}
@@ -1281,21 +1283,22 @@ function renderProfiles(){
         <button class="btn-apply-profile" onclick="applyProfile('${p.name}')">
           ${isActive?'Re-Apply Profile':'Apply Profile'}
         </button>
-        ${!isPreset?`<button class="btn-save-profile" onclick="saveProfileAll('${p.name}')">Save Changes</button>
-                    <button class="btn-del-profile" onclick="deleteProfile('${p.name}')">Delete</button>`:''}
+        <button class="btn-save-profile" onclick="saveProfileAll('${p.name}')">Save Changes</button>
+        ${!p.is_preset?`<button class="btn-del-profile" onclick="deleteProfile('${p.name}')">Delete</button>`:''}
       </div>
     </div>`;
   }).join('');
+  if(vueApp)vueApp.profilesHtml=html;
 }
 
 async function saveProfileField(name, field, value){
-  const prof=PROFILES.find(p=>p.name===name);if(!prof||prof.is_preset)return;
+  const prof=PROFILES.find(p=>p.name===name);if(!prof)return;
   prof[field]=value;
   await fetch(`/api/profiles/${name}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(prof)});
 }
 
 async function saveProfileAll(name){
-  const p=PROFILES.find(x=>x.name===name);if(!p||p.is_preset)return;
+  const p=PROFILES.find(x=>x.name===name);if(!p)return;
   p.label       = G('plbl-'+name)?.value || p.label;
   p.icon        = G('pico-'+name)?.textContent?.trim() || p.icon;
   p.description = G('pdesc-'+name)?.value || p.description;
@@ -1632,15 +1635,13 @@ async function toggleLive(){
     })});
     if(r.ok){
       simRunning=true;
-      G('live-btn').className='btn-live stop';G('live-btn').textContent='⏹ Stop';
-      G('live-badge').className='sbadge live';G('live-badge').textContent='LIVE';
+      if(vueApp)vueApp.simRunning=true;
       connectSSE();showToast('Live simulation started');
     }
   } else {
     await fetch('/api/simulate/live/stop',{method:'POST'});
     simRunning=false;
-    G('live-btn').className='btn-live start';G('live-btn').textContent='▶ Start Live Sim';
-    G('live-badge').className='sbadge off';G('live-badge').textContent='OFFLINE';
+    if(vueApp)vueApp.simRunning=false;
     if(sse){sse.close();sse=null;}showToast('Stopped');
   }
 }
@@ -1650,29 +1651,31 @@ function connectSSE(){
   sse.onmessage=e=>{
     const d=JSON.parse(e.data);if(d.type!=='step')return;
     const si=d.si_score||0,sc=si>=7?'var(--green)':si>=5?'var(--orange)':'var(--red)';
-    const set=(id,v,c)=>{const e2=G(id);if(e2){e2.textContent=v;if(c)e2.style.color=c;}};
-    set('ls-soc',(d.soc_pct||0).toFixed(1)+'%',d.soc_pct>50?'var(--green)':d.soc_pct>20?'var(--orange)':'var(--red)');
-    set('ls-sol',(d.solar_kw||0).toFixed(3));set('ls-ld',(d.load_kw||0).toFixed(3));
-    set('ls-si',si.toFixed(2),sc);set('ls-day','Day '+(d.day+1));
-    G('sim-status').textContent=`Day ${d.day+1} · Step ${d.step}`;
+    if(vueApp){
+      vueApp.ui.liveSoc=(d.soc_pct||0).toFixed(1)+'%';
+      vueApp.ui.liveSocColor=d.soc_pct>50?'var(--green)':d.soc_pct>20?'var(--orange)':'var(--red)';
+      vueApp.ui.liveSolar=(d.solar_kw||0).toFixed(3);
+      vueApp.ui.liveLoad=(d.load_kw||0).toFixed(3);
+      vueApp.ui.liveSi=si.toFixed(2);
+      vueApp.ui.liveSiColor=sc;
+      vueApp.ui.liveDay='Day '+(d.day+1);
+      vueApp.ui.simStatus=`Day ${d.day+1} · Step ${d.step}`;
+      vueApp.ui.connected=true;
+    }
   };
   sse.onerror=()=>{if(simRunning)setTimeout(connectSSE,3000);};
 }
 
 // ── Weather ──────────────────────────────────────────────
 function renderWeather(){
-  const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  G('day-grid').innerHTML=weatherPlan.map((d,i)=>`
-    <div class="day-card ${editDay===i?'active':''}" onclick="selectDay(${i})">
-      <div class="day-num">Day ${i+1} · ${dayNames[i%7]}</div>
-      <span class="day-wx-icon">${WX_ICONS[d.condition]||'☀️'}</span>
-      <div class="day-cond">${d.condition}</div>
-      <div class="day-temp">${d.temp_c}°C</div>
-      <div class="day-times">🌅${d.sunrise_hhmm} 🌇${d.sunset_hhmm}</div>
-    </div>`).join('');
+  if(vueApp){
+    vueApp.weatherPlan=weatherPlan;
+    vueApp.editDay=editDay;
+  }
 }
 function selectDay(i){
   editDay=i;const d=weatherPlan[i];
+  if(vueApp)vueApp.editDay=i;
   G('day-editor').style.display='block';G('day-edit-num').textContent=i+1;
   G('de-cond').value=d.condition;G('de-temp').value=d.temp_c;
   G('de-cloud').value=d.cloud_pct;G('de-rise').value=d.sunrise_hhmm;G('de-set').value=d.sunset_hhmm;
@@ -1684,7 +1687,9 @@ async function saveDay(){
   const patch={condition:G('de-cond').value,temp_c:+G('de-temp').value,
     cloud_pct:+G('de-cloud').value,sunrise_hhmm:G('de-rise').value,sunset_hhmm:G('de-set').value};
   await fetch(`/api/weather/Default Plan/${editDay}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(patch)});
-  Object.assign(weatherPlan[editDay],patch);renderWeather();showToast('Day '+(editDay+1)+' saved ✓');
+  Object.assign(weatherPlan[editDay],patch);
+  if(vueApp)vueApp.weatherPlan=weatherPlan;
+  renderWeather();showToast('Day '+(editDay+1)+' saved ✓');
 }
 
 // ── MQTT ─────────────────────────────────────────────────
@@ -1706,7 +1711,63 @@ function showToast(msg,type='ok'){
 }
 
 // ── Init ──────────────────────────────────────────────────
+function initVue(){
+  const app=Vue.createApp({
+    data(){
+      return {
+        activeTab:'configure',
+        simRunning:false,
+        cardsHtml:'',
+        profilesHtml:'',
+        weatherPlan:weatherPlan,
+        editDay:null,
+        dayNames:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
+        wxIcons:WX_ICONS,
+        ui:{
+          connected:true,
+          simStatus:'Idle',
+          clock:'--:--:--',
+          liveSoc:'—',
+          liveSocColor:'var(--green)',
+          liveSolar:'—',
+          liveLoad:'—',
+          liveSi:'—',
+          liveSiColor:'var(--l1)',
+          liveDay:'—'
+        }
+      };
+    },
+    methods:{
+      showTab,
+      toggleLive,
+      selectDay,
+      filterCards,
+      addAppliance,
+      createNewProfile,
+      onSOCChange,
+      syncSOCNum,
+      onBatCapChange,
+      syncBatNum,
+      onReserveChange,
+      syncReserveNum,
+      onPanelChange,
+      syncPanelNum,
+      saveSettings,
+      setDuration,
+      runSimulation,
+      dlBreakdown,
+      setView,
+      syncCloud,
+      saveDay,
+      saveMqtt
+    }
+  });
+  app.config.compilerOptions.delimiters=['[[',']]'];
+  vueApp=app.mount('#app');
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
+  initVue();
   await loadAppliances();
   // Load persisted settings (SOC, battery cap, panel) from DB
   await loadSettings();
