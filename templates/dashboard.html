@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>RV Energy Dashboard — ACFuture</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
 <style>
+[v-cloak]{display:none!important}
 /* ══════════════════════════════════════════════════════════════
    ELEVATICS AI — RV ENERGY DASHBOARD
    iPad / HMI Optimised — Large Text · Touch Friendly · High Contrast
@@ -500,15 +502,15 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
 }
 </style>
 </head>
-<body>
+<body id="app" v-cloak>
 
 <div class="sb">
-  <div class="dot off" id="cdot"></div>
+  <div class="dot" :class="ui.connected ? 'live' : 'off'" id="cdot"></div>
   <span>ACFuture · RV Energy Dashboard</span>
-  <div class="vsep"></div><span id="sbstatus">Connecting…</span>
-  <div class="vsep"></div><span id="sbtime">--:--:--</span>
+  <div class="vsep"></div><span id="sbstatus">[[ ui.statusText ]]</span>
+  <div class="vsep"></div><span id="sbtime">[[ ui.clock ]]</span>
   <div style="margin-left:auto"></div>
-  <div class="badge off" id="dbadge">NO DATA</div>
+  <div class="badge" :class="hasData ? 'live' : 'off'" id="dbadge">[[ hasData ? 'LIVE' : 'NO DATA' ]]</div>
 </div>
 
 <nav><div class="ni">
@@ -517,18 +519,18 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
     <div class="brand-sub">Real-Time MQTT Dashboard</div>
   </div>
   <div class="ntabs">
-    <button class="ntab active" onclick="showTab('realtime',this)">Real-Time</button>
-    <button class="ntab" onclick="showTab('appliances',this)">Appliances</button>
-    <button class="ntab" onclick="showTab('stability',this)">Stability</button>
-    <button class="ntab" onclick="showTab('history',this)">History</button>
+    <button class="ntab" :class="{active:activeTab==='realtime'}" @click="showTab('realtime')">Real-Time</button>
+    <button class="ntab" :class="{active:activeTab==='appliances'}" @click="showTab('appliances')">Appliances</button>
+    <button class="ntab" :class="{active:activeTab==='stability'}" @click="showTab('stability')">Stability</button>
+    <button class="ntab" :class="{active:activeTab==='history'}" @click="showTab('history')">History</button>
   </div>
   <div class="nr">
     <div class="nstat"><div>
-      <div class="nstat-v" id="nav-soc" style="color:var(--green)">—%</div>
+      <div class="nstat-v" id="nav-soc" :style="{color:ui.socColor}">[[ ui.navSoc ]]</div>
       <div class="nstat-l">Battery</div>
     </div></div>
     <div class="nstat"><div>
-      <div class="nstat-v" id="nav-si" style="color:var(--blue)">—/10</div>
+      <div class="nstat-v" id="nav-si" :style="{color:ui.siColor}">[[ ui.navSi ]]</div>
       <div class="nstat-l">Stability</div>
     </div></div>
     <button class="btn-mqtt" onclick="openMod()">MQTT Settings</button>
@@ -538,8 +540,8 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
 <main>
 
 <!-- ══ REAL-TIME ══════════════════════════════════════════════ -->
-<div id="tab-realtime" class="page active">
-  <div id="empty-state" class="card">
+<div id="tab-realtime" class="page" :class="{active:activeTab==='realtime'}">
+  <div id="empty-state" class="card" v-show="!hasData">
     <div class="empty-state">
       <div class="empty-ico">📡</div>
       <div class="empty-title">Waiting for MQTT data</div>
@@ -551,14 +553,14 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
     </div>
   </div>
 
-  <div id="live-content" style="display:none">
+  <div id="live-content" v-show="hasData">
     <!-- HERO METRICS -->
     <div class="ghero" style="margin-bottom:var(--gap)">
       <div class="hcard">
         <div class="hlbl">Battery State of Charge</div>
-        <div class="hval green" id="h-soc">—</div>
+        <div class="hval" id="h-soc" :style="{color:ui.socColor}">[[ ui.heroSoc ]]</div>
         <div class="soc-wrap">
-          <div class="soc-track"><div class="soc-fill" id="soc-fill" style="width:0%;background:var(--green)"></div></div>
+          <div class="soc-track"><div class="soc-fill" id="soc-fill" :style="{width: ui.socPct + '%', background: ui.socColor}"></div></div>
           <div class="soc-marks">
             <span class="sm s0">0%</span>
             <span class="sm s10">10% ⚠</span>
@@ -566,15 +568,17 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
             <span class="sm s100">100%</span>
           </div>
         </div>
-        <div class="hsub" id="h-res"></div>
+        <div class="hsub" id="h-res">[[ ui.reserveText ]]</div>
       </div>
-      <div class="mcard"><div class="mlbl">Solar</div><div class="mval" id="h-sol" style="color:var(--orange)">—</div><div class="msub">kW generating</div></div>
-      <div class="mcard"><div class="mlbl">Load</div><div class="mval" id="h-ld" style="color:var(--blue)">—</div><div class="msub">kW consuming</div></div>
-      <div class="mcard"><div class="mlbl" id="h-net-l">Net</div><div class="mval" id="h-net">—</div><div class="msub" id="h-net-m">—</div></div>
+      <div class="mcard"><div class="mlbl">Solar</div><div class="mval" id="h-sol" style="color:var(--orange)">[[ ui.heroSolar ]]</div><div class="msub">kW generating</div></div>
+      <div class="mcard"><div class="mlbl">Load</div><div class="mval" id="h-ld" style="color:var(--blue)">[[ ui.heroLoad ]]</div><div class="msub">kW consuming</div></div>
+      <div class="mcard"><div class="mlbl" id="h-net-l">Net</div><div class="mval" id="h-net" :style="{color:ui.netColor}">[[ ui.heroNet ]]</div><div class="msub" id="h-net-m">[[ ui.heroNetMsg ]]</div></div>
     </div>
 
     <!-- Alerts -->
-    <div id="alerts-wrap" style="margin-bottom:var(--gap)"></div>
+    <div id="alerts-wrap" style="margin-bottom:var(--gap)">
+      <div v-for="(a, i) in alerts" :key="i" class="alert" :class="a.t"><div class="adot"></div><span>[[ a.m ]]</span></div>
+    </div>
 
     <!-- Charts -->
     <div class="g2" style="margin-bottom:var(--gap)">
@@ -620,14 +624,25 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
           <th style="text-align:right">Current</th><th style="text-align:right">Power</th>
           <th>Share of Load</th>
         </tr></thead>
-        <tbody id="rt-tbody"><tr><td colspan="5" style="text-align:center;color:var(--l3);padding:36px">Waiting for data…</td></tr></tbody>
+        <tbody id="rt-tbody">
+          <tr v-if="!liveRows.length"><td colspan="5" style="text-align:center;color:var(--l3);padding:36px">Waiting for data…</td></tr>
+          <tr v-for="row in liveRows" :key="row.aid">
+            <td style="font-size:var(--xl);font-weight:500"><span style="margin-right:12px">[[ row.icon ]]</span>[[ row.name ]]
+              <span style="font-size:var(--sm);color:var(--l3);margin-left:10px;font-weight:500">[[ row.cat ]]</span></td>
+            <td style="text-align:right"><span class="mnum" style="color:var(--l2)">[[ row.vText ]]</span></td>
+            <td style="text-align:right"><span class="mnum" style="color:var(--teal)">[[ row.aText ]]</span></td>
+            <td style="text-align:right"><span class="mnum" :style="{color:row.clr,fontSize:'var(--xl)'}">[[ row.wText ]]</span></td>
+            <td><div class="sbar"><div class="strack"><div class="sfill" :style="{width:row.pct+'%',background:row.clr}"></div></div>
+              <span class="spct">[[ row.pct.toFixed(1) ]]%</span></div></td>
+          </tr>
+        </tbody>
       </table>
     </div>
   </div>
 </div>
 
 <!-- ══ APPLIANCES ═════════════════════════════════════════════ -->
-<div id="tab-appliances" class="page">
+<div id="tab-appliances" class="page" :class="{active:activeTab==='appliances'}">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--gap-lg);flex-wrap:wrap;gap:14px">
     <div>
       <div style="font-family:var(--fd);font-size:var(--xxl);font-weight:600;margin-bottom:6px">Per-Appliance Telemetry</div>
@@ -646,7 +661,7 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
 </div>
 
 <!-- ══ STABILITY ══════════════════════════════════════════════ -->
-<div id="tab-stability" class="page">
+<div id="tab-stability" class="page" :class="{active:activeTab==='stability'}">
   <div class="g2">
     <div class="card" style="display:flex;flex-direction:column;align-items:center">
       <div class="ch" style="width:100%">
@@ -728,7 +743,7 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
 </div>
 
 <!-- ══ HISTORY ════════════════════════════════════════════════ -->
-<div id="tab-history" class="page">
+<div id="tab-history" class="page" :class="{active:activeTab==='history'}">
   <!-- Date/time range selector -->
   <div class="card" style="margin-bottom:var(--gap)">
     <div class="ctitle" style="margin-bottom:20px">Time Range Filter</div>
@@ -823,6 +838,7 @@ let socBuf=[], pwBuf=[], siBuf=[];
 let TW={soc:'all',pw:'all',si:'all',hsoc:'all',hpw:'all'}, globalTW='all';
 let appState={};  // {aid: {meta, vBuf, aBuf, wBuf, latest}}
 let latestSI={score:0,grade:'F'};
+let vueApp=null;
 
 const baseOpts={
   responsive:true,maintainAspectRatio:false,
@@ -838,10 +854,8 @@ const baseOpts={
   }
 };
 
-function showTab(n,btn){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.ntab').forEach(b=>b.classList.remove('active'));
-  G('tab-'+n).classList.add('active');if(btn)btn.classList.add('active');
+function showTab(n){
+  if(vueApp)vueApp.activeTab=n;
   if(n==='appliances') renderGrid();
   if(n==='stability')  refreshSI();
   if(n==='history')    refreshHist();
@@ -856,12 +870,20 @@ function connectSSE(){
   sse.onerror=()=>{setConn(false);setTimeout(connectSSE,3000);};
 }
 function setConn(on){
-  G('cdot').className='dot '+(on?'live':'off');
-  if(!on)G('sbstatus').textContent='Reconnecting…';
+  if(vueApp){
+    vueApp.ui.connected=on;
+    if(!on)vueApp.ui.statusText='Reconnecting…';
+  }
 }
 
 function dispatch(d){
-  if(d.type==='connected'){G('sbstatus').textContent='Connected · ready for MQTT data';return;}
+  if(d.type==='connected'){
+    if(vueApp){
+      vueApp.ui.connected=true;
+      vueApp.ui.statusText='Connected · ready for MQTT data';
+    }
+    return;
+  }
 
   if(d.type==='registry'){
     (d.appliances||[]).forEach(a=>{
@@ -883,7 +905,7 @@ function dispatch(d){
     s.wBuf.push({ts,w:wv});if(s.wBuf.length>MAX)s.wBuf.shift();
     s.latest={v:vv,a:av,w:wv,ts};
     updateTable();
-    if(G('tab-appliances').classList.contains('active'))liveCard(aid);
+    if(vueApp&&vueApp.activeTab==='appliances')liveCard(aid);
     else ensureCard(aid);
     showData();return;
   }
@@ -891,24 +913,30 @@ function dispatch(d){
   if(d.type==='battery'){
     const soc=+d.soc_pct||0,net=+d.net_kw||0;
     const sc=soc>50?'var(--green)':soc>20?'var(--orange)':'var(--red)';
-    const set=(id,v,c)=>{const e=G(id);if(e){e.textContent=v;if(c)e.style.color=c;}};
-    set('h-soc',soc.toFixed(1)+'%',sc);
-    const sf=G('soc-fill');if(sf){sf.style.width=soc+'%';sf.style.background=sc;}
-    const hr=G('h-res');if(hr)hr.textContent=d.reserve_hit?'⚠ Reserve floor active — 10% protection mode':'';
-    set('h-net',(net>=0?'+':'')+net.toFixed(3),net>=0?'var(--green)':'var(--red)');
-    G('h-net-m').textContent=net>=0?'Charging battery':'Drawing from battery';
-    const ns=G('nav-soc');if(ns){ns.textContent=soc.toFixed(0)+'%';ns.style.color=sc;}
+    if(vueApp){
+      vueApp.ui.socPct=soc;
+      vueApp.ui.socColor=sc;
+      vueApp.ui.heroSoc=soc.toFixed(1)+'%';
+      vueApp.ui.reserveText=d.reserve_hit?'⚠ Reserve floor active — 10% protection mode':'';
+      vueApp.ui.heroNet=(net>=0?'+':'')+net.toFixed(3);
+      vueApp.ui.netColor=net>=0?'var(--green)':'var(--red)';
+      vueApp.ui.heroNetMsg=net>=0?'Charging battery':'Drawing from battery';
+      vueApp.ui.navSoc=soc.toFixed(0)+'%';
+    }
     const ts=fmt(d.ts);
     socBuf.push({ts,v:soc});if(socBuf.length>MAX)socBuf.shift();
     buildAlerts(soc,latestSI.score,latestSI.grade,d.reserve_hit);
-    buildRTCharts();G('sbstatus').textContent='Updated '+ts+' · SOC '+soc.toFixed(1)+'%';
+    buildRTCharts();
+    if(vueApp)vueApp.ui.statusText='Updated '+ts+' · SOC '+soc.toFixed(1)+'%';
     showData();return;
   }
 
   if(d.type==='solar'){
     const s=+d.solar_kw||0,l=+d.load_kw||0;
-    const set=(id,v)=>{const e=G(id);if(e)e.textContent=v;};
-    set('h-sol',s.toFixed(3));set('h-ld',l.toFixed(3));
+    if(vueApp){
+      vueApp.ui.heroSolar=s.toFixed(3);
+      vueApp.ui.heroLoad=l.toFixed(3);
+    }
     const ts=fmt(d.ts);
     pwBuf.push({ts,s,l});if(pwBuf.length>MAX)pwBuf.shift();
     buildRTCharts();return;
@@ -918,7 +946,10 @@ function dispatch(d){
 function fmt(ts){try{return new Date(ts).toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}catch(e){return new Date().toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}}
 
 function showData(){
-  if(!hasData){hasData=true;G('empty-state').style.display='none';G('live-content').style.display='block';G('dbadge').className='badge live';G('dbadge').textContent='LIVE';}
+  if(!hasData){
+    hasData=true;
+    if(vueApp)vueApp.hasData=true;
+  }
 }
 
 // ── Alerts ────────────────────────────────────────────────
@@ -930,7 +961,7 @@ function buildAlerts(soc,si,grade,res){
   if(si<5)a.push({t:'critical',m:`Stability Score ${(+si).toFixed(1)}/10 (Grade F) — system cannot sustain itself.`});
   else if(si<7)a.push({t:'warning',m:`Stability Score ${(+si).toFixed(1)}/10 (Grade ${grade}) — review energy balance.`});
   if(!a.length)a.push({t:'ok',m:'All systems nominal — energy balance is healthy.'});
-  G('alerts-wrap').innerHTML=a.map(x=>`<div class="alert ${x.t}"><div class="adot"></div><span>${x.m}</span></div>`).join('');
+  if(vueApp)vueApp.alerts=a;
 }
 
 // ── Time windows ──────────────────────────────────────────
@@ -938,7 +969,7 @@ function setTW(k,w,btn){
   TW[k]=w;const wrap=G('tw-'+k);
   if(wrap)wrap.querySelectorAll('.twb').forEach(b=>b.classList.toggle('active',b===btn));
   if(k==='soc'||k==='pw')buildRTCharts();
-  if(k==='si'){if(G('tab-stability').classList.contains('active'))refreshSI();}
+  if(k==='si'){if(vueApp&&vueApp.activeTab==='stability')refreshSI();}
   if(k.startsWith('h'))refreshHist();
 }
 function setGTW(w,btn){
@@ -983,23 +1014,25 @@ function buildRTCharts(){
 
 // ── Live table ────────────────────────────────────────────
 function updateTable(){
-  const tb=G('rt-tbody');if(!tb)return;
   const entries=Object.entries(appState).filter(([,s])=>s.latest);
-  if(!entries.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--l3);padding:40px;font-size:var(--base)">No appliance data yet</td></tr>';return;}
+  if(!vueApp)return;
+  if(!entries.length){vueApp.liveRows=[];return;}
   const maxW=Math.max(...entries.map(([,s])=>s.latest?.w||0),.01);
-  tb.innerHTML=entries.map(([aid,s],i)=>{
+  vueApp.liveRows=entries.map(([aid,s],i)=>{
     const l=s.latest,m=s.meta||{},clr=m.clr||COLORS[i%COLORS.length];
-    const pct=Math.min(100,(l.w/maxW)*100).toFixed(1);
-    return `<tr>
-      <td style="font-size:var(--xl);font-weight:500"><span style="margin-right:12px">${m.icon||''}</span>${m.name||'App '+aid}
-        <span style="font-size:var(--sm);color:var(--l3);margin-left:10px;font-weight:500">${m.cat||''}</span></td>
-      <td style="text-align:right"><span class="mnum" style="color:var(--l2)">${(+l.v).toFixed(1)} V</span></td>
-      <td style="text-align:right"><span class="mnum" style="color:var(--teal)">${(+l.a).toFixed(3)} A</span></td>
-      <td style="text-align:right"><span class="mnum" style="color:${clr};font-size:var(--xl)">${(+l.w).toFixed(1)} W</span></td>
-      <td><div class="sbar"><div class="strack"><div class="sfill" style="width:${pct}%;background:${clr}"></div></div>
-          <span class="spct">${pct}%</span></div></td>
-    </tr>`;
-  }).join('');
+    const pct=Math.min(100,(l.w/maxW)*100);
+    return {
+      aid,
+      icon:m.icon||'',
+      name:m.name||('App '+aid),
+      cat:m.cat||'',
+      vText:(+l.v).toFixed(1)+' V',
+      aText:(+l.a).toFixed(3)+' A',
+      wText:(+l.w).toFixed(1)+' W',
+      pct,
+      clr
+    };
+  });
 }
 
 // ── Appliance Charts ──────────────────────────────────────
@@ -1323,7 +1356,10 @@ function drawGauge(score,grade){
   fi.setAttribute('d',arcPath(cx,cy,r,sd,fs));fi.setAttribute('stroke',siCol(score));fi.setAttribute('stroke-width',sw);
   if(gn){gn.textContent=score.toFixed(1);gn.setAttribute('fill',siCol(score));}
   if(gs)gs.textContent=`Grade ${grade} — ${GRADES[grade]||''}`;
-  const ns=G('nav-si');if(ns){ns.textContent=score.toFixed(1)+'/10';ns.style.color=siCol(score);}
+  if(vueApp){
+    vueApp.ui.navSi=score.toFixed(1)+'/10';
+    vueApp.ui.siColor=siCol(score);
+  }
   latestSI={score,grade};
 }
 
@@ -1532,13 +1568,51 @@ async function reconnect(){
 }
 
 // ── Init ──────────────────────────────────────────────────
-setInterval(()=>{G('sbtime').textContent=new Date().toLocaleTimeString('en');},1000);
+function initVue(){
+  const app=Vue.createApp({
+    data(){
+      return {
+        activeTab:'realtime',
+        hasData:false,
+        alerts:[],
+        liveRows:[],
+        ui:{
+          connected:false,
+          statusText:'Connecting…',
+          clock:'--:--:--',
+          socPct:0,
+          socColor:'var(--green)',
+          heroSoc:'—',
+          reserveText:'',
+          heroSolar:'—',
+          heroLoad:'—',
+          heroNet:'—',
+          netColor:'var(--l1)',
+          heroNetMsg:'—',
+          navSoc:'—%',
+          navSi:'—/10',
+          siColor:'var(--blue)'
+        }
+      };
+    },
+    methods:{
+      showTab
+    }
+  });
+  app.config.compilerOptions.delimiters=['[[',']]'];
+  vueApp=app.mount('#app');
+}
+
 setInterval(()=>{
-  if(G('tab-appliances').classList.contains('active'))renderGrid();
-  if(G('tab-stability').classList.contains('active'))refreshSI();
+  if(vueApp)vueApp.ui.clock=new Date().toLocaleTimeString('en');
+},1000);
+setInterval(()=>{
+  if(vueApp&&vueApp.activeTab==='appliances')renderGrid();
+  if(vueApp&&vueApp.activeTab==='stability')refreshSI();
 },5000);
 
 document.addEventListener('DOMContentLoaded',()=>{
+  initVue();
   drawGauge(0,'F');connectSSE();
   fetch('/api/appliances').then(r=>r.ok?r.json():[]).then(apps=>{
     apps.forEach(a=>{
