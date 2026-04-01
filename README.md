@@ -1,28 +1,30 @@
 # RV Energy Simulator — Standalone Package
 
-**Elevatics AI** — Standalone RV energy simulation + MQTT telemetry system  
-*Simulate realistic appliance data, stream it over MQTT, visualise in real time.*
+**Elevatics AI** — Standalone RV energy simulation + optional MQTT telemetry  
+*Simulate realistic appliance data, view it in real time in the browser, and optionally publish to an external MQTT broker.*
 
 ---
 
 ## Architecture Overview
 
+A **single FastAPI process** serves the dashboard, the simulator UI, REST APIs, and Server-Sent Events (SSE). The simulation engine runs in-process; live steps update the dashboard over SSE. **MQTT is optional**: `SimPublisher` publishes to a broker you configure (for example Mosquitto on your network)—there is no embedded broker in this package.
+
 ```
-┌─────────────────────────────────┐    MQTT (port 1883)    ┌────────────────────────────────┐
-│  SIMULATOR   (port 5001)         │ ─────────────────────► │  DASHBOARD   (port 5002)        │
-│                                  │                         │                                 │
-│  • Appliance card configurator   │  rv/energy/battery      │  • Real-time SOC gauge          │
-│  • Multi-window scheduler        │  rv/energy/solar        │  • Per-appliance V/A/W charts   │
-│  • 7-day weather planner         │  rv/energy/appliances/* │  • Stability Score (0–10)       │
-│  • 9 realistic cycle patterns    │  rv/energy/summary      │  • 24h history buffer           │
-│  • Live simulation (step-by-step)│  rv/energy/weather      │  • Alert system                 │
-│  • Embedded MQTT broker          │ ◄───────────────────────│  • MQTT subscriber              │
-└─────────────────────────────────┘    SSE + REST            └────────────────────────────────┘
-         │                                                              │
-         │                                                              ▼
-         └──────────────────── SQLite (data/simulator.db) ─────────────┘
-                               Appliance configs + schedules
-                               Weather plans + MQTT settings
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  simulator.py  (port 5001)                                                    │
+│                                                                               │
+│  GET /              → Real-time dashboard (charts, SOC, stability)            │
+│  GET /sim           → Appliance configurator, scheduler, live sim controls    │
+│                                                                               │
+│  app/sim_engine.py  → 2880-step day simulation                               │
+│  app/sim_db.py      → SQLite (data/simulator.db)                             │
+│  app/mqtt_service.py → SimPublisher only (optional external MQTT)            │
+└──────────────────────────────────────────────────────────────────────────────┘
+         │                                    │
+         │ SSE /api/stream, /api/simulate/live/stream
+         ▼                                    ▼
+    Browser (dashboard + simulator)    Optional: MQTT broker (external)
+                                              rv/energy/… topics
 ```
 
 ---
@@ -30,37 +32,35 @@
 ## Quick Start
 
 ```bash
-cd rv-energy-simulator
+cd rv-energy-simulator-mqtt
 pip install -r requirements.txt
 
-# Terminal 1 — Appliance configurator + simulator
 python simulator.py          # → http://localhost:5001
-
-# Terminal 2 — Real-time dashboard
-python broker_dashboard.py   # → http://localhost:5002
 ```
 
-Then on the Simulator at **localhost:5001**, click **▶ Start Live Sim** — data flows instantly to the Dashboard.
+- **Dashboard:** [http://localhost:5001/](http://localhost:5001/) — real-time charts and telemetry  
+- **Simulator:** [http://localhost:5001/sim](http://localhost:5001/sim) — configure appliances, weather, and click **▶ Start Live Sim**
+
+Live data flows from the simulator to the dashboard over SSE in the same process—no second app or MQTT hop required for the UI.
 
 ---
 
 ## What Each File Does
 
-| File | Port | Purpose |
-|---|---|---|
-| `simulator.py` | 5001 | FastAPI app: appliance configurator, scheduler, simulation, MQTT publisher |
-| `broker_dashboard.py` | 5002 | FastAPI app: MQTT subscriber, real-time charts, stability score display |
-| `app/sim_db.py` | — | SQLite schema: appliances, schedules, weather plans, MQTT settings |
-| `app/sim_engine.py` | — | 2880-step simulation engine with 9 realistic cycle patterns |
-| `app/mqtt_service.py` | — | Embedded MQTT broker (amqtt) + paho publisher + paho subscriber |
-| `templates/simulator.html` | — | Apple-design configurator UI (appliance cards + scheduler) |
-| `templates/dashboard.html` | — | Real-time dashboard with line charts, gauge, alert strip |
+| File | Purpose |
+|---|---|
+| `simulator.py` | FastAPI app: dashboard (`/`), configurator (`/sim`), simulation, SSE, dashboard REST, optional MQTT publish |
+| `app/sim_db.py` | SQLite schema: appliances, schedules, weather plans, MQTT settings, profiles, sim settings |
+| `app/sim_engine.py` | 2880-step simulation engine with realistic cycle patterns |
+| `app/mqtt_service.py` | `SimPublisher` only — publishes telemetry to a configured external broker |
+| `templates/simulator.html` | Configurator UI (appliance cards + scheduler) |
+| `templates/dashboard.html` | Real-time dashboard (charts, gauge, history) |
 
 ---
 
 ## Features
 
-### Appliance Configurator (localhost:5001)
+### Appliance Configurator (`/sim`)
 
 - **Card UI** for each appliance showing all electrical parameters
 - **Editable fields:** Voltage (V), Current (A), Power Factor, Efficiency (%), Duty Cycle (%), Avg Power (W)
@@ -105,48 +105,50 @@ Then on the Simulator at **localhost:5001**, click **▶ Start Live Sim** — da
 - 2880-step (30-second) simulation resolution
 - 0.95× usable fraction (LiFePO4 safe operating range)
 
-### MQTT Telemetry
+### Optional MQTT Telemetry
 
-- **Embedded broker** (amqtt, port 1883) — no external mosquitto needed
-- Configurable publish rate (0.1–60 seconds/step)
+- **No embedded broker** — point `broker_host` / `broker_port` at **Mosquitto** (or another broker) on your LAN or cloud
+- Configurable publish rate (0.1–60 seconds per step)
 - Per-topic enable/disable (appliances, battery, solar, summary, weather)
-- QoS 0/1/2 support
+- QoS and retain supported via settings
 - Configurable base topic (default: `rv/energy`)
 
-### MQTT Topics
+### MQTT Topics (when publishing is enabled)
 
 ```
-rv/energy/appliances/{id}   → {ts, id, voltage_v, current_a, power_w}
+rv/energy/registry           → appliance metadata (names, icons, …)
+rv/energy/appliances/{id}   → {ts, id, voltage_v, current_a, power_w, …}
 rv/energy/battery            → {ts, soc_pct, kwh, reserve_hit, net_kw}
 rv/energy/solar              → {ts, solar_kw, load_kw}
 rv/energy/summary            → {ts, soc_pct, load_kw, solar_kw}
-rv/energy/weather            → {ts, condition, temp_c, cloud_pct}
-rv/energy/control            → inbound commands (start/stop/reset)
 ```
 
-### Real-Time Dashboard (localhost:5002)
+### Real-Time Dashboard (`/`)
 
-- **Stability Score gauge** (0–10) computed live from MQTT telemetry
+- **Stability Score gauge** (0–10) computed from live step telemetry
 - **Battery SOC** with 10% and 20% reserve markers on chart
-- **Rolling 60-minute charts**: SOC trend, Solar vs Load power
-- **Per-appliance line charts**: V, A, W updated on each MQTT message
-- **Live appliance table**: current V/A/W for every device with share bar
-- **Alert strip**: auto-computed from incoming data (low SOC, reserve hit, inverter overload)
-- **History tab**: full buffer of all received SOC and power data
-- **MQTT reconnect**: configure broker host/port/topic from UI
+- **Rolling charts**: SOC trend, Solar vs Load power
+- **Per-appliance line charts**: V, A, W updated each step
+- **Live appliance table**: current V/A/W for every device
+- **Alert strip**: low SOC, reserve hit, stability warnings
+- **History tab**: buffered SOC and power data (`/api/history/…`)
+- **Connection modal**: legacy UI may call `POST /api/connect` (no-op in single-app mode); broker target for MQTT is configured on the **Simulator** MQTT tab (`/sim`)
 
 ---
 
 ## API Reference
 
-### Simulator (port 5001)
+All routes are served on **port 5001** (prefix `/api` unless noted).
+
+### Simulator & configuration
 
 ```
-GET    /api/appliances              List all appliances with schedules
-POST   /api/appliances              Create appliance
-PUT    /api/appliances/{id}         Update appliance
-DELETE /api/appliances/{id}         Delete appliance
-POST   /api/appliances/{id}/toggle  Toggle on/off state
+GET    /api/appliances                      List all appliances with schedules
+POST   /api/appliances                      Create appliance
+PUT    /api/appliances/{id}                 Update appliance
+PATCH  /api/appliances/{id}/rename          Rename appliance
+DELETE /api/appliances/{id}                 Delete appliance
+POST   /api/appliances/{id}/toggle          Toggle on/off state
 
 GET    /api/appliances/{id}/schedules       List schedules for appliance
 POST   /api/appliances/{id}/schedules       Add schedule window
@@ -156,70 +158,77 @@ DELETE /api/schedules/{sid}                 Delete schedule window
 GET    /api/weather/{plan_name}             Get 7-day weather plan
 PUT    /api/weather/{plan_name}/{day}       Update one day
 
-GET    /api/mqtt/settings                   Get MQTT settings
-PUT    /api/mqtt/settings                   Save MQTT settings
+GET    /api/profiles                        List profiles
+GET    /api/profiles/{name}                 Get profile
+POST   /api/profiles                        Create profile
+PUT    /api/profiles/{name}                 Update custom profile
+DELETE /api/profiles/{name}                 Delete custom profile
+POST   /api/profiles/{name}/apply           Apply profile overrides
+
+GET    /api/settings                        Global sim settings (battery, panel, SOC, …)
+PUT    /api/settings                        Save sim settings
+
+PUT    /api/mqtt/settings                   Save MQTT publish settings (broker, topics, …)
 
 POST   /api/simulate                        Run multi-day simulation (batch)
 POST   /api/simulate/live/start             Start live streaming simulation
 POST   /api/simulate/live/stop              Stop live simulation
-GET    /api/simulate/live/status            Get current sim state
-GET    /api/simulate/live/stream            SSE stream of live sim steps
+GET    /api/simulate/live/status            Current sim state
+GET    /api/simulate/live/stream            SSE: live sim steps (and unified telemetry)
 ```
 
-### Dashboard (port 5002)
+### Dashboard (same app)
 
 ```
 GET    /api/status                          Latest telemetry snapshot
+GET    /api/appliances/live                 Appliances with latest buffered points
 GET    /api/history/battery?n=200           Battery SOC history (last N)
 GET    /api/history/solar?n=200             Solar/load history
-GET    /api/history/appliance/{id}?n=200    Per-appliance V/A/W history
-GET    /api/appliances                      Active appliances with latest data
+GET    /api/history/appliance/{id}?n=200    Per-appliance history
 GET    /api/stability                       Live stability score breakdown
-GET    /api/stream                          SSE stream of MQTT updates
-POST   /api/connect                         Reconnect to different MQTT broker
+GET    /api/stream                          SSE stream (dashboard events; same pipeline as live sim)
+POST   /api/connect                         No-op (kept for UI compatibility)
 ```
 
 ---
 
 ## Integration with RV Energy Intelligence
 
-This simulator feeds data to the main `rv-energy-intelligence` resource calculator:
+The simulator can **publish** to any MQTT broker so downstream services subscribe to `rv/energy/#` (or your base topic).
 
 ```
 rv-energy-simulator (port 5001)
         │
-        │  MQTT  rv/energy/#
+        │  optional MQTT publish
         ▼
-   localhost:1883
+   your Mosquitto / cloud broker
         │
-        ├── broker_dashboard.py (port 5002)  ← real-time analytics
+        ├── rv-energy-intelligence (or other consumers)
+        │        POST /api/simulate  ← aggregated daily data, etc.
         │
-        └── rv-energy-intelligence (port 5000)  ← stability score + history
-             POST /api/simulate  ← receive aggregated daily data
+        └── External dashboards / Home Assistant / monitoring
 ```
 
-For direct integration: the stability score computation in `broker_dashboard.py` 
-(`_compute_si()`) uses the same four-pillar formula as `app/stability.py` in the main app.
+Stability-style scoring in the web dashboard uses a **live** four-pillar formula aligned with the batch **SI score** from `app/sim_engine.py` for end-of-day runs; exact numeric parity between “live estimate” and “full day aggregate” is not guaranteed.
 
 ---
 
-## Run on Separate Machines
+## Docker
 
-The simulator and dashboard are designed to run on different devices on the same network:
+`docker-compose.yml` runs the **simulator** service on port **5001** (and optional **dbgate** for SQLite browsing). There is no separate dashboard container.
 
-**Machine A (RV Jetson AGX Orin) — Simulator:**
 ```bash
-python simulator.py
-# Accessible at http://JETSON_IP:5001
+docker compose up -d
+# Dashboard + simulator: http://localhost:5001/ and http://localhost:5001/sim
 ```
 
-**Machine B (Laptop / Tablet) — Dashboard:**
-```bash
-# Edit broker_host in UI to point to Machine A's IP
-python broker_dashboard.py
-# Open http://localhost:5002
-# Set MQTT broker: JETSON_IP:1883
-```
+---
+
+## Remote / split deployment
+
+**Typical:** run `python simulator.py` on one machine and open `http://<host>:5001/` in a browser on another device on the same network.
+
+**MQTT-only consumers:** run Mosquitto (or your broker) where reachable, set **MQTT settings** on `/sim` to that host/port, and start live simulation—subscribers receive `rv/energy/…` without needing the web UI on the same host.
 
 ---
 
