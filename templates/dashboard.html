@@ -144,51 +144,53 @@ main{max-width:1600px;margin:0 auto;padding:28px}
 .alert.ok .adot{background:var(--green)}
 
 /* ── APPLIANCE GRID ──────────────────────────────────────────── */
-.app-grid{display:grid;grid-template-columns:1fr;gap:var(--gap)}
+.app-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:var(--gap)}
+@media(max-width:900px){.app-grid{grid-template-columns:1fr}}
 
-/* Per-appliance card — full width, clear separation, no overlap */
+/* Per-appliance card */
 .app-chart-card{
   background:var(--glass);border:1px solid var(--gb);border-radius:var(--r28);
-  overflow:hidden;box-shadow:var(--sh);
+  overflow:hidden;box-shadow:var(--sh);display:flex;flex-direction:column;
 }
-/* Horizontal layout: identity panel left, chart right */
+/* Vertical layout: identity panel on top, chart below */
 .acard-inner{
-  display:grid;grid-template-columns:300px 1fr;
-  min-height:240px;
+  display:flex;flex-direction:column;flex:1;
 }
-/* Left identity panel */
+/* Top identity panel */
 .aleft{
-  padding:24px;border-right:1px solid var(--sep);
-  display:flex;flex-direction:column;justify-content:space-between;gap:14px;
+  padding:18px 20px 14px;border-bottom:1px solid var(--sep);
+  display:flex;flex-direction:column;gap:10px;
   background:rgba(0,0,0,.18);
 }
 /* Card color accent bar at very left */
 .aclr-bar{width:5px;flex-shrink:0;border-radius:0 0 0 0}
 /* Appliance name + meta */
-.aname{font-size:var(--xl);font-weight:500;line-height:1.25;margin-bottom:4px;word-break:break-word}
+.aname{font-size:var(--lg);font-weight:600;line-height:1.25;margin-bottom:2px;word-break:break-word}
 .ameta{font-size:var(--sm);color:var(--l3);font-weight:500;margin-bottom:0}
+/* header row: name+meta left, csv button right */
+.acard-header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
 /* 3 value chips in a row */
 .aval-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
-.avchip{background:rgba(255,255,255,.05);border-radius:var(--r16);padding:12px 8px;text-align:center;border:1px solid rgba(255,255,255,.06)}
+.avchip{background:rgba(255,255,255,.05);border-radius:var(--r16);padding:10px 8px;text-align:center;border:1px solid rgba(255,255,255,.06)}
 .avnum{font-family:var(--fm);font-size:var(--lg);font-weight:500;line-height:1;margin-bottom:4px}
-.avlbl{font-size:11px;color:var(--l3);font-weight:500;text-transform:uppercase;letter-spacing:.8px}
+.avlbl{font-size:10px;color:var(--l3);font-weight:500;text-transform:uppercase;letter-spacing:.8px}
 /* Mode tabs */
 .amode-tabs{display:flex;gap:4px;flex-wrap:wrap}
-.atab{padding:7px 14px;border-radius:var(--rp);font-size:var(--sm);font-weight:500;
+.atab{padding:5px 12px;border-radius:var(--rp);font-size:var(--sm);font-weight:500;
   cursor:pointer;border:1px solid var(--sep);background:transparent;color:var(--l3);
   font-family:var(--f);transition:all .15s;white-space:nowrap}
 .atab:hover{color:var(--l2)}
 .atab.active{background:rgba(255,255,255,.12);color:var(--l1);border-color:rgba(255,255,255,.20)}
-/* Right chart panel */
+/* Bottom chart panel */
 .aright{
-  padding:20px 24px;display:flex;flex-direction:column;gap:10px;min-width:0;
+  padding:14px 18px 18px;display:flex;flex-direction:column;gap:8px;min-width:0;flex:1;
 }
 /* Legend row */
-.alegend{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+.alegend{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
 .ald{display:flex;align-items:center;gap:6px;font-size:var(--sm);color:var(--l2);font-weight:500;white-space:nowrap}
-.aldd{width:20px;height:3px;border-radius:2px;flex-shrink:0}
-/* Chart container — fixed height, no overflow */
-.achart-wrap{flex:1;min-height:160px;position:relative}
+.aldd{width:16px;height:3px;border-radius:2px;flex-shrink:0}
+/* Chart container */
+.achart-wrap{flex:1;min-height:150px;position:relative}
 
 /* ── LIVE TABLE ──────────────────────────────────────────────── */
 .dtable{width:100%;border-collapse:collapse}
@@ -264,6 +266,238 @@ main{max-width:1600px;margin:0 auto;padding:28px}
 /* ── datetime-local input color fix ──────────────────────────── */
 input[type='datetime-local']{color-scheme:dark}
 input[type='datetime-local']:focus{border-color:var(--blue) !important}
+</style>
+
+<!-- ═══ FRONTEND STUDIO — Enhancement Layer ═══ -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ── Font override: Outfit for crisp cross-platform rendering ── */
+:root {
+  --f: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  --fd: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* ── Dynamic aurora background ─────────────────────────────── */
+@keyframes aurora {
+  0%   { opacity: .80; transform: scale(1)    translateX(0); }
+  100% { opacity: 1;   transform: scale(1.04) translateX(-1.5%); }
+}
+body::before {
+  background:
+    radial-gradient(ellipse 130% 55% at 15% -5%,  rgba(10,84,255,.14)  0%, transparent 58%),
+    radial-gradient(ellipse  70% 45% at 85% 110%, rgba(48,209,88,.07)  0%, transparent 52%),
+    radial-gradient(ellipse  55% 35% at 55%  55%, rgba(191,90,242,.05) 0%, transparent 55%) !important;
+  animation: aurora 14s ease-in-out infinite alternate;
+}
+
+/* ── Card entrance ─────────────────────────────────────────── */
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Enhanced glassmorphism surfaces ───────────────────────── */
+.card, .hcard, .mcard {
+  background: rgba(18,18,24,.90) !important;
+  border: 1px solid rgba(255,255,255,.10) !important;
+  box-shadow:
+    0 4px 56px rgba(0,0,0,.72),
+    0 1px 0 rgba(255,255,255,.07) inset,
+    0 -1px 0 rgba(0,0,0,.28) inset !important;
+  transition: border-color .22s ease, box-shadow .22s ease, transform .22s ease !important;
+}
+.card:hover, .hcard:hover {
+  border-color: rgba(255,255,255,.17) !important;
+  box-shadow:
+    0 10px 80px rgba(0,0,0,.80),
+    0 1px 0 rgba(255,255,255,.09) inset,
+    0 -1px 0 rgba(0,0,0,.32) inset !important;
+  transform: translateY(-2px);
+}
+
+/* ── Page fade-in on tab switch ────────────────────────────── */
+.page.active { animation: cardIn .32s cubic-bezier(0.16,1,0.3,1) both; }
+
+/* ── Hero grid stagger ─────────────────────────────────────── */
+.ghero > *:nth-child(1) { animation: cardIn .45s cubic-bezier(0.16,1,0.3,1)  40ms both; }
+.ghero > *:nth-child(2) { animation: cardIn .45s cubic-bezier(0.16,1,0.3,1) 100ms both; }
+.ghero > *:nth-child(3) { animation: cardIn .45s cubic-bezier(0.16,1,0.3,1) 160ms both; }
+.ghero > *:nth-child(4) { animation: cardIn .45s cubic-bezier(0.16,1,0.3,1) 220ms both; }
+
+/* ── Button micro-interactions ─────────────────────────────── */
+button {
+  transition: opacity .15s, background .15s, transform .12s cubic-bezier(0.34,1.56,0.64,1), border-color .15s !important;
+}
+button:not(:disabled):active { transform: scale(0.965) !important; }
+
+/* ── Status dot with ripple ────────────────────────────────── */
+.dot.live {
+  box-shadow: 0 0 0 0 rgba(48,209,88,.5);
+  animation: livePulse 2.2s cubic-bezier(.455,.03,.515,.955) infinite !important;
+}
+@keyframes livePulse {
+  0%   { transform: scale(1);   box-shadow: 0 0 0 0   rgba(48,209,88,.55); }
+  60%  { transform: scale(1.3); box-shadow: 0 0 0 8px rgba(48,209,88,0); }
+  100% { transform: scale(1);   box-shadow: 0 0 0 0   rgba(48,209,88,0); }
+}
+
+/* ── Live badge pulse ──────────────────────────────────────── */
+.badge.live {
+  animation: badgePulse 3s ease-in-out infinite;
+}
+@keyframes badgePulse {
+  0%,100% { box-shadow: 0 0 0 0   rgba(48,209,88,.30); }
+  50%      { box-shadow: 0 0 0 6px rgba(48,209,88,0); }
+}
+
+/* ── Nav active tab indicator ──────────────────────────────── */
+.ntab { position: relative; overflow: hidden; }
+.ntab::after {
+  content: '';
+  position: absolute;
+  bottom: 5px; left: 50%;
+  transform: translateX(-50%) scaleX(0);
+  width: 55%; height: 2px;
+  border-radius: 2px;
+  background: var(--blue);
+  transition: transform .28s cubic-bezier(0.34,1.56,0.64,1);
+}
+.ntab.active::after { transform: translateX(-50%) scaleX(1); }
+
+/* ── Value flash on live data update ───────────────────────── */
+@keyframes valFlash {
+  0%   { opacity: 1; }
+  28%  { opacity: .38; }
+  100% { opacity: 1; }
+}
+.val-flash { animation: valFlash .42s cubic-bezier(0.16,1,0.3,1); }
+
+/* ── SOC / fill bar glow ───────────────────────────────────── */
+.soc-fill, .sfill, .pfill {
+  filter: drop-shadow(0 0 5px currentColor);
+}
+
+/* ── Styled scrollbars ─────────────────────────────────────── */
+::-webkit-scrollbar          { width: 5px; height: 5px; }
+::-webkit-scrollbar-track    { background: transparent; }
+::-webkit-scrollbar-thumb    { background: rgba(255,255,255,.11); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.22); }
+
+/* ── Focus rings ───────────────────────────────────────────── */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 2px; }
+
+/* ── Reduced motion safety ─────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   APPLIANCE CARDS — Compact, Fixed-Height, Responsive Fix
+   Root cause: flex:1 on .achart-wrap in unbounded flex column
+   → chart grows without limit. Fix: fixed height everywhere.
+══════════════════════════════════════════════════════════════ */
+
+/* Grid: tighter min-width so 3 columns fit on 1400px screens */
+.app-grid {
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)) !important;
+  gap: 16px !important;
+}
+
+/* Card: block height, no overflow-hiding cuts off chart tooltip */
+.app-chart-card {
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: visible !important;
+}
+.acard-inner {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 !important;
+}
+
+/* ── Top identity panel — compact ─────────────────────────── */
+.aleft {
+  padding: 12px 16px 10px !important;
+  gap: 8px !important;
+  background: rgba(0,0,0,.22) !important;
+}
+
+/* Name + meta — smaller to save vertical space */
+.acard-header { margin-bottom: 0 !important; }
+.aname {
+  font-size: 17px !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+  margin-bottom: 1px !important;
+}
+.ameta { font-size: 12px !important; }
+
+/* Value chips — 3-col, compact */
+.aval-row { gap: 6px !important; }
+.avchip {
+  padding: 7px 5px !important;
+  border-radius: 10px !important;
+}
+.avnum { font-size: 16px !important; margin-bottom: 2px !important; }
+.avlbl { font-size: 9px !important; letter-spacing: .6px !important; }
+
+/* Mode tabs — slim */
+.amode-tabs { gap: 3px !important; }
+.atab {
+  padding: 4px 9px !important;
+  font-size: 12px !important;
+  min-height: 28px !important;
+}
+
+/* ── Chart panel — fixed height, no flex bleed ─────────────── */
+.aright {
+  padding: 8px 14px 12px !important;
+  gap: 5px !important;
+  flex: none !important;        /* prevent this panel from growing */
+}
+
+/* THE KEY FIX: replace flex:1 with a fixed pixel height */
+.achart-wrap {
+  flex: none !important;
+  height: 155px !important;
+  min-height: 155px !important;
+  max-height: 155px !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+/* Legend — single row, compact */
+.alegend { gap: 8px !important; flex-wrap: nowrap !important; }
+.ald     { font-size: 11px !important; gap: 4px !important; }
+.aldd    { width: 12px !important; height: 2px !important; }
+
+/* CSV button in card header — smaller */
+.app-chart-card .csvb {
+  padding: 4px 10px !important;
+  font-size: 11px !important;
+  min-height: 28px !important;
+}
+
+/* ── Responsive breakpoints ────────────────────────────────── */
+@media (max-width: 1200px) {
+  .app-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important; }
+}
+@media (max-width: 860px) {
+  .app-grid { grid-template-columns: 1fr 1fr !important; }
+  .achart-wrap { height: 130px !important; min-height: 130px !important; max-height: 130px !important; }
+}
+@media (max-width: 560px) {
+  .app-grid { grid-template-columns: 1fr !important; }
+  .achart-wrap { height: 140px !important; min-height: 140px !important; max-height: 140px !important; }
+  .alegend { flex-wrap: wrap !important; }
+}
 </style>
 </head>
 <body>
@@ -801,7 +1035,15 @@ function renderGrid(){
       <div class="empty-desc">Start the simulator at <a class="empty-link" href="{{ simulator_url }}" target="_blank">Simulator</a> and click ▶ Start Live Sim</div>
     </div></div>`;return;
   }
-  aids.forEach((aid,i)=>ensureCard(aid,i));
+  aids.forEach((aid,i)=>{
+    if(G('acard-'+aid)){
+      // Card already exists — refresh values and force chart rebuild with latest data
+      const s=appState[aid];if(s)s._tick=0;
+      liveCard(aid);
+    } else {
+      ensureCard(aid,i);
+    }
+  });
   grid.querySelectorAll('[id^="acard-"]').forEach(c=>{
     if(!appState[c.id.replace('acard-','')])c.remove();
   });
@@ -821,11 +1063,14 @@ function ensureCard(aid,ci){
 
   card.innerHTML=`
     <div class="acard-inner">
-      <!-- LEFT: identity, live values, controls -->
+      <!-- TOP: identity, live values, controls -->
       <div class="aleft">
-        <div>
-          <div class="aname" id="aname-${aid}">${m.name||'App '+aid}</div>
-          <div class="ameta" id="ameta-${aid}">${m.cat||'—'}</div>
+        <div class="acard-header">
+          <div>
+            <div class="aname" id="aname-${aid}">${m.name||'App '+aid}</div>
+            <div class="ameta" id="ameta-${aid}">${m.cat||'—'}</div>
+          </div>
+          <button class="csvb" onclick="dlCSV('app-${aid}')" style="flex-shrink:0;padding:5px 12px;font-size:var(--sm)">↓ CSV</button>
         </div>
 
         <div class="aval-row">
@@ -849,11 +1094,9 @@ function ensureCard(aid,ci){
           <button class="atab" onclick="swMode('${aid}','a',this)">Current</button>
           <button class="atab" onclick="swMode('${aid}','v',this)">Voltage</button>
         </div>
-
-        <button class="csvb" onclick="dlCSV('app-${aid}')" style="align-self:flex-start;padding:7px 14px;font-size:var(--sm)">↓ CSV</button>
       </div>
 
-      <!-- RIGHT: chart with legend -->
+      <!-- BOTTOM: chart with legend -->
       <div class="aright">
         <div class="alegend" id="leg-${aid}">
           <div class="ald"><div class="aldd" style="background:${clr}"></div>Power (W)</div>
@@ -887,14 +1130,27 @@ function liveCard(aid){
   const tick=(s._tick=(s._tick||0)+1);
   if(tick%5===1 || !appCRefs[aid]) buildChart(aid,appMode[aid]||'all');
   else if(appCRefs[aid]){
-    // Fast path: just push new data point
+    // Fast path: update chart data in-place then redraw
     const mode=appMode[aid]||'all';
+    const ch=appCRefs[aid];
     const rawBuf=mode==='w'?s.wBuf:mode==='a'?s.aBuf:mode==='v'?s.vBuf:s.wBuf;
     const buf=fBuf(rawBuf,globalTW);
-    if(appCRefs[aid].data.labels.length!==buf.length){
+    if(ch.data.labels.length!==buf.length){
       buildChart(aid,mode); // full rebuild if length changed
     } else {
-      appCRefs[aid].update('none');
+      // Same length (sliding window at MAX) — update data arrays in-place
+      if(mode==='all'){
+        const wB=fBuf(s.wBuf,globalTW),aB=fBuf(s.aBuf,globalTW),vB=fBuf(s.vBuf,globalTW);
+        const len=Math.min(wB.length,aB.length,vB.length);
+        ch.data.labels=wB.slice(-len).map(p=>p.ts);
+        ch.data.datasets[0].data=wB.slice(-len).map(p=>p.w);
+        ch.data.datasets[1].data=aB.slice(-len).map(p=>p.a*10);
+        ch.data.datasets[2].data=vB.slice(-len).map(p=>p.v);
+      } else {
+        ch.data.labels=buf.map(p=>p.ts);
+        ch.data.datasets[0].data=buf.map(p=>p[mode]);
+      }
+      ch.update('none');
     }
   }
 }
@@ -1315,6 +1571,68 @@ document.addEventListener('DOMContentLoaded',()=>{
     if(apps.length){renderGrid();}
   }).catch(()=>{});
 });
+</script>
+
+<!-- ═══ FRONTEND STUDIO — Enhancement Script ═══ -->
+<script>
+(function () {
+  'use strict';
+
+  /* 1 · Stagger cards + resize charts whenever a tab is shown */
+  const _origShowTab = window.showTab;
+  if (typeof _origShowTab === 'function') {
+    window.showTab = function (n, btn) {
+      _origShowTab(n, btn);
+      const page = document.getElementById('tab-' + n);
+      if (!page) return;
+
+      // Stagger entrance animation
+      const cards = page.querySelectorAll('.card, .hcard, .mcard, .app-chart-card');
+      cards.forEach(function (el, i) {
+        el.style.animation = 'none';
+        void el.offsetHeight;
+        el.style.animation = '';
+        el.style.animationDelay = (i * 38) + 'ms';
+      });
+
+      // Force Chart.js to re-measure container after CSS height takes effect
+      if (n === 'appliances') {
+        requestAnimationFrame(function () {
+          page.querySelectorAll('canvas[id^="ac-"]').forEach(function (canvas) {
+            var chart = Chart && Chart.getChart ? Chart.getChart(canvas) : null;
+            if (chart) { chart.resize(); }
+          });
+        });
+      }
+    };
+  }
+
+  /* 2 · Flash numeric values when live data updates */
+  var flashObserver = new MutationObserver(function (mutations) {
+    mutations.forEach(function (m) {
+      var el = m.target.nodeType === 3 ? m.target.parentElement : m.target;
+      if (el && el.matches && el.matches('.hval, .mval, .nstat-v')) {
+        el.classList.remove('val-flash');
+        void el.offsetHeight;
+        el.classList.add('val-flash');
+      }
+    });
+  });
+  document.querySelectorAll('.hval, .mval, .nstat-v').forEach(function (el) {
+    flashObserver.observe(el, { childList: true, subtree: true, characterData: true });
+  });
+
+  /* 3 · Stagger first visible page on load */
+  document.addEventListener('DOMContentLoaded', function () {
+    var firstPage = document.querySelector('.page.active');
+    if (firstPage) {
+      firstPage.querySelectorAll('.card, .hcard, .mcard').forEach(function (el, i) {
+        el.style.animationDelay = (i * 50) + 'ms';
+      });
+    }
+  });
+
+})();
 </script>
 </body>
 </html>
