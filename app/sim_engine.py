@@ -1,44 +1,45 @@
 """
 app/sim_engine.py
-─────────────────────────────────────────────────────────────────────────────
+-----------------------------------------------------------------------------
 Realistic RV appliance simulation engine.
 
 Each 30-second step computes:
-  • Per-appliance instantaneous V, A, W based on cycle pattern + schedule
-  • Solar generation from sunrise/sunset + cloud cover + irradiance model
-  • Battery SOC with LiFePO4 derating + 10-20% reserve floor protection
-  • Stability Score (0-10) across 4 pillars
+  - Per-appliance instantaneous V, A, W based on cycle pattern + schedule
+  - Solar generation from sunrise/sunset + cloud cover + irradiance model
+  - Battery SOC with LiFePO4 derating + 10-20% reserve floor protection
+  - Stability Score (0-10) across 4 pillars
 
 CYCLE PATTERNS (simulate realistic power modes)
-─────────────────────────────────────────────────
-  constant      — uniform draw when active
-  compressor    — fridge: ON 22/90 steps (24%), OFF at 0.06× (fan only)
-  thermostat    — water heater/AC: cycles to maintain setpoint, stable phase
-  wifi_traffic  — router: 90% idle (0.5×), 10% burst (3×) random
-  display_sleep — HMI: 22:00-06:00 at 0.08×, rest at 1.0×
-  motion_sensor — camera: 80% at 0.15×, 20% at 1.0× (motion detected)
-  network_load  — Starlink: base 0.4×, idle/burst based on time of day
-  dimmer        — lights: fade in/out with brightness variation
-  wash_cycle    — washer: variable load through wash/rinse/spin phases
+-------------------------------------------------
+  constant      - uniform draw when active
+  compressor    - fridge: ON 22/90 steps (24%), OFF at 0.06x (fan only)
+  thermostat    - water heater/AC: cycles to maintain setpoint, stable phase
+  wifi_traffic  - router: 90% idle (0.5x), 10% burst (3x) random
+  display_sleep - HMI: 22:00-06:00 at 0.08x, rest at 1.0x
+  motion_sensor - camera: 80% at 0.15x, 20% at 1.0x (motion detected)
+  network_load  - Starlink: base 0.4x, idle/burst based on time of day
+  dimmer        - lights: fade in/out with brightness variation
+  wash_cycle    - washer: variable load through wash/rinse/spin phases
 
 SOLAR MODEL (sunrise-to-sunset sine arch)
-─────────────────────────────────────────
-  irr(h) = sin(π × (h − sunrise) / (sunset − sunrise))
-  daily_kwh = panel_kw × weather_factor × numerical_integral(irr)
+-----------------------------------------
+  irr(h) = sin(pi x (h - sunrise) / (sunset - sunrise))
+  daily_kwh = panel_kw x weather_factor x numerical_integral(irr)
+"""
 
 from __future__ import annotations
 import math, random, time as _time
 from datetime import datetime, date, timedelta
 from typing import Any
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # CONSTANTS
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 STEPS   = 2880          # 30-second steps per 24h
 DT_H    = 30 / 3600     # hours per step
 WEATHER_FACTOR = {"sunny": 1.00, "partly": 0.60, "overcast": 0.25, "rainy": 0.05}
-RESERVE_LOW  = 0.10     # 10% — hard floor (battery protection)
-RESERVE_HIGH = 0.20     # 20% — soft reserve warning threshold
+RESERVE_LOW  = 0.10     # 10% - hard floor (battery protection)
+RESERVE_HIGH = 0.20     # 20% - soft reserve warning threshold
 
 # Patterns that internally model their own duty cycle; dc must NOT be
 # applied as an additional multiplier for these (FIX #7).
@@ -48,9 +49,9 @@ _SELF_CYCLING_PATTERNS = frozenset({
 })
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # HELPERS
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 def hhmm_to_h(hhmm: str) -> float:
     """'06:30' -> 6.5"""
     h, m = map(int, hhmm.split(":"))
@@ -63,12 +64,12 @@ def solar_irr(h: float, sunrise_h: float, sunset_h: float) -> float:
     return math.sin(math.pi * (h - sunrise_h) / span)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # PER-STEP CYCLE PATTERN FUNCTIONS
-# Returns a multiplier 0.0 – N that scales the rated power
-# ─────────────────────────────────────────────────────────────────────────────
+# Returns a multiplier 0.0 - N that scales the rated power
+# -----------------------------------------------------------------------------
 def _pattern_compressor(step: int, rng: random.Random) -> float:
-    """Fridge compressor: ON 22/90 steps (~24%), then fan-only 0.06×"""
+    """Fridge compressor: ON 22/90 steps (~24%), then fan-only 0.06x"""
     phase = step % 90
     if phase < 22:
         return 3.5 + rng.uniform(-0.2, 0.2)  # startup spike included
@@ -76,7 +77,7 @@ def _pattern_compressor(step: int, rng: random.Random) -> float:
 
 def _pattern_thermostat(step: int, rng: random.Random) -> float:
     """Water heater / AC: stable 120-step thermostat cycle (50 ON, 70 OFF).
-    FIX #10: deterministic phase from step — no per-step randint() jitter
+    FIX #10: deterministic phase from step - no per-step randint() jitter
     that previously caused erratic flicker instead of smooth cycling.
     """
     phase = step % 120
@@ -149,9 +150,9 @@ def _cycle_multiplier(
     return max(0.0, fn(step, app_step, rng))
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # SCHEDULE EVALUATION
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 def is_in_schedule(
     h: float, schedules: list[dict], day_of_week: int = 0
 ) -> tuple[bool, float]:
@@ -175,9 +176,9 @@ def is_in_schedule(
     return False, 0.0
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # MAIN SIMULATION
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 def run_day_simulation(
     appliances: list[dict],
     schedules_by_id: dict[int, list[dict]],
@@ -193,7 +194,7 @@ def run_day_simulation(
     Returns per-step timeseries + daily aggregates.
     Each step includes V, A, W for every appliance.
 
-    start_soc is a fraction of raw battery_cap_kwh (0.0–1.0).
+    start_soc is a fraction of raw battery_cap_kwh (0.0-1.0).
     The result includes end_soc_raw using the same convention so multi-day
     runs can chain days without bat_tf energy inflation (FIX #3).
     """
@@ -207,8 +208,8 @@ def run_day_simulation(
     cloud_pct = float(day_config.get("cloud_pct", 10.0))  # kept for display
     day_idx   = int(day_config.get("day_index", 0))
 
-    # FIX #1 + #2: use wx_factor alone — it already encodes cloud/condition.
-    # The old code multiplied wx_factor × irr_factor(cloud_pct), double-
+    # FIX #1 + #2: use wx_factor alone - it already encodes cloud/condition.
+    # The old code multiplied wx_factor x irr_factor(cloud_pct), double-
     # penalising clouds and pushing clear-sky irr_factor above 1.0 (+0.05).
     total_irr_f = WEATHER_FACTOR.get(cond, 1.0)
 
@@ -225,7 +226,7 @@ def run_day_simulation(
     kwh = min(start_soc * battery_cap_kwh, max_kwh)
 
     # FIX #9: use the numerically integrated irradiance curve as normaliser
-    # instead of the hardcoded 0.6 approximation (≈2/π ≈ 0.637, not 0.6).
+    # instead of the hardcoded 0.6 approximation (~2/pi ~ 0.637, not 0.6).
     cs = sum(solar_irr(s * DT_H, sunrise_h, sunset_h) for s in range(STEPS)) * DT_H
     daily_sol_kwh = panel_kwp * cs * total_irr_f
 
@@ -239,20 +240,20 @@ def run_day_simulation(
     app_sched_step: dict[int, int] = {a["id"]: 0 for a in appliances}
     reserve_hit = False
 
-    # FIX #12: symmetric noise ceiling — instantaneous solar cannot exceed
-    # the per-step peak (daily budget / cs × 1.0 at solar noon).
+    # FIX #12: symmetric noise ceiling - instantaneous solar cannot exceed
+    # the per-step peak (daily budget / cs x 1.0 at solar noon).
     sol_kw_ceil = (daily_sol_kwh / cs) if cs > 0 else 0.0
 
     for s in range(STEPS):
         h = s * DT_H
 
-        # ── Solar this step ──────────────────────────────────────────────
+        # -- Solar this step ----------------------------------------------
         irr    = solar_irr(h, sunrise_h, sunset_h)
         sol_kw = (daily_sol_kwh * irr / cs) if cs > 0 else 0.0
         # FIX #12: clip symmetrically so positive noise cannot exceed the peak
         sol_kw = max(0.0, min(sol_kw_ceil, sol_kw + rng.gauss(0, sol_kw * 0.05)))
 
-        # ── Appliance loads this step ────────────────────────────────────
+        # -- Appliance loads this step ------------------------------------
         step_apps: dict[int, dict] = {}
         total_kw  = 0.0
         dow = day_idx % 7
@@ -290,7 +291,7 @@ def run_day_simulation(
             raw_mult = _cycle_multiplier(pattern, s, app_s, rng)
 
             # FIX #7: self-cycling patterns already encode their duty ratio
-            # internally — multiplying by dc again double-penalises them.
+            # internally - multiplying by dc again double-penalises them.
             # Only apply dc for "constant" pattern appliances.
             if pattern in _SELF_CYCLING_PATTERNS:
                 mult = raw_mult * frac
@@ -313,7 +314,7 @@ def run_day_simulation(
             total_kw += inst_w / 1000.0
             app_energy[aid] = app_energy.get(aid, 0.0) + inst_w / 1000.0 * DT_H
 
-        # ── Battery update ───────────────────────────────────────────────
+        # -- Battery update -----------------------------------------------
         net_kw  = sol_kw - total_kw
         kwh_new = kwh + net_kw * DT_H
         kwh_new = min(max_kwh, kwh_new)   # cap at usable max
@@ -345,7 +346,7 @@ def run_day_simulation(
                 "appliances":  {str(k): v for k, v in step_apps.items()},
             })
 
-    # ── Hourly aggregates ────────────────────────────────────────────────────
+    # -- Hourly aggregates ----------------------------------------------------
     def h24(arr: list) -> list:
         return [round(sum(arr[h * 120:(h + 1) * 120]) / 120, 3) for h in range(24)]
 
@@ -433,6 +434,6 @@ def run_multi_day(
             seed=day_cfg.get("day_index", 0) * 1337,
         )
         results.append(r)
-        # end_soc_raw is fraction of raw cap — safe across varying bat_tf
+        # end_soc_raw is fraction of raw cap - safe across varying bat_tf
         soc = r["end_soc_raw"]
     return results
