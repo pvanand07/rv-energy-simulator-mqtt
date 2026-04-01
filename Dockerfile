@@ -9,6 +9,6 @@ COPY . .
 
 RUN mkdir -p /app/data
 
-EXPOSE 5001 5002 1883
+EXPOSE 5001
 
 CMD ["python", "simulator.py"]

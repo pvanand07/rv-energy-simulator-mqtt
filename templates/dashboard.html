@@ -544,7 +544,7 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
       <div class="empty-ico">📡</div>
       <div class="empty-title">Waiting for MQTT data</div>
       <div class="empty-desc">
-        Start the Simulator at <a class="empty-link" href="{{ simulator_url }}" target="_blank">Simulator</a>
+        Start the Simulator at <a class="empty-link" href="/sim">Simulator</a>
         and click <strong>▶ Start Live Sim</strong>.<br>
         Data streams here in real time over MQTT.
       </div>
@@ -817,7 +817,7 @@ const MAX = 1440;
 const COLORS = ['#FF9F0A','#0A84FF','#30D158','#FF453A','#BF5AF2','#5AC8F5','#FFD60A','#FF6B6B','#AC8E68','#30D158'];
 const GRADES = {S:'Exceptional',A:'Excellent',B:'Good',C:'Fair',D:'Poor',F:'Critical'};
 
-let sse=null, simSSE=null, hasData=false;
+let sse=null, hasData=false;
 let chartRefs={}, appCRefs={}, appMode={};
 let socBuf=[], pwBuf=[], siBuf=[];
 let TW={soc:'all',pw:'all',si:'all',hsoc:'all',hpw:'all'}, globalTW='all';
@@ -854,28 +854,6 @@ function connectSSE(){
   sse.onopen=()=>setConn(true);
   sse.onmessage=e=>{try{dispatch(JSON.parse(e.data));}catch(ex){}};
   sse.onerror=()=>{setConn(false);setTimeout(connectSSE,3000);};
-
-  // Also connect directly to simulator's live stream so SOC updates
-  // appear in the dashboard without relying solely on MQTT.
-  connectSimProxy();
-}
-
-function connectSimProxy(){
-  if(simSSE) simSSE.close();
-  simSSE = new EventSource('/api/sim-stream-proxy');
-  simSSE.onmessage = e => {
-    try {
-      const d = JSON.parse(e.data);
-      // Proxy delivers pre-formatted battery/solar/appliance events
-      if(d.type === 'battery' || d.type === 'solar' || d.type === 'appliance' || d.type === 'registry') {
-        dispatch(d);
-      }
-    } catch(ex){}
-  };
-  simSSE.onerror = () => {
-    // Simulator may not be running — retry quietly
-    setTimeout(connectSimProxy, 5000);
-  };
 }
 function setConn(on){
   G('cdot').className='dot '+(on?'live':'off');
@@ -1032,7 +1010,7 @@ function renderGrid(){
     grid.innerHTML=`<div class="card"><div class="empty-state">
       <div class="empty-ico">📡</div>
       <div class="empty-title">No appliance data</div>
-      <div class="empty-desc">Start the simulator at <a class="empty-link" href="{{ simulator_url }}" target="_blank">Simulator</a> and click ▶ Start Live Sim</div>
+      <div class="empty-desc">Start the simulator at <a class="empty-link" href="/sim">Simulator</a> and click ▶ Start Live Sim</div>
     </div></div>`;return;
   }
   aids.forEach((aid,i)=>{
@@ -1562,7 +1540,7 @@ setInterval(()=>{
 
 document.addEventListener('DOMContentLoaded',()=>{
   drawGauge(0,'F');connectSSE();
-  fetch('{{ simulator_url }}/api/appliances').then(r=>r.ok?r.json():[]).then(apps=>{
+  fetch('/api/appliances').then(r=>r.ok?r.json():[]).then(apps=>{
     apps.forEach(a=>{
       const aid=String(a.id);
       if(!appState[aid])appState[aid]={meta:{},vBuf:[],aBuf:[],wBuf:[],latest:null};

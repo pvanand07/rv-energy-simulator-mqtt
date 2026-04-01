@@ -1,81 +1,21 @@
 """
 app/mqtt_service.py
 ─────────────────────────────────────────────────────────────────────────────
-MQTT service — broker, publisher, and subscriber in one module.
+MQTT publisher used by the simulator live loop.
 
-  • Embedded MQTT broker via amqtt (port 1883, no external mosquitto needed)
-  • Publisher: streams live simulation data on configurable topics
-  • Subscriber: receives data and forwards to Dashboard via asyncio.Queue
-
-MQTT Topic Structure:
-  {base_topic}/appliances/{id}     → per-appliance V, A, W, status
-  {base_topic}/battery             → SOC %, kWh, voltage, reserve status
-  {base_topic}/solar               → kW generation, irradiance factor
-  {base_topic}/weather             → condition, temp, cloud%, sunrise/sunset
-  {base_topic}/summary             → stability score, total load, total solar
-  {base_topic}/control             → inbound commands (start/stop/reset)
+This module intentionally only contains publish-side behavior. Broker and
+subscriber concerns were removed to keep architecture simple and explicit.
 """
 from __future__ import annotations
-import asyncio, json, logging, time
+import json
+import logging
 from datetime import datetime
-from typing import Any, Callable
 
 import paho.mqtt.client as paho
 
 logger = logging.getLogger("rv.mqtt")
 
-# ─── Global subscriber queue for dashboard ───────────────────────────────────
-_dashboard_queues: list[asyncio.Queue] = []
-_broker_task: asyncio.Task | None = None
-_sim_task: asyncio.Task | None = None
-_is_publishing = False
 
-def add_dashboard_queue(q: asyncio.Queue):
-    _dashboard_queues.append(q)
-
-def remove_dashboard_queue(q: asyncio.Queue):
-    try: _dashboard_queues.remove(q)
-    except ValueError: pass
-
-async def _broadcast(msg: dict):
-    """Push a received MQTT message to all connected dashboard SSE clients."""
-    for q in _dashboard_queues:
-        try:
-            q.put_nowait(msg)
-        except asyncio.QueueFull:
-            pass
-
-
-# ─── MQTT Broker (amqtt) ──────────────────────────────────────────────────────
-async def start_broker(host: str = "localhost", port: int = 1883):
-    """Launch embedded MQTT broker. Safe to call multiple times."""
-    global _broker_task
-    if _broker_task and not _broker_task.done():
-        return  # already running
-    try:
-        from amqtt.broker import Broker
-        cfg = {
-            "listeners": {"default": {"type": "tcp", "bind": f"0.0.0.0:{port}"}},
-            "sys_interval": 10,
-            "auth": {"allow-anonymous": True},
-            "topic-check": {"enabled": False},
-        }
-        broker = Broker(cfg)
-        await broker.start()
-        logger.info("MQTT broker started on %s:%d", host, port)
-        _broker_task = asyncio.ensure_future(_keep_broker_alive(broker))
-    except Exception as e:
-        logger.warning("Could not start embedded MQTT broker: %s. Use external mosquitto.", e)
-
-async def _keep_broker_alive(broker):
-    try:
-        while True:
-            await asyncio.sleep(60)
-    except asyncio.CancelledError:
-        await broker.shutdown()
-
-
-# ─── MQTT Publisher (paho synchronous, run in thread) ────────────────────────
 class SimPublisher:
     """Wraps paho client. Call .connect(), then publish()."""
 
@@ -201,56 +141,3 @@ class SimPublisher:
             })
 
 
-# ─── MQTT Subscriber (paho) — feeds dashboard queue ──────────────────────────
-_sub_client: paho.Client | None = None
-
-def start_subscriber(settings: dict, loop: asyncio.AbstractEventLoop):
-    """Connect a paho subscriber that forwards messages to _broadcast."""
-    global _sub_client
-    if _sub_client:
-        try:
-            _sub_client.disconnect()
-        except Exception:
-            pass
-
-    base = settings.get("base_topic", "rv/energy").rstrip("/")
-    host = settings.get("broker_host", "localhost")
-    port = settings.get("broker_port", 1883)
-
-    client = paho.Client(client_id="rv_dashboard_sub")
-    user = settings.get("username", "")
-    if user:
-        client.username_pw_set(user, settings.get("password", ""))
-
-    def on_message(c, ud, msg):
-        try:
-            payload = json.loads(msg.payload.decode())
-            payload["_topic"] = msg.topic
-            payload["_received"] = datetime.utcnow().isoformat()
-            asyncio.run_coroutine_threadsafe(_broadcast(payload), loop)
-        except Exception:
-            pass
-
-    def on_connect(c, ud, flags, rc):
-        c.subscribe(f"{base}/#", qos=0)
-        logger.info("Dashboard subscriber connected, listening on %s/#", base)
-
-    client.on_message  = on_message
-    client.on_connect  = on_connect
-    try:
-        client.connect(host, port, keepalive=30)
-        client.loop_start()
-        _sub_client = client
-        logger.info("Dashboard subscriber started")
-    except Exception as e:
-        logger.warning("Dashboard subscriber connect failed: %s", e)
-
-def stop_subscriber():
-    global _sub_client
-    if _sub_client:
-        try:
-            _sub_client.loop_stop()
-            _sub_client.disconnect()
-        except Exception:
-            pass
-        _sub_client = None
