@@ -52,7 +52,7 @@ _SELF_CYCLING_PATTERNS = frozenset({
 # HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
 def hhmm_to_h(hhmm: str) -> float:
-    """'06:30' → 6.5"""
+    """'06:30' -> 6.5"""
     h, m = map(int, hhmm.split(":"))
     return h + m / 60.0
 
