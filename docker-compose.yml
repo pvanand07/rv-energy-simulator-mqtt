@@ -3,8 +3,8 @@ services:
     build: .
     command: python simulator.py
     ports:
-      - "${SIMULATOR_PORT}:5001"   # Configurator UI
-      - "${MQTT_PORT}:1883"        # Embedded MQTT broker
+      - "${SIMULATOR_PORT:-5001}:5001"   # Configurator UI
+      - "${MQTT_PORT:-1883}:1883"        # Embedded MQTT broker
     volumes:
       - sim-data:/app/data
     restart: unless-stopped
@@ -19,7 +19,7 @@ services:
     build: .
     command: python broker_dashboard.py
     ports:
-      - "${DASHBOARD_PORT}:5002"   # Real-time dashboard UI
+      - "${DASHBOARD_PORT:-5002}:5002"   # Real-time dashboard UI
     environment:
       - MQTT_HOST=simulator
       - MQTT_PORT=1883
@@ -32,7 +32,7 @@ services:
   dbgate:
     image: dbgate/dbgate
     ports:
-      - "${DBGATE_PORT}:3000"
+      - "${DBGATE_PORT:-3000}:3000"
     volumes:
       - sim-data:/app/data
       - dbgate-data:/root/.dbgate
