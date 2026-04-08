@@ -203,50 +203,89 @@ class SimPublisher:
 
 # ─── MQTT Subscriber (paho) — feeds dashboard queue ──────────────────────────
 _sub_client: paho.Client | None = None
+_sub_settings: dict = {}
+_sub_loop: asyncio.AbstractEventLoop | None = None
+_sub_retry_task: asyncio.Task | None = None
 
 def start_subscriber(settings: dict, loop: asyncio.AbstractEventLoop):
-    """Connect a paho subscriber that forwards messages to _broadcast."""
-    global _sub_client
+    """Build a paho subscriber and launch an async retry loop until connected."""
+    global _sub_client, _sub_settings, _sub_loop, _sub_retry_task
+    _sub_settings = settings
+    _sub_loop     = loop
+
     if _sub_client:
         try:
+            _sub_client.loop_stop()
             _sub_client.disconnect()
         except Exception:
             pass
+        _sub_client = None
 
     base = settings.get("base_topic", "rv/energy").rstrip("/")
     host = settings.get("broker_host", "localhost")
-    port = settings.get("broker_port", 1883)
-
-    client = paho.Client(client_id="rv_dashboard_sub")
+    port = int(settings.get("broker_port", 1883))
     user = settings.get("username", "")
+
+    client = paho.Client(client_id="rv_dashboard_sub", clean_session=True)
     if user:
         client.username_pw_set(user, settings.get("password", ""))
 
     def on_message(c, ud, msg):
         try:
             payload = json.loads(msg.payload.decode())
-            payload["_topic"] = msg.topic
+            payload["_topic"]    = msg.topic
             payload["_received"] = datetime.utcnow().isoformat()
             asyncio.run_coroutine_threadsafe(_broadcast(payload), loop)
         except Exception:
             pass
 
     def on_connect(c, ud, flags, rc):
-        c.subscribe(f"{base}/#", qos=0)
-        logger.info("Dashboard subscriber connected, listening on %s/#", base)
+        if rc == 0:
+            c.subscribe(f"{base}/#", qos=0)
+            logger.info("MQTT subscriber connected → %s:%d, listening on %s/#", host, port, base)
+        else:
+            logger.warning("MQTT subscriber connect refused (rc=%d)", rc)
 
-    client.on_message  = on_message
-    client.on_connect  = on_connect
-    try:
-        client.connect(host, port, keepalive=30)
-        client.loop_start()
-        _sub_client = client
-        logger.info("Dashboard subscriber started")
-    except Exception as e:
-        logger.warning("Dashboard subscriber connect failed: %s", e)
+    def on_disconnect(c, ud, rc):
+        if rc != 0:
+            logger.warning("MQTT subscriber disconnected (rc=%d) — paho will retry", rc)
+
+    client.on_message    = on_message
+    client.on_connect    = on_connect
+    client.on_disconnect = on_disconnect
+    # Exponential back-off: 1 s min, 30 s max between reconnect attempts
+    client.reconnect_delay_set(min_delay=1, max_delay=30)
+
+    _sub_client = client
+
+    # Kick off an async retry loop so startup-timing failures self-heal
+    if _sub_retry_task and not _sub_retry_task.done():
+        _sub_retry_task.cancel()
+    _sub_retry_task = asyncio.run_coroutine_threadsafe(
+        _subscriber_connect_loop(client, host, port), loop
+    )
+
+async def _subscriber_connect_loop(client: paho.Client, host: str, port: int):
+    """Retry initial connect every 3 s until the broker accepts the connection."""
+    delay = 3
+    for attempt in range(20):  # give up after ~1 min
+        try:
+            client.connect(host, port, keepalive=30)
+            client.loop_start()
+            logger.info("MQTT subscriber started (attempt %d)", attempt + 1)
+            return
+        except Exception as e:
+            logger.warning("MQTT subscriber connect failed (attempt %d): %s — retrying in %ds",
+                           attempt + 1, e, delay)
+            await asyncio.sleep(delay)
+            delay = min(delay * 1.5, 30)
+    logger.error("MQTT subscriber gave up connecting after repeated failures")
 
 def stop_subscriber():
-    global _sub_client
+    global _sub_client, _sub_retry_task
+    if _sub_retry_task and not _sub_retry_task.done():
+        _sub_retry_task.cancel()
+        _sub_retry_task = None
     if _sub_client:
         try:
             _sub_client.loop_stop()

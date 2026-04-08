@@ -8,6 +8,12 @@ services:
     volumes:
       - sim-data:/app/data
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import socket; s=socket.create_connection(('localhost',1883),2); s.close()\""]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
 
   dashboard:
     build: .
@@ -17,8 +23,10 @@ services:
     environment:
       - MQTT_HOST=simulator
       - MQTT_PORT=1883
+      - SIMULATOR_HOST=simulator
     depends_on:
-      - simulator
+      simulator:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:

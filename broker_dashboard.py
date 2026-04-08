@@ -48,7 +48,7 @@ latest: dict = {
     "last_update": "—", "connected": False,
 }
 
-SIMULATOR_URL = "http://localhost:5001"
+SIMULATOR_URL = f"http://{os.environ.get('SIMULATOR_HOST', 'localhost')}:5001"
 
 # ── Stability Score ───────────────────────────────────────────────────────────
 def _compute_si(soc_pct: float, solar_kw: float, load_kw: float, net_kw: float) -> dict:
@@ -377,7 +377,7 @@ async def sim_stream_proxy():
         yield f"data: {json.dumps({'type':'proxy_connected'})}\n\n"
         try:
             async with httpx.AsyncClient(timeout=None) as client:
-                async with client.stream("GET", "http://localhost:5001/api/simulate/live/stream") as resp:
+                async with client.stream("GET", f"{SIMULATOR_URL}/api/simulate/live/stream") as resp:
                     async for line in resp.aiter_lines():
                         if line.startswith("data: "):
                             payload = line[6:]

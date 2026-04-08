@@ -51,12 +51,14 @@ _sse_queues: list[asyncio.Queue] = []
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_sim_db()
+    await start_broker()
+    # Small yield so the broker's TCP listener is bound before subscriber connects
+    await asyncio.sleep(0.5)
     async with get_sim_db() as db:
         row = await (await db.execute("SELECT * FROM mqtt_settings WHERE id=1")).fetchone()
         if row:
             loop = asyncio.get_event_loop()
             start_subscriber(dict(row), loop)
-    await start_broker()
     logger.info("RV Simulator ready — http://localhost:5001")
     yield
     if _sim_state["task"] and not _sim_state["task"].done():
