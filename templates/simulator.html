@@ -5,9 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>RV Energy Simulator — ACFuture</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
 <style>
-[v-cloak]{display:none!important}
 /* ══════════════════════════════════════════════════════════════
    ELEVATICS AI — RV ENERGY SIMULATOR
    iPad / HMI Design System
@@ -39,6 +37,68 @@
   --text-xs:13px; --text-sm:15px; --text-base:18px; --text-lg:22px;
   --text-xl:28px; --text-2xl:36px; --text-3xl:48px; --text-hero:72px;
 }
+/* ── LIGHT MODE OVERRIDES ──────────────────────────────────── */
+html.light{
+  --bg:#f2f2f7;--bg2:#ffffff;--bg3:#ffffff;--bg4:#e5e5ea;--bg5:#d1d1d6;
+  --l1:#1c1c1e;--l2:rgba(28,28,30,.75);--l3:rgba(28,28,30,.48);
+  --l4:rgba(28,28,30,.22);--l5:rgba(28,28,30,.08);
+  --sep:rgba(60,60,67,.22);
+  --glass:rgba(255,255,255,.90);--gb:rgba(0,0,0,.07);--gh:rgba(0,0,0,.12);
+  --sh:0 2px 24px rgba(0,0,0,.12),0 1px 0 rgba(255,255,255,.9) inset;
+}
+html.light body::before{background:radial-gradient(ellipse 100% 40% at 50% 0%,rgba(10,84,255,.06) 0%,transparent 65%);}
+html.light nav{background:rgba(242,242,247,.94);}
+html.light .sb{background:rgba(242,242,247,.98);}
+
+/* ── THEME TOGGLE BUTTON ───────────────────────────────────── */
+.theme-btn{
+  width:44px;height:44px;border-radius:50%;border:1.5px solid var(--sep);
+  background:var(--glass);color:var(--l1);cursor:pointer;
+  font-size:20px;display:flex;align-items:center;justify-content:center;
+  transition:all .2s;flex-shrink:0;
+}
+.theme-btn:hover{background:var(--gh);}
+
+/* ── COST INPUT (energy cost per kWh) ─────────────────────── */
+.cost-bar{
+  display:flex;align-items:center;gap:12px;padding:12px 20px;
+  background:rgba(48,209,88,.07);border-bottom:1px solid rgba(48,209,88,.15);
+  font-size:var(--text-sm);
+}
+.cost-bar label{color:var(--l3);font-weight:500;white-space:nowrap}
+.cost-input{
+  width:100px;padding:6px 10px;background:rgba(255,255,255,.08);
+  border:1.5px solid rgba(255,255,255,.15);border-radius:10px;
+  color:var(--l1);font-family:var(--fm);font-size:var(--text-base);font-weight:500;
+  text-align:center;outline:none;
+}
+html.light .cost-input{background:rgba(0,0,0,.05);border-color:rgba(0,0,0,.15);}
+.cost-input:focus{border-color:var(--green);}
+.cost-summary{
+  margin-left:auto;display:flex;gap:20px;align-items:center;
+}
+.cost-chip{
+  display:flex;align-items:baseline;gap:6px;
+}
+.cost-chip-val{font-family:var(--fm);font-size:var(--text-lg);font-weight:500;color:var(--green)}
+.cost-chip-lbl{font-size:var(--text-sm);color:var(--l3);font-weight:500}
+
+
+/* ── LIGHT MODE ─────────────────────────────────────────────── */
+html.light{
+  --bg:#f2f2f7;--bg2:#ffffff;--bg3:#ffffff;--bg4:#e5e5ea;--bg5:#d1d1d6;
+  --l1:#1c1c1e;--l2:rgba(28,28,30,.75);--l3:rgba(28,28,30,.50);
+  --l4:rgba(28,28,30,.22);--l5:rgba(28,28,30,.08);
+  --sep:rgba(60,60,67,.22);
+  --glass:rgba(255,255,255,.90);--gb:rgba(0,0,0,.07);--gh:rgba(0,0,0,.11);
+  --sh:0 2px 20px rgba(0,0,0,.10),0 1px 0 rgba(255,255,255,.9) inset;
+}
+html.light body::before{background:radial-gradient(ellipse 100% 40% at 50% 0%,rgba(10,84,255,.05) 0%,transparent 65%);}
+html.light nav{background:rgba(242,242,247,.96)!important;}
+html.light .sb{background:rgba(242,242,247,.99)!important;}
+html.light .ntabs{background:rgba(0,0,0,.07);}
+html.light .ntab.active{background:rgba(0,0,0,.12);color:var(--l1);}
+
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 html{
   background:var(--bg);color:var(--l1);
@@ -500,234 +560,101 @@ input[type=range]::-webkit-slider-thumb{
   .comp-row{grid-template-columns:1fr 1fr}
 }
 </style>
-
-<!-- ═══ FRONTEND STUDIO — Enhancement Layer ═══ -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<style>
-/* ── Font override: Outfit for crisp cross-platform rendering ── */
-:root {
-  --f: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  --fd: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-}
-
-/* ── Dynamic aurora background ─────────────────────────────── */
-@keyframes aurora {
-  0%   { opacity: .80; transform: scale(1)    translateX(0); }
-  100% { opacity: 1;   transform: scale(1.04) translateX(-1.5%); }
-}
-body::before {
-  background:
-    radial-gradient(ellipse 130% 55% at 15% -5%,  rgba(10,84,255,.14)  0%, transparent 58%),
-    radial-gradient(ellipse  70% 45% at 85% 110%, rgba(48,209,88,.07)  0%, transparent 52%),
-    radial-gradient(ellipse  55% 35% at 55%  55%, rgba(191,90,242,.05) 0%, transparent 55%) !important;
-  animation: aurora 14s ease-in-out infinite alternate;
-}
-
-/* ── Card entrance ─────────────────────────────────────────── */
-@keyframes cardIn {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* ── Enhanced glassmorphism surfaces ───────────────────────── */
-.card, .app-card, .ls-card, .prof-card {
-  background: rgba(18,18,24,.90) !important;
-  border: 1px solid rgba(255,255,255,.10) !important;
-  box-shadow:
-    0 4px 56px rgba(0,0,0,.72),
-    0 1px 0 rgba(255,255,255,.07) inset,
-    0 -1px 0 rgba(0,0,0,.28) inset !important;
-  transition: border-color .22s ease, box-shadow .22s ease, transform .22s ease !important;
-}
-.card:hover, .app-card:hover, .prof-card:hover {
-  border-color: rgba(255,255,255,.17) !important;
-  box-shadow:
-    0 10px 80px rgba(0,0,0,.80),
-    0 1px 0 rgba(255,255,255,.09) inset,
-    0 -1px 0 rgba(0,0,0,.32) inset !important;
-  transform: translateY(-2px);
-}
-
-/* ── Live strip cards ──────────────────────────────────────── */
-.ls-card {
-  transition: border-color .22s ease, box-shadow .22s ease, transform .22s ease !important;
-}
-.ls-card:hover {
-  border-color: rgba(255,255,255,.16) !important;
-  transform: translateY(-1px);
-}
-
-/* ── Page fade-in on tab switch ────────────────────────────── */
-.page.active { animation: cardIn .32s cubic-bezier(0.16,1,0.3,1) both; }
-
-/* ── Button micro-interactions ─────────────────────────────── */
-button {
-  transition: opacity .15s, background .15s, transform .12s cubic-bezier(0.34,1.56,0.64,1), border-color .15s !important;
-}
-button:not(:disabled):active { transform: scale(0.965) !important; }
-
-/* ── Status dot with ripple ────────────────────────────────── */
-.dot.live {
-  box-shadow: 0 0 0 0 rgba(48,209,88,.5);
-  animation: livePulse 2.2s cubic-bezier(.455,.03,.515,.955) infinite !important;
-}
-@keyframes livePulse {
-  0%   { transform: scale(1);   box-shadow: 0 0 0 0   rgba(48,209,88,.55); }
-  60%  { transform: scale(1.3); box-shadow: 0 0 0 8px rgba(48,209,88,0); }
-  100% { transform: scale(1);   box-shadow: 0 0 0 0   rgba(48,209,88,0); }
-}
-
-/* ── Live badge pulse ──────────────────────────────────────── */
-.sbadge.live {
-  animation: badgePulse 3s ease-in-out infinite;
-}
-@keyframes badgePulse {
-  0%,100% { box-shadow: 0 0 0 0   rgba(48,209,88,.30); }
-  50%      { box-shadow: 0 0 0 6px rgba(48,209,88,0); }
-}
-
-/* ── Nav active tab indicator ──────────────────────────────── */
-.ntab { position: relative; overflow: hidden; }
-.ntab::after {
-  content: '';
-  position: absolute;
-  bottom: 5px; left: 50%;
-  transform: translateX(-50%) scaleX(0);
-  width: 55%; height: 2px;
-  border-radius: 2px;
-  background: var(--blue);
-  transition: transform .28s cubic-bezier(0.34,1.56,0.64,1);
-}
-.ntab.active::after { transform: translateX(-50%) scaleX(1); }
-
-/* ── Value flash on live data update ───────────────────────── */
-@keyframes valFlash {
-  0%   { opacity: 1; }
-  28%  { opacity: .38; }
-  100% { opacity: 1; }
-}
-.val-flash { animation: valFlash .42s cubic-bezier(0.16,1,0.3,1); }
-
-/* ── Live strip value ──────────────────────────────────────── */
-.ls-val {
-  font-family: var(--fm);
-  font-size: var(--text-2xl);
-  font-weight: 700;
-  line-height: 1;
-  margin-bottom: 10px;
-  letter-spacing: -1px;
-  transition: color .3s;
-}
-.ls-lbl {
-  font-size: var(--text-xs);
-  color: var(--l3);
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  font-weight: 600;
-}
-
-/* ── Fill bar glow ─────────────────────────────────────────── */
-.pfill { filter: drop-shadow(0 0 5px currentColor); }
-
-/* ── Weather day card entrance ─────────────────────────────── */
-.day-card {
-  transition: border-color .18s ease, background .18s ease, transform .18s ease !important;
-}
-.day-card:hover { transform: translateY(-2px) !important; }
-
-/* ── Styled scrollbars ─────────────────────────────────────── */
-::-webkit-scrollbar          { width: 5px; height: 5px; }
-::-webkit-scrollbar-track    { background: transparent; }
-::-webkit-scrollbar-thumb    { background: rgba(255,255,255,.11); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.22); }
-
-/* ── Focus rings ───────────────────────────────────────────── */
-button:focus-visible,
-input:focus-visible,
-select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 2px; }
-
-/* ── Reduced motion safety ─────────────────────────────────── */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: .01ms !important;
-    transition-duration: .01ms !important;
-  }
-}
-</style>
 </head>
-<body id="app" v-cloak>
+<body>
 
 <!-- STATUS BAR -->
 <div class="sb">
-  <div class="dot" :class="ui.connected ? 'live' : 'off'"></div>
+  <div class="dot live"></div>
   <span>ACFuture · RV Energy Simulator</span>
   <div class="vsep"></div>
-  <span id="sim-status">[[ ui.simStatus ]]</span>
+  <span id="sim-status">Idle</span>
   <div class="vsep"></div>
-  <span id="sb-time">[[ ui.clock ]]</span>
+  <span id="sb-time">--:--:--</span>
   <div style="margin-left:auto"></div>
-  <div class="sbadge" :class="simRunning ? 'live' : 'off'" id="live-badge">[[ simRunning ? 'LIVE' : 'OFFLINE' ]]</div>
+  <div class="sbadge off" id="live-badge">OFFLINE</div>
 </div>
 
 <!-- NAV -->
 <nav><div class="ni">
   <div class="brand">
-    <div>
-      <div class="brand-wordmark">ACFuture</div>
-      <div class="brand-sub">RV Energy Simulator</div>
+    <img src="data:image/png;base64,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" alt="AC Future" style="height:36px;width:auto;object-fit:contain;filter:var(--logo-filter,invert(1));transition:filter .3s">
+    <div style="margin-left:12px;border-left:1px solid var(--sep);padding-left:12px">
+      <div class="brand-sub" style="letter-spacing:1.8px">RV ENERGY SIMULATOR</div>
     </div>
   </div>
   <div class="ntabs">
-    <button class="ntab" :class="{active:activeTab==='configure'}" @click="showTab('configure')">Configure</button>
-    <button class="ntab" :class="{active:activeTab==='profiles'}" @click="showTab('profiles')">Profiles</button>
-    <button class="ntab" :class="{active:activeTab==='simulate'}" @click="showTab('simulate')">Simulate</button>
-    <button class="ntab" :class="{active:activeTab==='weather'}" @click="showTab('weather')">Weather</button>
-    <button class="ntab" :class="{active:activeTab==='mqtt'}" @click="showTab('mqtt')">MQTT</button>
+    <button class="ntab active" onclick="showTab('configure',this)">Configure</button>
+    <button class="ntab" onclick="showTab('profiles',this)">Profiles</button>
+    <button class="ntab" onclick="showTab('simulate',this)">Simulate</button>
+    <button class="ntab" onclick="showTab('weather',this)">Weather</button>
+    <button class="ntab" onclick="showTab('mqtt',this)">MQTT</button>
   </div>
   <div class="nr">
-    <button class="btn-live" :class="simRunning ? 'stop' : 'start'" id="live-btn" @click="toggleLive()">[[ simRunning ? '⏹ Stop' : '▶ Start Live Sim' ]]</button>
+    <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle light/dark mode">🌙</button>
+    <button class="btn-live start" id="live-btn" onclick="toggleLive()">▶ Start Live Sim</button>
   </div>
 </div></nav>
+
+<!-- ENERGY COST BAR -->
+<div class="cost-bar" id="cost-bar">
+  <label for="cost-kwh">Energy cost:</label>
+  <input class="cost-input" type="number" id="cost-kwh" value="0.14" min="0.01" max="9.99" step="0.01"
+    oninput="updateCostSummary()">
+  <span style="color:var(--l3);font-size:var(--text-sm)">$ / kWh</span>
+  <div class="cost-summary" id="cost-summary" style="display:none">
+    <div class="cost-chip">
+      <span class="cost-chip-val" id="cost-solar-val">—</span>
+      <span class="cost-chip-lbl">saved by solar</span>
+    </div>
+    <div class="cost-chip">
+      <span class="cost-chip-val" id="cost-load-val">—</span>
+      <span class="cost-chip-lbl">total consumption</span>
+    </div>
+    <div class="cost-chip">
+      <span style="font-family:var(--fm);font-size:var(--text-lg);font-weight:500;color:var(--teal)" id="cost-net-val">—</span>
+      <span class="cost-chip-lbl">net grid cost</span>
+    </div>
+  </div>
+</div>
 
 <main>
 
 <!-- ══ CONFIGURE ═════════════════════════════════════════════ -->
-<div id="tab-configure" class="page" :class="{active:activeTab==='configure'}">
+<div id="tab-configure" class="page active">
   <div class="toolbar">
     <div class="filter-bar">
-      <button class="flt active" @click="filterCards('all',$event.currentTarget)">All Appliances</button>
-      <button class="flt" @click="filterCards('high',$event.currentTarget)">High Power</button>
-      <button class="flt" @click="filterCards('medium',$event.currentTarget)">Medium</button>
-      <button class="flt" @click="filterCards('low',$event.currentTarget)">Low</button>
-      <button class="flt" @click="filterCards('always_on',$event.currentTarget)">Always-On</button>
+      <button class="flt active" onclick="filterCards('all',this)">All Appliances</button>
+      <button class="flt" onclick="filterCards('high',this)">High Power</button>
+      <button class="flt" onclick="filterCards('medium',this)">Medium</button>
+      <button class="flt" onclick="filterCards('low',this)">Low</button>
+      <button class="flt" onclick="filterCards('always_on',this)">Always-On</button>
     </div>
-    <button class="btn-add" @click="addAppliance">+ Add Appliance</button>
+    <button class="btn-add" onclick="addAppliance()">+ Add Appliance</button>
   </div>
-  <div class="cards-grid" id="cards-grid" v-html="cardsHtml"></div>
+  <div class="cards-grid" id="cards-grid"></div>
 </div>
 
 <!-- ══ PROFILES ══════════════════════════════════════════════ -->
-<div id="tab-profiles" class="page" :class="{active:activeTab==='profiles'}">
+<div id="tab-profiles" class="page">
   <div class="profiles-header">
     <div class="profiles-title">
       <div class="t1">RV User Profiles</div>
       <div class="t2">Select, edit, or create a profile to configure your simulation. All parameters are editable inline.</div>
     </div>
-    <button class="btn-new-profile" @click="createNewProfile">+ New Custom Profile</button>
+    <button class="btn-new-profile" onclick="createNewProfile()">+ New Custom Profile</button>
   </div>
-  <div class="profiles-grid" id="profiles-grid" v-html="profilesHtml"></div>
+  <div class="profiles-grid" id="profiles-grid"></div>
 </div>
 
 <!-- ══ SIMULATE ═══════════════════════════════════════════════ -->
-<div id="tab-simulate" class="page" :class="{active:activeTab==='simulate'}">
+<div id="tab-simulate" class="page">
   <div class="live-strip">
-    <div class="ls-card"><div class="ls-val" id="ls-soc" :style="{color:ui.liveSocColor}">[[ ui.liveSoc ]]</div><div class="ls-lbl">SOC %</div></div>
-    <div class="ls-card"><div class="ls-val" id="ls-sol" style="color:var(--orange)">[[ ui.liveSolar ]]</div><div class="ls-lbl">Solar kW</div></div>
-    <div class="ls-card"><div class="ls-val" id="ls-ld" style="color:var(--blue)">[[ ui.liveLoad ]]</div><div class="ls-lbl">Load kW</div></div>
-    <div class="ls-card"><div class="ls-val" id="ls-si" :style="{color:ui.liveSiColor}">[[ ui.liveSi ]]</div><div class="ls-lbl">Stability</div></div>
-    <div class="ls-card"><div class="ls-val" id="ls-day" style="color:var(--l3)">[[ ui.liveDay ]]</div><div class="ls-lbl">Sim Day</div></div>
+    <div class="ls-card"><div class="ls-val" id="ls-soc" style="color:var(--green)">—</div><div class="ls-lbl">SOC %</div></div>
+    <div class="ls-card"><div class="ls-val" id="ls-sol" style="color:var(--orange)">—</div><div class="ls-lbl">Solar kW</div></div>
+    <div class="ls-card"><div class="ls-val" id="ls-ld" style="color:var(--blue)">—</div><div class="ls-lbl">Load kW</div></div>
+    <div class="ls-card"><div class="ls-val" id="ls-si">—</div><div class="ls-lbl">Stability</div></div>
+    <div class="ls-card"><div class="ls-val" id="ls-day" style="color:var(--l3)">—</div><div class="ls-lbl">Sim Day</div></div>
   </div>
 
   <!-- Battery & Solar Configuration — full-width card above charts -->
@@ -744,11 +671,11 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
         <div style="font-size:var(--sm);color:var(--l3);margin-bottom:14px" id="soc-kwh-display">39.2 kWh available</div>
         <input type="range" id="cfg-soc" min="10" max="100" step="1" value="87"
           style="width:100%;height:8px;accent-color:var(--green);cursor:pointer;margin-bottom:10px"
-          @input="onSOCChange($event.target.value)" @change="saveSettings()">
+          oninput="onSOCChange(this.value)" onchange="saveSettings()">
         <div style="display:flex;align-items:center;gap:8px">
           <input type="number" id="cfg-soc-num" value="87" min="10" max="100" step="1"
             style="width:72px;padding:7px 10px;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.12);border-radius:10px;color:var(--l1);font-family:var(--fm);font-size:var(--lg);font-weight:500;text-align:center;outline:none"
-            @input="syncSOCNum($event.target.value)" @change="saveSettings()">
+            oninput="syncSOCNum(this.value)" onchange="saveSettings()">
           <span style="font-size:var(--sm);color:var(--l3)">%</span>
           <div id="soc-status-badge" style="margin-left:auto;padding:4px 12px;border-radius:var(--rp);font-size:var(--sm);font-weight:500;background:rgba(48,209,88,.12);color:var(--green);border:1px solid rgba(48,209,88,.25);white-space:nowrap">Good</div>
         </div>
@@ -763,11 +690,11 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
         </div>
         <input type="range" id="cfg-bat-slider" min="5" max="500" step="5" value="45"
           style="width:100%;height:8px;accent-color:var(--blue);cursor:pointer;margin-bottom:10px"
-          @input="onBatCapChange($event.target.value)" @change="saveSettings()">
+          oninput="onBatCapChange(this.value)" onchange="saveSettings()">
         <div style="display:flex;align-items:center;gap:8px">
           <input type="number" id="cfg-bat" value="45" min="5" max="500" step="5"
             style="width:80px;padding:7px 10px;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.12);border-radius:10px;color:var(--l1);font-family:var(--fm);font-size:var(--lg);font-weight:500;text-align:center;outline:none"
-            @input="syncBatNum($event.target.value)" @change="saveSettings()">
+            oninput="syncBatNum(this.value)" onchange="saveSettings()">
           <span style="font-size:var(--sm);color:var(--l3)">kWh</span>
         </div>
       </div>
@@ -781,11 +708,11 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
         </div>
         <input type="range" id="cfg-reserve-slider" min="5" max="30" step="1" value="10"
           style="width:100%;height:8px;accent-color:var(--red);cursor:pointer;margin-bottom:10px"
-          @input="onReserveChange($event.target.value)" @change="saveSettings()">
+          oninput="onReserveChange(this.value)" onchange="saveSettings()">
         <div style="display:flex;align-items:center;gap:8px">
           <input type="number" id="cfg-reserve" value="10" min="5" max="30" step="1"
             style="width:72px;padding:7px 10px;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,69,58,.25);border-radius:10px;color:var(--l1);font-family:var(--fm);font-size:var(--lg);font-weight:500;text-align:center;outline:none"
-            @input="syncReserveNum($event.target.value)" @change="saveSettings()">
+            oninput="syncReserveNum(this.value)" onchange="saveSettings()">
           <span style="font-size:var(--sm);color:var(--l3)">% hard floor</span>
         </div>
       </div>
@@ -799,11 +726,11 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
         </div>
         <input type="range" id="cfg-panel-slider" min="0.1" max="20" step="0.1" value="0.8"
           style="width:100%;height:8px;accent-color:var(--orange);cursor:pointer;margin-bottom:10px"
-          @input="onPanelChange($event.target.value)" @change="saveSettings()">
+          oninput="onPanelChange(this.value)" onchange="saveSettings()">
         <div style="display:flex;align-items:center;gap:8px">
           <input type="number" id="cfg-panel" value="0.8" min="0.1" max="20" step="0.1"
             style="width:80px;padding:7px 10px;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,159,10,.25);border-radius:10px;color:var(--l1);font-family:var(--fm);font-size:var(--lg);font-weight:500;text-align:center;outline:none"
-            @input="syncPanelNum($event.target.value)" @change="saveSettings()">
+            oninput="syncPanelNum(this.value)" onchange="saveSettings()">
           <span style="font-size:var(--sm);color:var(--l3)">kWp peak</span>
         </div>
       </div>
@@ -832,17 +759,17 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
     <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
       <div style="font-size:var(--sm);color:var(--l3);font-weight:500">Duration</div>
       <div style="display:flex;gap:6px;padding:4px;background:rgba(255,255,255,.07);border-radius:var(--rp)">
-        <button class="dur-btn active" @click="setDuration(1,$event.currentTarget)">1 Day</button>
-        <button class="dur-btn" @click="setDuration(2,$event.currentTarget)">2 Days</button>
-        <button class="dur-btn" @click="setDuration(3,$event.currentTarget)">3 Days</button>
-        <button class="dur-btn" @click="setDuration(4,$event.currentTarget)">4 Days</button>
-        <button class="dur-btn" @click="setDuration(5,$event.currentTarget)">5 Days</button>
-        <button class="dur-btn" @click="setDuration(6,$event.currentTarget)">6 Days</button>
-        <button class="dur-btn" @click="setDuration(7,$event.currentTarget)">7 Days</button>
+        <button class="dur-btn active" onclick="setDuration(1,this)">1 Day</button>
+        <button class="dur-btn" onclick="setDuration(2,this)">2 Days</button>
+        <button class="dur-btn" onclick="setDuration(3,this)">3 Days</button>
+        <button class="dur-btn" onclick="setDuration(4,this)">4 Days</button>
+        <button class="dur-btn" onclick="setDuration(5,this)">5 Days</button>
+        <button class="dur-btn" onclick="setDuration(6,this)">6 Days</button>
+        <button class="dur-btn" onclick="setDuration(7,this)">7 Days</button>
       </div>
       <div style="flex:1"></div>
       <div style="font-size:var(--xs);color:var(--l3)">Auto-saved</div>
-      <button class="btn-run" style="min-width:200px" @click="runSimulation">▶ Run Simulation</button>
+      <button class="btn-run" style="min-width:200px" onclick="runSimulation()">▶ Run Simulation</button>
     </div>
   </div>
 
@@ -874,10 +801,10 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
         <div class="t2">Daily average · Day 1 of simulation · Click appliance for details</div>
       </div>
       <div class="bd-controls">
-        <button class="btn-dl" @click="dlBreakdown">↓ CSV</button>
+        <button class="btn-dl" onclick="dlBreakdown()">↓ CSV</button>
         <div class="view-toggle">
-          <button class="vtb active" @click="setView('bar',$event.currentTarget)">Bar Chart</button>
-          <button class="vtb" @click="setView('table',$event.currentTarget)">Table</button>
+          <button class="vtb active" onclick="setView('bar',this)">Bar Chart</button>
+          <button class="vtb" onclick="setView('table',this)">Table</button>
         </div>
       </div>
     </div>
@@ -897,24 +824,16 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
 </div>
 
 <!-- ══ WEATHER ════════════════════════════════════════════════ -->
-<div id="tab-weather" class="page" :class="{active:activeTab==='weather'}">
+<div id="tab-weather" class="page">
   <div class="card" style="margin-bottom:var(--gap)">
     <div class="section-label">7-Day Weather & Solar Plan</div>
-    <div class="day-grid" id="day-grid">
-      <div class="day-card" :class="{active:editDay===i}" v-for="(d, i) in weatherPlan" :key="i" @click="selectDay(i)">
-        <div class="day-num">Day [[ i+1 ]] · [[ dayNames[i%7] ]]</div>
-        <span class="day-wx-icon">[[ wxIcons[d.condition] || '☀️' ]]</span>
-        <div class="day-cond">[[ d.condition ]]</div>
-        <div class="day-temp">[[ d.temp_c ]]°C</div>
-        <div class="day-times">🌅[[ d.sunrise_hhmm ]] 🌇[[ d.sunset_hhmm ]]</div>
-      </div>
-    </div>
+    <div class="day-grid" id="day-grid"></div>
   </div>
   <div class="card" id="day-editor" style="display:none">
     <div class="section-label">Editing Day <span id="day-edit-num">1</span></div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:var(--gap)">
       <div class="field-group"><div class="field-label">Condition</div>
-        <select class="field-input" id="de-cond" @change="syncCloud()">
+        <select class="field-input" id="de-cond" onchange="syncCloud()">
           <option value="sunny">Sunny (100% solar)</option>
           <option value="partly">Partly Cloudy (60%)</option>
           <option value="overcast">Overcast (25%)</option>
@@ -929,14 +848,14 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
       <div class="field-group"><div class="field-label">Sunset</div>
         <input class="field-input" type="time" id="de-set" value="19:30"></div>
       <div class="field-group" style="display:flex;align-items:flex-end">
-        <button class="btn-run" @click="saveDay" style="background:var(--blue);color:#fff">Save Day</button>
+        <button class="btn-run" onclick="saveDay()" style="background:var(--blue);color:#fff">Save Day</button>
       </div>
     </div>
   </div>
 </div>
 
 <!-- ══ MQTT ═══════════════════════════════════════════════════ -->
-<div id="tab-mqtt" class="page" :class="{active:activeTab==='mqtt'}">
+<div id="tab-mqtt" class="page">
   <div class="mqtt-grid">
     <div class="card">
       <div class="section-label">Broker Connection</div>
@@ -953,7 +872,7 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
           <option value="1" {{ 'selected' if mqtt_cfg.qos==1 else '' }}>1 — At least once</option>
           <option value="2" {{ 'selected' if mqtt_cfg.qos==2 else '' }}>2 — Exactly once</option>
         </select></div>
-      <button class="save-btn" @click="saveMqtt">Save MQTT Settings</button>
+      <button class="save-btn" onclick="saveMqtt()">Save MQTT Settings</button>
     </div>
     <div class="card">
       <div class="section-label">Data to Publish</div>
@@ -974,7 +893,7 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
         </div>
       </div>
       <div style="margin-top:16px;padding:16px;background:rgba(255,159,10,.07);border:1.5px solid rgba(255,159,10,.22);border-radius:var(--r16);font-size:var(--text-base);color:var(--orange);line-height:1.6">
-        Dashboard available at <a href="/" style="color:var(--blue);font-weight:500">Dashboard</a> — receives all live simulation data
+        Dashboard available at <a href="http://localhost:5002" style="color:var(--blue);font-weight:500">localhost:5002</a> — receives all MQTT data above
       </div>
     </div>
   </div>
@@ -996,34 +915,55 @@ const CYCLES = ['constant','compressor','thermostat','wifi_traffic','display_sle
 let APPS=[], PROFILES={{ profiles|tojson }}, curFilter='all', simRunning=false, sse=null;
 let activeProfileName=null, editDay=null, lastBD=null;
 let weatherPlan={{ weather|tojson }};
-let vueApp=null;
 if(!weatherPlan.length) weatherPlan=Array.from({length:7},(_,i)=>({day_index:i,condition:'sunny',temp_c:22,cloud_pct:5,sunrise_hhmm:'06:30',sunset_hhmm:'19:30'}));
 
 // Charts
 let socChart,energyChart,appBarChart;
+function makeBaseChartOpts(){
+  const isLight=document.documentElement.classList.contains('light');
+  const gc=isLight?'rgba(0,0,0,.07)':'rgba(255,255,255,.04)';
+  const tc=isLight?'rgba(0,0,0,.40)':'rgba(255,255,255,.30)';
+  const ttBg=isLight?'rgba(255,255,255,.98)':'rgba(16,16,20,.95)';
+  const ttTi=isLight?'rgba(0,0,0,.45)':'rgba(235,235,245,.55)';
+  const ttBo=isLight?'#1c1c1e':'#fff';
+  return {
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{backgroundColor:ttBg,titleColor:ttTi,bodyColor:ttBo,
+      borderColor:isLight?'rgba(0,0,0,.10)':'rgba(255,255,255,.10)',borderWidth:1,
+      padding:14,cornerRadius:12,bodyFont:{size:15,weight:'500'},titleFont:{size:12,weight:'500'}}},
+    elements:{point:{radius:0,hoverRadius:6},line:{cubicInterpolationMode:'monotone'}},
+    animation:{duration:400,easing:'easeOutCubic'},
+    scales:{
+      x:{grid:{color:gc,drawTicks:false},ticks:{color:tc,font:{size:13},maxTicksLimit:8},border:{display:false}},
+      y:{grid:{color:gc,drawTicks:false},ticks:{color:tc,font:{size:13}},border:{display:false}}
+    }
+  };
+}
 const baseChartOpts={
   responsive:true,maintainAspectRatio:false,
   plugins:{legend:{display:false},tooltip:{
     backgroundColor:'rgba(16,16,20,.95)',titleColor:'rgba(235,235,245,.55)',
     bodyColor:'#fff',borderColor:'rgba(255,255,255,.10)',borderWidth:1,
-    padding:14,cornerRadius:12,bodyFont:{size:16,weight:'700'},titleFont:{size:12}}},
-  elements:{point:{radius:0,hoverRadius:6}},
+    padding:14,cornerRadius:12,bodyFont:{size:15,weight:'500'},titleFont:{size:12,weight:'500'}}},
+  elements:{point:{radius:0,hoverRadius:6},line:{cubicInterpolationMode:'monotone'}},
   animation:{duration:400,easing:'easeOutCubic'},
   scales:{
-    x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'rgba(255,255,255,.30)',font:{size:13},maxTicksLimit:8},border:{display:false}},
-    y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'rgba(255,255,255,.30)',font:{size:13}},border:{display:false}}
+    x:{grid:{color:'rgba(255,255,255,.04)',drawTicks:false},ticks:{color:'rgba(255,255,255,.30)',font:{size:13},maxTicksLimit:8},border:{display:false}},
+    y:{grid:{color:'rgba(255,255,255,.04)',drawTicks:false},ticks:{color:'rgba(255,255,255,.30)',font:{size:13}},border:{display:false}}
   }
 };
 
 // ── Nav ──────────────────────────────────────────────────
-function showTab(n){
-  if(vueApp)vueApp.activeTab=n;
+function showTab(n,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.ntab').forEach(b=>b.classList.remove('active'));
+  G('tab-'+n).classList.add('active'); if(btn)btn.classList.add('active');
   if(n==='weather') renderWeather();
   if(n==='profiles') renderProfiles();
 }
 
 // ── Clock ───────────────────────────────────────────────
-setInterval(()=>{if(vueApp)vueApp.ui.clock=new Date().toLocaleTimeString('en');},1000);
+setInterval(()=>{G('sb-time').textContent=new Date().toLocaleTimeString('en');},1000);
 
 // ── Appliance CRUD ──────────────────────────────────────
 async function loadAppliances(){
@@ -1044,11 +984,12 @@ function computedFields(app){
 }
 
 function renderCards(){
+  const grid=G('cards-grid');
   let list=APPS;
   if(curFilter==='always_on') list=APPS.filter(a=>a.always_on);
   else if(curFilter!=='all') list=APPS.filter(a=>a.cat===curFilter);
 
-  const html=list.map(app=>{
+  grid.innerHTML=list.map(app=>{
     const cf=computedFields(app);
     const clr=app.clr||'#0A84FF';
     const isAlways=app.always_on;
@@ -1141,7 +1082,6 @@ function renderCards(){
       </div>
     </div>`;
   }).join('');
-  if(vueApp)vueApp.cardsHtml=html;
 }
 
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
@@ -1245,34 +1185,41 @@ async function delSW(sid,aid){
 
 // ── Profiles ─────────────────────────────────────────────
 function renderProfiles(){
-  const html=PROFILES.map(p=>{
+  const grid=G('profiles-grid');
+  grid.innerHTML=PROFILES.map(p=>{
     const isActive=activeProfileName===p.name;
+    const isPreset=p.is_preset;
     return `<div class="prof-card ${isActive?'active':''}" id="pc-${p.name}">
       <div class="prof-card-top">
         <div class="prof-icon-row">
-          <div class="prof-icon-box" contenteditable="true" id="pico-${p.name}" 
-            onblur="saveProfileField('${p.name}','icon',this.textContent)">${esc(p.icon||'🙂')}</div>
+          <div class="prof-icon-box" contenteditable="${!isPreset}" id="pico-${p.name}" 
+            onblur="${!isPreset?`saveProfileField('${p.name}','icon',this.textContent)`:''}"
+            style="${isPreset?'cursor:default':''}">${esc(p.icon||'🙂')}</div>
           <div class="prof-header">
-            <input class="prof-label-edit" id="plbl-${p.name}" value="${esc(p.label)}" 
-              onblur="saveProfileField('${p.name}','label',this.value)">
-            <div style="font-size:var(--text-sm);color:var(--l3);margin-top:6px;padding-left:8px">Profile fields are editable</div>
+            <input class="prof-label-edit" id="plbl-${p.name}" value="${esc(p.label)}" ${isPreset?'readonly':''} 
+              onblur="${!isPreset?`saveProfileField('${p.name}','label',this.value)`:''}"
+              style="${isPreset?'pointer-events:none':''}">
+            ${isPreset?`<div class="preset-badge">PRESET — READ ONLY</div>`:`<div style="font-size:var(--text-sm);color:var(--l3);margin-top:6px;padding-left:8px">Custom profile — all fields editable</div>`}
           </div>
         </div>
-        <textarea class="prof-desc-edit" rows="2" id="pdesc-${p.name}" 
-          onblur="saveProfileField('${p.name}','description',this.value)">${esc(p.description)}</textarea>
+        <textarea class="prof-desc-edit" rows="2" id="pdesc-${p.name}" ${isPreset?'readonly':''} 
+          onblur="${!isPreset?`saveProfileField('${p.name}','description',this.value)`:''}"
+          style="${isPreset?'pointer-events:none':''}">${esc(p.description)}</textarea>
         <div class="prof-params">
           <div class="pp"><label>Occupants</label>
-            <input type="number" id="pocc-${p.name}" value="${p.occupants}" min="1" max="20"
-              onchange="saveProfileField('${p.name}','occupants',+this.value)"></div>
+            <input type="number" id="pocc-${p.name}" value="${p.occupants}" min="1" max="20" ${isPreset?'readonly':''}
+              onchange="${!isPreset?`saveProfileField('${p.name}','occupants',+this.value)`:''}"
+              style="${isPreset?'color:var(--l3)':''}"></div>
           <div class="pp"><label>Experience</label>
-            <select id="pexp-${p.name}" onchange="saveProfileField('${p.name}','experience',this.value)">
+            <select id="pexp-${p.name}" ${isPreset?'disabled':''} onchange="${!isPreset?`saveProfileField('${p.name}','experience',this.value)`:''}">
               <option value="expert" ${p.experience==='expert'?'selected':''}>Expert</option>
               <option value="normal" ${p.experience==='normal'?'selected':''}>Normal</option>
               <option value="new" ${p.experience==='new'?'selected':''}>New to RV</option>
             </select></div>
           <div class="pp"><label>Load Factor</label>
-            <input type="number" id="plf-${p.name}" value="${p.load_factor}" min="0.3" max="2.5" step="0.05"
-              onchange="saveProfileField('${p.name}','load_factor',+this.value)"></div>
+            <input type="number" id="plf-${p.name}" value="${p.load_factor}" min="0.3" max="2.5" step="0.05" ${isPreset?'readonly':''}
+              onchange="${!isPreset?`saveProfileField('${p.name}','load_factor',+this.value)`:''}"
+              style="${isPreset?'color:var(--l3)':''}"></div>
           <!-- Battery & Solar are set globally in Simulate tab settings, not per-profile -->
           <div class="pp" style="display:flex;align-items:center;justify-content:center;gap:8px;font-size:var(--text-base);color:var(--l2)">
             ${isActive?'<span style="color:var(--green);font-weight:500;font-size:var(--text-lg)">✓ Active</span>':''}
@@ -1283,22 +1230,21 @@ function renderProfiles(){
         <button class="btn-apply-profile" onclick="applyProfile('${p.name}')">
           ${isActive?'Re-Apply Profile':'Apply Profile'}
         </button>
-        <button class="btn-save-profile" onclick="saveProfileAll('${p.name}')">Save Changes</button>
-        ${!p.is_preset?`<button class="btn-del-profile" onclick="deleteProfile('${p.name}')">Delete</button>`:''}
+        ${!isPreset?`<button class="btn-save-profile" onclick="saveProfileAll('${p.name}')">Save Changes</button>
+                    <button class="btn-del-profile" onclick="deleteProfile('${p.name}')">Delete</button>`:''}
       </div>
     </div>`;
   }).join('');
-  if(vueApp)vueApp.profilesHtml=html;
 }
 
 async function saveProfileField(name, field, value){
-  const prof=PROFILES.find(p=>p.name===name);if(!prof)return;
+  const prof=PROFILES.find(p=>p.name===name);if(!prof||prof.is_preset)return;
   prof[field]=value;
   await fetch(`/api/profiles/${name}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(prof)});
 }
 
 async function saveProfileAll(name){
-  const p=PROFILES.find(x=>x.name===name);if(!p)return;
+  const p=PROFILES.find(x=>x.name===name);if(!p||p.is_preset)return;
   p.label       = G('plbl-'+name)?.value || p.label;
   p.icon        = G('pico-'+name)?.textContent?.trim() || p.icon;
   p.description = G('pdesc-'+name)?.value || p.description;
@@ -1528,6 +1474,8 @@ async function runSimulation(){
     start_soc:+G('cfg-soc').value/100,plan_name:'Default Plan',days:simDays
   })});
   const data=await r.json();const results=data.days;
+  _lastSimResults = results;
+  updateCostSummary();
   showToast('Complete ✓');
 
   // SOC chart — uses simDays + configured reserve%
@@ -1536,44 +1484,46 @@ async function runSimulation(){
   const resLinePct = +G('cfg-reserve').value || reservePct || 10;
   if(socChart)socChart.destroy();
   const sc=G('soc-chart');
-  if(sc)socChart=new Chart(sc.getContext('2d'),{type:'line',data:{labels:sL,datasets:[
-    {data:sD,borderColor:'#30D158',backgroundColor:'rgba(48,209,88,.07)',fill:true,tension:.4,borderWidth:2.5,
-     label:'Battery SOC',pointRadius:0,pointHoverRadius:5},
-    {data:sL.map(()=>20),borderColor:'rgba(255,159,10,.60)',borderDash:[6,4],borderWidth:2,
-     label:'Warning 20%',pointRadius:0},
-    {data:sL.map(()=>resLinePct),borderColor:'rgba(255,69,58,.72)',borderDash:[3,4],borderWidth:2,
-     label:`Reserve ${resLinePct}%`,pointRadius:0},
-  ]},options:{...baseChartOpts,
-    plugins:{legend:{display:true,position:'top',align:'start',
-      labels:{color:'rgba(255,255,255,.55)',font:{size:13,weight:'500'},usePointStyle:true,padding:16}},
-    tooltip:{...baseChartOpts.plugins.tooltip,mode:'index',intersect:false}},
-    scales:{...baseChartOpts.scales,y:{...baseChartOpts.scales.y,min:0,max:100,ticks:{...baseChartOpts.scales.y.ticks,callback:v=>v+'%'}}}}});
+  if(sc){
+    const opts=makeBaseChartOpts();
+    socChart=new Chart(sc.getContext('2d'),{type:'line',data:{labels:sL,datasets:[
+      {data:sD,borderColor:'#30D158',backgroundColor:'rgba(48,209,88,.08)',fill:true,
+       borderWidth:2.5,label:'Battery SOC',pointRadius:0,pointHoverRadius:5},
+      {data:sL.map(()=>20),borderColor:'rgba(255,159,10,.62)',borderDash:[7,4],borderWidth:1.5,
+       label:'Warning 20%',pointRadius:0},
+      {data:sL.map(()=>resLinePct),borderColor:'rgba(255,69,58,.75)',borderDash:[3,4],borderWidth:1.5,
+       label:`Reserve ${resLinePct}%`,pointRadius:0},
+    ]},options:{...opts,
+      plugins:{...opts.plugins,
+        legend:{display:true,position:'top',align:'start',
+          labels:{color:opts.scales.x.ticks.color,font:{size:13,weight:'500'},usePointStyle:true,padding:14}},
+        tooltip:{...opts.plugins.tooltip,mode:'index',intersect:false}},
+      scales:{...opts.scales,y:{...opts.scales.y,min:0,max:100,ticks:{...opts.scales.y.ticks,callback:v=>v+'%'}}}}});
+  }
 
   // Load vs Solar — curved bars with legend
   const dL=results.map((_,i)=>`Day ${i+1}`);
   if(energyChart)energyChart.destroy();
   const ec=G('energy-chart');
-  if(ec)energyChart=new Chart(ec.getContext('2d'),{
-    type:'bar',
-    data:{labels:dL,datasets:[
-      {data:results.map(d=>d.total_solar_kwh),label:'Solar Generated',
-       backgroundColor:'rgba(255,159,10,.6)',borderColor:'#FF9F0A',borderWidth:2,
-       borderRadius:10,borderSkipped:false},
-      {data:results.map(d=>d.total_load_kwh),label:'Total Load',
-       backgroundColor:'rgba(10,132,255,.5)',borderColor:'#0A84FF',borderWidth:2,
-       borderRadius:10,borderSkipped:false},
-    ]},
-    options:{
-      ...baseChartOpts,
-      plugins:{
-        legend:{
-          display:true,
-          labels:{color:'rgba(255,255,255,.60)',font:{size:14,weight:'600'},
-            padding:20,usePointStyle:true,pointStyleWidth:14}
-        }
-      }
-    }
-  });
+  if(ec){
+    const opts=makeBaseChartOpts();
+    energyChart=new Chart(ec.getContext('2d'),{
+      type:'bar',
+      data:{labels:dL,datasets:[
+        {data:results.map(d=>d.total_solar_kwh),label:'Solar Generated',
+         backgroundColor:'rgba(255,159,10,.55)',borderColor:'#FF9F0A',borderWidth:2,
+         borderRadius:10,borderSkipped:false},
+        {data:results.map(d=>d.total_load_kwh),label:'Total Load',
+         backgroundColor:'rgba(10,132,255,.45)',borderColor:'#0A84FF',borderWidth:2,
+         borderRadius:10,borderSkipped:false},
+      ]},
+      options:{...opts,
+        plugins:{...opts.plugins,
+          legend:{display:true,position:'top',align:'start',
+            labels:{color:opts.scales.x.ticks.color,font:{size:14,weight:'500'},
+              padding:18,usePointStyle:true,pointStyleWidth:14}}}}
+    });
+  }
 
   // Breakdown — large 480px horizontal bar chart
   const firstDay=results[0];const ae=firstDay.app_energy_kwh||{};
@@ -1584,25 +1534,29 @@ async function runSimulation(){
 
   if(appBarChart)appBarChart.destroy();
   const abc=G('app-bar-chart');
-  if(abc)appBarChart=new Chart(abc.getContext('2d'),{
-    type:'bar',
-    data:{labels:names,datasets:[{
-      data:ids.map(id=>ae[id]),
-      backgroundColor:clrs.map(c=>c+'BB'),borderColor:clrs,
-      borderWidth:2,borderRadius:6,borderSkipped:false,
-    }]},
-    options:{
-      ...baseChartOpts,indexAxis:'y',
-      plugins:{legend:{display:false},tooltip:{...baseChartOpts.plugins.tooltip,callbacks:{
-        label:ctx=>{const p=totalKwh>0?(ctx.raw/totalKwh*100).toFixed(1):'0';
-          return ` ${ctx.raw.toFixed(3)} kWh/day  (${p}% of load)`;}}
-      }},
-      scales:{
-        x:{...baseChartOpts.scales.x,ticks:{...baseChartOpts.scales.x.ticks,callback:v=>v.toFixed(2)+' kWh'}},
-        y:{...baseChartOpts.scales.y,ticks:{...baseChartOpts.scales.y.ticks,font:{size:15},color:'rgba(255,255,255,.72)'}}
+  if(abc){
+    const opts=makeBaseChartOpts();
+    appBarChart=new Chart(abc.getContext('2d'),{
+      type:'bar',
+      data:{labels:names,datasets:[{
+        data:ids.map(id=>ae[id]),
+        backgroundColor:clrs.map(c=>c+'BB'),borderColor:clrs,
+        borderWidth:2,borderRadius:6,borderSkipped:false,
+      }]},
+      options:{...opts,indexAxis:'y',
+        plugins:{...opts.plugins,
+          legend:{display:false},
+          tooltip:{...opts.plugins.tooltip,callbacks:{
+            label:ctx=>{const p=totalKwh>0?(ctx.raw/totalKwh*100).toFixed(1):'0';
+              return ` ${ctx.raw.toFixed(3)} kWh/day  (${p}% of load)`;}}}
+        },
+        scales:{
+          x:{...opts.scales.x,ticks:{...opts.scales.x.ticks,callback:v=>v.toFixed(2)+' kWh'}},
+          y:{...opts.scales.y,ticks:{...opts.scales.y.ticks,font:{size:15}}}
+        }
       }
-    }
-  });
+    });
+  }
 
   // Breakdown table
   bdData=ids.map(id=>{const a=APPS.find(x=>x.id==id);const kwh=+ae[id];
@@ -1635,13 +1589,15 @@ async function toggleLive(){
     })});
     if(r.ok){
       simRunning=true;
-      if(vueApp)vueApp.simRunning=true;
+      G('live-btn').className='btn-live stop';G('live-btn').textContent='⏹ Stop';
+      G('live-badge').className='sbadge live';G('live-badge').textContent='LIVE';
       connectSSE();showToast('Live simulation started');
     }
   } else {
     await fetch('/api/simulate/live/stop',{method:'POST'});
     simRunning=false;
-    if(vueApp)vueApp.simRunning=false;
+    G('live-btn').className='btn-live start';G('live-btn').textContent='▶ Start Live Sim';
+    G('live-badge').className='sbadge off';G('live-badge').textContent='OFFLINE';
     if(sse){sse.close();sse=null;}showToast('Stopped');
   }
 }
@@ -1651,31 +1607,29 @@ function connectSSE(){
   sse.onmessage=e=>{
     const d=JSON.parse(e.data);if(d.type!=='step')return;
     const si=d.si_score||0,sc=si>=7?'var(--green)':si>=5?'var(--orange)':'var(--red)';
-    if(vueApp){
-      vueApp.ui.liveSoc=(d.soc_pct||0).toFixed(1)+'%';
-      vueApp.ui.liveSocColor=d.soc_pct>50?'var(--green)':d.soc_pct>20?'var(--orange)':'var(--red)';
-      vueApp.ui.liveSolar=(d.solar_kw||0).toFixed(3);
-      vueApp.ui.liveLoad=(d.load_kw||0).toFixed(3);
-      vueApp.ui.liveSi=si.toFixed(2);
-      vueApp.ui.liveSiColor=sc;
-      vueApp.ui.liveDay='Day '+(d.day+1);
-      vueApp.ui.simStatus=`Day ${d.day+1} · Step ${d.step}`;
-      vueApp.ui.connected=true;
-    }
+    const set=(id,v,c)=>{const e2=G(id);if(e2){e2.textContent=v;if(c)e2.style.color=c;}};
+    set('ls-soc',(d.soc_pct||0).toFixed(1)+'%',d.soc_pct>50?'var(--green)':d.soc_pct>20?'var(--orange)':'var(--red)');
+    set('ls-sol',(d.solar_kw||0).toFixed(3));set('ls-ld',(d.load_kw||0).toFixed(3));
+    set('ls-si',si.toFixed(2),sc);set('ls-day','Day '+(d.day+1));
+    G('sim-status').textContent=`Day ${d.day+1} · Step ${d.step}`;
   };
   sse.onerror=()=>{if(simRunning)setTimeout(connectSSE,3000);};
 }
 
 // ── Weather ──────────────────────────────────────────────
 function renderWeather(){
-  if(vueApp){
-    vueApp.weatherPlan=weatherPlan;
-    vueApp.editDay=editDay;
-  }
+  const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  G('day-grid').innerHTML=weatherPlan.map((d,i)=>`
+    <div class="day-card ${editDay===i?'active':''}" onclick="selectDay(${i})">
+      <div class="day-num">Day ${i+1} · ${dayNames[i%7]}</div>
+      <span class="day-wx-icon">${WX_ICONS[d.condition]||'☀️'}</span>
+      <div class="day-cond">${d.condition}</div>
+      <div class="day-temp">${d.temp_c}°C</div>
+      <div class="day-times">🌅${d.sunrise_hhmm} 🌇${d.sunset_hhmm}</div>
+    </div>`).join('');
 }
 function selectDay(i){
   editDay=i;const d=weatherPlan[i];
-  if(vueApp)vueApp.editDay=i;
   G('day-editor').style.display='block';G('day-edit-num').textContent=i+1;
   G('de-cond').value=d.condition;G('de-temp').value=d.temp_c;
   G('de-cloud').value=d.cloud_pct;G('de-rise').value=d.sunrise_hhmm;G('de-set').value=d.sunset_hhmm;
@@ -1687,9 +1641,7 @@ async function saveDay(){
   const patch={condition:G('de-cond').value,temp_c:+G('de-temp').value,
     cloud_pct:+G('de-cloud').value,sunrise_hhmm:G('de-rise').value,sunset_hhmm:G('de-set').value};
   await fetch(`/api/weather/Default Plan/${editDay}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(patch)});
-  Object.assign(weatherPlan[editDay],patch);
-  if(vueApp)vueApp.weatherPlan=weatherPlan;
-  renderWeather();showToast('Day '+(editDay+1)+' saved ✓');
+  Object.assign(weatherPlan[editDay],patch);renderWeather();showToast('Day '+(editDay+1)+' saved ✓');
 }
 
 // ── MQTT ─────────────────────────────────────────────────
@@ -1710,64 +1662,56 @@ function showToast(msg,type='ok'){
   requestAnimationFrame(()=>el.classList.add('show'));setTimeout(()=>el.classList.remove('show'),2800);
 }
 
-// ── Init ──────────────────────────────────────────────────
-function initVue(){
-  const app=Vue.createApp({
-    data(){
-      return {
-        activeTab:'configure',
-        simRunning:false,
-        cardsHtml:'',
-        profilesHtml:'',
-        weatherPlan:weatherPlan,
-        editDay:null,
-        dayNames:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
-        wxIcons:WX_ICONS,
-        ui:{
-          connected:true,
-          simStatus:'Idle',
-          clock:'--:--:--',
-          liveSoc:'—',
-          liveSocColor:'var(--green)',
-          liveSolar:'—',
-          liveLoad:'—',
-          liveSi:'—',
-          liveSiColor:'var(--l1)',
-          liveDay:'—'
-        }
-      };
-    },
-    methods:{
-      showTab,
-      toggleLive,
-      selectDay,
-      filterCards,
-      addAppliance,
-      createNewProfile,
-      onSOCChange,
-      syncSOCNum,
-      onBatCapChange,
-      syncBatNum,
-      onReserveChange,
-      syncReserveNum,
-      onPanelChange,
-      syncPanelNum,
-      saveSettings,
-      setDuration,
-      runSimulation,
-      dlBreakdown,
-      setView,
-      syncCloud,
-      saveDay,
-      saveMqtt
-    }
+// ── Theme toggle ──────────────────────────────────────────
+function toggleTheme(){
+  const isLight = document.documentElement.classList.toggle('light');
+  localStorage.setItem('rv-theme', isLight ? 'light' : 'dark');
+  const btn = G('theme-btn');
+  if(btn) btn.textContent = isLight ? '☀️' : '🌙';
+  document.querySelectorAll('img[alt="AC Future"]').forEach(img => {
+    img.style.filter = isLight ? 'none' : 'invert(1)';
   });
-  app.config.compilerOptions.delimiters=['[[',']]'];
-  vueApp=app.mount('#app');
+  // Rebuild charts with correct theme colours
+  if(socChart){    try{socChart.destroy();}   catch(e){}  socChart=null; }
+  if(energyChart){ try{energyChart.destroy();}catch(e){}  energyChart=null; }
+  if(appBarChart){ try{appBarChart.destroy();}catch(e){}  appBarChart=null; }
+}
+// Apply saved theme on load
+(function(){
+  const saved = localStorage.getItem('rv-theme');
+  if(saved === 'light') {
+    document.documentElement.classList.add('light');
+    document.addEventListener('DOMContentLoaded', () => {
+      const btn = G('theme-btn');
+      if(btn) btn.textContent = '☀️';
+      document.querySelectorAll('img[alt="AC Future"]').forEach(img => img.style.filter = 'none');
+    });
+  }
+})();
+
+// ── Energy cost calculation ────────────────────────────────
+let _lastSimResults = null;
+
+function updateCostSummary(){
+  if(!_lastSimResults) return;
+  const rate = +G('cost-kwh').value || 0.14;
+  const results = _lastSimResults;
+  const totalSolar = results.reduce((s,d) => s + (d.total_solar_kwh||0), 0);
+  const totalLoad  = results.reduce((s,d) => s + (d.total_load_kwh||0),  0);
+  const solarSaved = totalSolar * rate;
+  const loadCost   = totalLoad  * rate;
+  const netCost    = Math.max(0, loadCost - solarSaved);
+  const fmt = v => '$' + v.toFixed(2);
+  const setT = (id,v) => { const e=G(id); if(e) e.textContent=v; };
+  setT('cost-solar-val', fmt(solarSaved));
+  setT('cost-load-val',  fmt(loadCost));
+  setT('cost-net-val',   fmt(netCost));
+  const cs = G('cost-summary');
+  if(cs) cs.style.display = 'flex';
 }
 
+// ── Init ──────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
-  initVue();
   await loadAppliances();
   // Load persisted settings (SOC, battery cap, panel) from DB
   await loadSettings();
@@ -1776,56 +1720,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Load settings from DB again (authoritative) - may differ from template cache
   await loadSettings();
 });
-</script>
-
-<!-- ═══ FRONTEND STUDIO — Enhancement Script ═══ -->
-<script>
-(function () {
-  'use strict';
-
-  /* 1 · Stagger cards whenever a tab is shown */
-  var _origShowTab = window.showTab;
-  if (typeof _origShowTab === 'function') {
-    window.showTab = function (n, btn) {
-      _origShowTab(n, btn);
-      var page = document.getElementById('tab-' + n);
-      if (!page) return;
-      var cards = page.querySelectorAll('.card, .app-card, .prof-card, .ls-card');
-      cards.forEach(function (el, i) {
-        el.style.animation = 'none';
-        void el.offsetHeight;
-        el.style.animation = '';
-        el.style.animationDelay = (i * 38) + 'ms';
-      });
-    };
-  }
-
-  /* 2 · Flash live strip values when data updates */
-  var flashObserver = new MutationObserver(function (mutations) {
-    mutations.forEach(function (m) {
-      var el = m.target.nodeType === 3 ? m.target.parentElement : m.target;
-      if (el && el.matches && el.matches('.ls-val')) {
-        el.classList.remove('val-flash');
-        void el.offsetHeight;
-        el.classList.add('val-flash');
-      }
-    });
-  });
-  document.querySelectorAll('.ls-val').forEach(function (el) {
-    flashObserver.observe(el, { childList: true, subtree: true, characterData: true });
-  });
-
-  /* 3 · Stagger first visible page on load */
-  document.addEventListener('DOMContentLoaded', function () {
-    var firstPage = document.querySelector('.page.active');
-    if (firstPage) {
-      firstPage.querySelectorAll('.card, .app-card').forEach(function (el, i) {
-        el.style.animationDelay = (i * 45) + 'ms';
-      });
-    }
-  });
-
-})();
 </script>
 </body>
 </html>

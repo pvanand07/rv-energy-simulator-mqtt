@@ -16,7 +16,6 @@ Run:
 """
 from __future__ import annotations
 import asyncio, json, logging, time
-from collections import defaultdict, deque
 from contextlib import asynccontextmanager
 from pathlib import Path
 from markupsafe import Markup
@@ -29,9 +28,9 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 
 from app.sim_db   import init_sim_db, get_sim_db, row_to_dict, SIM_DB
-from app.sim_engine import run_day_simulation, run_multi_day
+from app.sim_engine import run_day_simulation, run_multi_day, hhmm_to_h
 from app.mqtt_service import (
-    SimPublisher,
+    start_broker, SimPublisher, start_subscriber, stop_subscriber,
 )
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)-8s %(name)s %(message)s")
@@ -47,118 +46,24 @@ _sim_state = {
 }
 _sse_queues: list[asyncio.Queue] = []
 
-# ── Dashboard state (merged from broker_dashboard.py) ─────────────────────────
-MAX_HISTORY = 1440  # 24 h @ 1 pt/min
-_dashboard_state = {
-    "appliance_history": defaultdict(lambda: deque(maxlen=MAX_HISTORY)),
-    "battery_history": deque(maxlen=MAX_HISTORY),
-    "solar_history": deque(maxlen=MAX_HISTORY),
-    "summary_history": deque(maxlen=MAX_HISTORY),
-    "latest": {
-        "soc_pct": 0,
-        "battery_kwh": 0,
-        "solar_kw": 0,
-        "load_kw": 0,
-        "net_kw": 0,
-        "si_score": 0.0,
-        "si_grade": "—",
-        "reserve_hit": False,
-        "last_update": "—",
-        "connected": False,
-    },
-}
-
-
-def _compute_live_si(soc_pct: float, solar_kw: float, load_kw: float, net_kw: float) -> dict:
-    """Compute dashboard SI pillars from current live telemetry."""
-    usable_kwh = soc_pct / 100.0 * 37.5
-    daily_draw = max(abs(net_kw) if net_kw < 0 else 0.01, 0.01) * 24
-    bat_days = usable_kwh / daily_draw
-    cov = min(1.0, solar_kw / max(load_kw, 0.01))
-
-    p1 = min(3.5, (bat_days / 14.0) * 3.5)
-    p2 = min(3.0, cov * 3.0)
-    p3 = min(2.0, max(0.0, (1.0 - load_kw / 5.0)) * 2.0)
-    p4 = min(1.5, max(0.0, (soc_pct - 20.0) / 80.0) * 1.5)
-
-    score = round(p1 + p2 + p3 + p4, 2)
-    grade = ("S" if score >= 9 else "A" if score >= 8 else "B" if score >= 7 else
-             "C" if score >= 6 else "D" if score >= 5 else "F")
-
-    return {"score": score, "grade": grade, "p1": round(p1, 2), "p2": round(p2, 2), "p3": round(p3, 2), "p4": round(p4, 2)}
-
-
-def _snapshot_dashboard_status() -> dict:
-    latest = _dashboard_state["latest"]
-    return dict(latest)
-
-
-def _record_live_step(step_data: dict):
-    """Update merged dashboard buffers from one simulation step."""
-    ts = step_data.get("ts", "")
-    soc = float(step_data.get("soc_pct", 0))
-    kwh = float(step_data.get("battery_kwh", 0))
-    net = float(step_data.get("net_kw", 0))
-    solar_kw = float(step_data.get("solar_kw", 0))
-    load_kw = float(step_data.get("load_kw", 0))
-    reserve_hit = bool(step_data.get("reserve_hit", False))
-
-    latest = _dashboard_state["latest"]
-    latest.update({
-        "soc_pct": soc,
-        "battery_kwh": kwh,
-        "solar_kw": solar_kw,
-        "load_kw": load_kw,
-        "net_kw": net,
-        "reserve_hit": reserve_hit,
-        "last_update": ts,
-        "connected": True,
-    })
-
-    si = _compute_live_si(soc, solar_kw, load_kw, net)
-    latest["si_score"] = si["score"]
-    latest["si_grade"] = si["grade"]
-
-    _dashboard_state["battery_history"].append({"ts": ts, "soc": soc, "kwh": kwh, "net_kw": net})
-    _dashboard_state["solar_history"].append({"ts": ts, "solar_kw": solar_kw, "load_kw": load_kw})
-    _dashboard_state["summary_history"].append({
-        "ts": ts,
-        "soc_pct": soc,
-        "solar_kw": solar_kw,
-        "load_kw": load_kw,
-        "si_score": si["score"],
-        "si_grade": si["grade"],
-    })
-
-    for aid, data in step_data.get("appliances", {}).items():
-        aid_str = str(aid)
-        meta = _sim_state["app_meta"].get(aid_str, {"name": f"App {aid_str}", "icon": "🔌", "clr": "#0A84FF", "cat": "medium"})
-        _dashboard_state["appliance_history"][aid_str].append({
-            "ts": ts,
-            "v": float(data.get("v", 0)),
-            "a": float(data.get("a", 0)),
-            "w": float(data.get("w", 0)),
-            "name": meta.get("name"),
-            "icon": meta.get("icon"),
-            "clr": meta.get("clr"),
-            "cat": meta.get("cat"),
-        })
-
 
 # ── Lifespan ──────────────────────────────────────────────────────────────────
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_sim_db()
-    # Seed merged dashboard metadata from DB at boot.
     async with get_sim_db() as db:
-        app_rows = await (await db.execute("SELECT * FROM sim_appliances ORDER BY id")).fetchall()
-    _sync_app_meta({str(dict(r)["id"]): row_to_dict(r) for r in app_rows})
+        row = await (await db.execute("SELECT * FROM mqtt_settings WHERE id=1")).fetchone()
+        if row:
+            loop = asyncio.get_event_loop()
+            start_subscriber(dict(row), loop)
+    await start_broker()
     logger.info("RV Simulator ready — http://localhost:5001")
     yield
     if _sim_state["task"] and not _sim_state["task"].done():
         _sim_state["task"].cancel()
     if _sim_state["publisher"]:
         _sim_state["publisher"].disconnect()
+    stop_subscriber()
 
 
 app = FastAPI(title="RV Energy Simulator", version="1.0.0", lifespan=lifespan)
@@ -552,6 +457,9 @@ async def save_mqtt_settings(req: Request):
              int(d.get("send_solar", 1)), int(d.get("send_summary", 1)),
              int(d.get("send_weather", 1)), int(d.get("qos", 0)), int(d.get("retain", 0))))
         await db.commit()
+    loop = asyncio.get_event_loop()
+    stop_subscriber()
+    start_subscriber(d, loop)
     return {"ok": True}
 
 
@@ -691,65 +599,6 @@ async def live_status():
     }
 
 
-@api.get("/status")
-async def dashboard_status():
-    return _snapshot_dashboard_status()
-
-
-@api.get("/appliances/live")
-async def list_appliances_with_latest():
-    result = {}
-    app_hist = _dashboard_state["appliance_history"]
-    for aid, meta in _sim_state["app_meta"].items():
-        hist = list(app_hist.get(aid, []))
-        result[aid] = {
-            **meta,
-            "latest": hist[-1] if hist else None,
-            "history_count": len(hist),
-        }
-    return result
-
-
-@api.get("/history/battery")
-async def history_battery(n: int = 300):
-    return list(_dashboard_state["battery_history"])[-n:]
-
-
-@api.get("/history/solar")
-async def history_solar(n: int = 300):
-    return list(_dashboard_state["solar_history"])[-n:]
-
-
-@api.get("/history/appliance/{aid}")
-async def history_appliance(aid: str, n: int = 200):
-    return list(_dashboard_state["appliance_history"].get(aid, []))[-n:]
-
-
-@api.get("/stability")
-async def stability_now():
-    latest = _dashboard_state["latest"]
-    si = _compute_live_si(
-        float(latest["soc_pct"]),
-        float(latest["solar_kw"]),
-        float(latest["load_kw"]),
-        float(latest["net_kw"]),
-    )
-    return {
-        "si_score": si["score"],
-        "si_grade": si["grade"],
-        "p1": si["p1"],
-        "p2": si["p2"],
-        "p3": si["p3"],
-        "p4": si["p4"],
-    }
-
-
-@api.post("/connect")
-async def reconnect(_: Request):
-    """Backward-compatible no-op after single-app merge."""
-    return {"ok": True}
-
-
 async def _live_loop(apps, schedules_by_id, weather_plan, battery_cap, panel_kwp, start_soc):
     """Background task: runs day-by-day, emitting steps via MQTT + SSE."""
     soc = start_soc
@@ -781,12 +630,11 @@ async def _live_loop(apps, schedules_by_id, weather_plan, battery_cap, panel_kwp
                 "load_kw":    step_data.get("load_kw", 0),
                 "current_step": step_data,
             })
-            _record_live_step(step_data)
 
             if _sim_state["publisher"]:
                 _sim_state["publisher"].publish_step(step_data, app_meta)
 
-            step_payload = {
+            sse_payload = json.dumps({
                 "type":     "step",
                 "soc_pct":  step_data["soc_pct"],
                 "solar_kw": step_data["solar_kw"],
@@ -796,45 +644,11 @@ async def _live_loop(apps, schedules_by_id, weather_plan, battery_cap, panel_kwp
                 "day":      _sim_state["day"],
                 "si_score": _sim_state["si_score"],
                 "si_grade": _sim_state["si_grade"],
-                "ts":       step_data["ts"],
                 "apps":     step_data["appliances"],
-            }
-            battery_payload = {
-                "type": "battery",
-                "soc_pct": step_data["soc_pct"],
-                "kwh": step_data["battery_kwh"],
-                "reserve_hit": step_data.get("reserve_hit", False),
-                "net_kw": step_data["net_kw"],
-                "si_score": _sim_state["si_score"],
-                "si_grade": _sim_state["si_grade"],
-                "ts": step_data["ts"],
-            }
-            solar_payload = {
-                "type": "solar",
-                "solar_kw": step_data["solar_kw"],
-                "load_kw": step_data["load_kw"],
-                "ts": step_data["ts"],
-            }
-
+            }, default=str)
             for q in _sse_queues:
                 try:
-                    q.put_nowait(json.dumps(step_payload, default=str))
-                    q.put_nowait(json.dumps(battery_payload, default=str))
-                    q.put_nowait(json.dumps(solar_payload, default=str))
-                    for aid, av in step_data["appliances"].items():
-                        m = app_meta.get(str(aid), {})
-                        q.put_nowait(json.dumps({
-                            "type": "appliance",
-                            "id": str(aid),
-                            "name": m.get("name", f"App {aid}"),
-                            "icon": m.get("icon", "🔌"),
-                            "clr": m.get("clr", "#0A84FF"),
-                            "cat": m.get("cat", "medium"),
-                            "v": av.get("v", 0),
-                            "a": av.get("a", 0),
-                            "w": av.get("w", 0),
-                            "ts": step_data["ts"],
-                        }, default=str))
+                    q.put_nowait(sse_payload)
                 except asyncio.QueueFull:
                     pass
 
@@ -853,7 +667,6 @@ async def sse_stream():
     async def event_generator():
         try:
             yield "data: {\"type\":\"connected\"}\n\n"
-            yield f"data: {json.dumps({'type': 'registry', 'appliances': [{'id': aid, **meta} for aid, meta in _sim_state['app_meta'].items()]})}\n\n"
             while True:
                 try:
                     msg = await asyncio.wait_for(q.get(), timeout=20)
@@ -870,30 +683,10 @@ async def sse_stream():
                              headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
-@api.get("/stream")
-async def dashboard_stream():
-    """Unified dashboard stream endpoint."""
-    return await sse_stream()
-
-
-# ── Pages ──────────────────────────────────────────────────────────────────────
+# ── Home page ──────────────────────────────────────────────────────────────────
 
 @app.get("/")
-async def dashboard_home(request: Request):
-    async with get_sim_db() as db:
-        mqtt_row = await (await db.execute("SELECT * FROM mqtt_settings WHERE id=1")).fetchone()
-    mqtt_cfg = dict(mqtt_row) if mqtt_row else {}
-    return templates.TemplateResponse(request, "dashboard.html", {
-        "status": _snapshot_dashboard_status(),
-        "simulator_url": "/sim",
-        "mqtt_host": mqtt_cfg.get("broker_host", "localhost"),
-        "mqtt_port": mqtt_cfg.get("broker_port", 1883),
-        "mqtt_topic": mqtt_cfg.get("base_topic", "rv/energy"),
-    })
-
-
-@app.get("/sim")
-async def simulator_home(request: Request):
+async def home(request: Request):
     async with get_sim_db() as db:
         mqtt_row  = await (await db.execute("SELECT * FROM mqtt_settings WHERE id=1")).fetchone()
         plan_rows = await (await db.execute(
@@ -920,12 +713,12 @@ app.include_router(api)
 
 
 if __name__ == "__main__":
-    print("\n" + "=" * 58)
-    print("  RV Energy Simulator  - Port 5001")
+    print("\n" + "═" * 58)
+    print("  RV Energy Simulator  — Port 5001")
     print("  Appliance Configurator + Profiles + MQTT Publisher")
-    print("=" * 58)
-    print("  Dashboard -> http://localhost:5001")
-    print("  Simulator -> http://localhost:5001/sim")
-    print("  MQTT      -> configurable external broker")
-    print("=" * 58 + "\n")
+    print("═" * 58)
+    print("  Open     → http://localhost:5001")
+    print("  MQTT     → localhost:1883 (embedded broker)")
+    print("  Dashboard→ http://localhost:5002")
+    print("═" * 58 + "\n")
     uvicorn.run("simulator:app", host="0.0.0.0", port=5001, reload=True, log_level="info")

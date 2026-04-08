@@ -5,9 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>RV Energy Dashboard — ACFuture</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
 <style>
-[v-cloak]{display:none!important}
 /* ══════════════════════════════════════════════════════════════
    ELEVATICS AI — RV ENERGY DASHBOARD
    iPad / HMI Optimised — Large Text · Touch Friendly · High Contrast
@@ -28,6 +26,53 @@
   /* Type scale — 2x larger than standard web */
   --xs:14px;--sm:17px;--base:20px;--lg:24px;--xl:32px;--xxl:44px;--hero:80px;
 }
+
+/* ── LIGHT MODE ─────────────────────────────────────────────── */
+html.light{
+  --bg:#f2f2f7;--bg2:#ffffff;--bg3:#ffffff;--bg4:#e5e5ea;--bg5:#d1d1d6;
+  --l1:#1c1c1e;--l2:rgba(28,28,30,.75);--l3:rgba(28,28,30,.50);
+  --l4:rgba(28,28,30,.22);--l5:rgba(28,28,30,.08);
+  --sep:rgba(60,60,67,.22);
+  --glass:rgba(255,255,255,.90);--gb:rgba(0,0,0,.07);--gh:rgba(0,0,0,.11);
+  --sh:0 2px 20px rgba(0,0,0,.10),0 1px 0 rgba(255,255,255,.9) inset;
+}
+html.light body::before{background:radial-gradient(ellipse 100% 40% at 50% 0%,rgba(10,84,255,.05) 0%,transparent 65%);}
+html.light nav{background:rgba(242,242,247,.96)!important;}
+html.light .sb{background:rgba(242,242,247,.99)!important;}
+html.light .ntabs{background:rgba(0,0,0,.07);}
+html.light .ntab.active{background:rgba(0,0,0,.12);color:var(--l1);}
+html.light .card::before{background:linear-gradient(135deg,rgba(255,255,255,.60) 0%,transparent 55%);}
+
+/* ── THEME TOGGLE ────────────────────────────────────────────── */
+.theme-btn{
+  width:44px;height:44px;border-radius:50%;border:1.5px solid var(--sep);
+  background:var(--glass);color:var(--l1);cursor:pointer;
+  font-size:20px;display:flex;align-items:center;justify-content:center;
+  transition:all .2s;flex-shrink:0;
+}
+.theme-btn:hover{background:var(--gh);}
+
+/* ── COST INPUT ──────────────────────────────────────────────── */
+.cost-bar{
+  display:flex;align-items:center;gap:12px;padding:12px 20px;
+  background:rgba(48,209,88,.06);border-bottom:1px solid rgba(48,209,88,.15);
+  font-size:var(--sm);
+}
+html.light .cost-bar{background:rgba(48,209,88,.08);}
+.cost-bar label{color:var(--l3);font-weight:500;white-space:nowrap}
+.cost-input{
+  width:100px;padding:6px 10px;background:rgba(255,255,255,.08);
+  border:1.5px solid rgba(255,255,255,.15);border-radius:10px;
+  color:var(--l1);font-family:var(--fm);font-size:var(--base);font-weight:500;
+  text-align:center;outline:none;
+}
+html.light .cost-input{background:rgba(0,0,0,.06);border-color:rgba(0,0,0,.15);}
+.cost-input:focus{border-color:var(--green);}
+.cost-summary{margin-left:auto;display:flex;gap:20px;align-items:center;flex-wrap:wrap;}
+.cost-chip{display:flex;align-items:baseline;gap:5px;}
+.cost-chip-val{font-family:var(--fm);font-size:var(--lg);font-weight:500;color:var(--green)}
+.cost-chip-lbl{font-size:var(--sm);color:var(--l3);font-weight:500}
+
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 html{background:var(--bg);color:var(--l1);font-family:var(--f);font-size:var(--base);
   line-height:1.5;-webkit-font-smoothing:antialiased}
@@ -146,53 +191,63 @@ main{max-width:1600px;margin:0 auto;padding:28px}
 .alert.ok .adot{background:var(--green)}
 
 /* ── APPLIANCE GRID ──────────────────────────────────────────── */
-.app-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:var(--gap)}
-@media(max-width:900px){.app-grid{grid-template-columns:1fr}}
+.app-grid{display:grid;grid-template-columns:1fr;gap:var(--gap)}
 
-/* Per-appliance card */
+/* Per-appliance card — full width, clear separation, no overlap */
 .app-chart-card{
   background:var(--glass);border:1px solid var(--gb);border-radius:var(--r28);
-  overflow:hidden;box-shadow:var(--sh);display:flex;flex-direction:column;
+  overflow:hidden;box-shadow:var(--sh);transition:border-color .2s,transform .15s;
 }
-/* Vertical layout: identity panel on top, chart below */
+.app-chart-card:hover{border-color:var(--gh);transform:translateY(-2px);}
+/* Horizontal layout: identity panel left, chart right */
 .acard-inner{
-  display:flex;flex-direction:column;flex:1;
+  display:grid;grid-template-columns:280px 1fr;
+  min-height:230px;
 }
-/* Top identity panel */
+/* Left identity panel */
 .aleft{
-  padding:18px 20px 14px;border-bottom:1px solid var(--sep);
-  display:flex;flex-direction:column;gap:10px;
-  background:rgba(0,0,0,.18);
+  padding:22px 20px;border-right:1px solid var(--sep);
+  display:flex;flex-direction:column;justify-content:space-between;gap:12px;
+  background:rgba(0,0,0,.15);
 }
-/* Card color accent bar at very left */
-.aclr-bar{width:5px;flex-shrink:0;border-radius:0 0 0 0}
+html.light .aleft{background:rgba(0,0,0,.04);}
 /* Appliance name + meta */
-.aname{font-size:var(--lg);font-weight:600;line-height:1.25;margin-bottom:2px;word-break:break-word}
+.aname{font-size:var(--xl);font-weight:500;line-height:1.25;margin-bottom:3px;word-break:break-word}
 .ameta{font-size:var(--sm);color:var(--l3);font-weight:500;margin-bottom:0}
-/* header row: name+meta left, csv button right */
-.acard-header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
 /* 3 value chips in a row */
-.aval-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
-.avchip{background:rgba(255,255,255,.05);border-radius:var(--r16);padding:10px 8px;text-align:center;border:1px solid rgba(255,255,255,.06)}
-.avnum{font-family:var(--fm);font-size:var(--lg);font-weight:500;line-height:1;margin-bottom:4px}
-.avlbl{font-size:10px;color:var(--l3);font-weight:500;text-transform:uppercase;letter-spacing:.8px}
+.aval-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
+.avchip{
+  background:rgba(255,255,255,.05);border-radius:var(--r16);
+  padding:11px 7px;text-align:center;
+  border:1px solid rgba(255,255,255,.06);
+}
+html.light .avchip{background:rgba(0,0,0,.04);border-color:rgba(0,0,0,.07);}
+.avnum{font-family:var(--fm);font-size:var(--lg);font-weight:500;line-height:1;margin-bottom:3px}
+.avlbl{font-size:11px;color:var(--l3);font-weight:500;text-transform:uppercase;letter-spacing:.8px}
 /* Mode tabs */
 .amode-tabs{display:flex;gap:4px;flex-wrap:wrap}
-.atab{padding:5px 12px;border-radius:var(--rp);font-size:var(--sm);font-weight:500;
+.atab{padding:7px 13px;border-radius:var(--rp);font-size:var(--sm);font-weight:500;
   cursor:pointer;border:1px solid var(--sep);background:transparent;color:var(--l3);
   font-family:var(--f);transition:all .15s;white-space:nowrap}
 .atab:hover{color:var(--l2)}
 .atab.active{background:rgba(255,255,255,.12);color:var(--l1);border-color:rgba(255,255,255,.20)}
-/* Bottom chart panel */
+html.light .atab.active{background:rgba(0,0,0,.10);color:var(--l1);border-color:rgba(0,0,0,.18);}
+/* Right chart panel */
 .aright{
-  padding:14px 18px 18px;display:flex;flex-direction:column;gap:8px;min-width:0;flex:1;
+  padding:18px 22px 18px 18px;display:flex;flex-direction:column;gap:8px;min-width:0;
 }
 /* Legend row */
-.alegend{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.alegend{display:flex;gap:14px;flex-wrap:wrap;align-items:center;flex-shrink:0}
 .ald{display:flex;align-items:center;gap:6px;font-size:var(--sm);color:var(--l2);font-weight:500;white-space:nowrap}
-.aldd{width:16px;height:3px;border-radius:2px;flex-shrink:0}
-/* Chart container */
-.achart-wrap{flex:1;min-height:150px;position:relative}
+.aldd{width:22px;height:3px;border-radius:2px;flex-shrink:0}
+/* Chart container — explicit height so Chart.js never gets 0px */
+.achart-wrap{
+  flex:1;
+  height:170px;      /* explicit, not just min-height */
+  min-height:170px;
+  position:relative;
+  overflow:hidden;
+}
 
 /* ── LIVE TABLE ──────────────────────────────────────────────── */
 .dtable{width:100%;border-collapse:collapse}
@@ -263,304 +318,99 @@ main{max-width:1600px;margin:0 auto;padding:28px}
   border-radius:var(--r16);color:var(--l1);font-size:var(--lg);font-family:var(--f);cursor:pointer}
 
 @media(max-width:1100px){.ghero{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}.app-grid{grid-template-columns:1fr}}
-@media(max-width:720px){.ghero{grid-template-columns:1fr};main{padding:16px};.ntabs{display:none}}
+@media(max-width:900px){.cost-card-grid{grid-template-columns:1fr 1fr !important}}
+@media(max-width:720px){.ghero{grid-template-columns:1fr};main{padding:16px};.ntabs{display:none}
+  .cost-card-grid{grid-template-columns:1fr !important}}
 
 /* ── datetime-local input color fix ──────────────────────────── */
 input[type='datetime-local']{color-scheme:dark}
 input[type='datetime-local']:focus{border-color:var(--blue) !important}
 </style>
-
-<!-- ═══ FRONTEND STUDIO — Enhancement Layer ═══ -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<style>
-/* ── Font override: Outfit for crisp cross-platform rendering ── */
-:root {
-  --f: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  --fd: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-}
-
-/* ── Dynamic aurora background ─────────────────────────────── */
-@keyframes aurora {
-  0%   { opacity: .80; transform: scale(1)    translateX(0); }
-  100% { opacity: 1;   transform: scale(1.04) translateX(-1.5%); }
-}
-body::before {
-  background:
-    radial-gradient(ellipse 130% 55% at 15% -5%,  rgba(10,84,255,.14)  0%, transparent 58%),
-    radial-gradient(ellipse  70% 45% at 85% 110%, rgba(48,209,88,.07)  0%, transparent 52%),
-    radial-gradient(ellipse  55% 35% at 55%  55%, rgba(191,90,242,.05) 0%, transparent 55%) !important;
-  animation: aurora 14s ease-in-out infinite alternate;
-}
-
-/* ── Card entrance ─────────────────────────────────────────── */
-@keyframes cardIn {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* ── Enhanced glassmorphism surfaces ───────────────────────── */
-.card, .hcard, .mcard {
-  background: rgba(18,18,24,.90) !important;
-  border: 1px solid rgba(255,255,255,.10) !important;
-  box-shadow:
-    0 4px 56px rgba(0,0,0,.72),
-    0 1px 0 rgba(255,255,255,.07) inset,
-    0 -1px 0 rgba(0,0,0,.28) inset !important;
-  transition: border-color .22s ease, box-shadow .22s ease, transform .22s ease !important;
-}
-.card:hover, .hcard:hover {
-  border-color: rgba(255,255,255,.17) !important;
-  box-shadow:
-    0 10px 80px rgba(0,0,0,.80),
-    0 1px 0 rgba(255,255,255,.09) inset,
-    0 -1px 0 rgba(0,0,0,.32) inset !important;
-  transform: translateY(-2px);
-}
-
-/* ── Page fade-in on tab switch ────────────────────────────── */
-.page.active { animation: cardIn .32s cubic-bezier(0.16,1,0.3,1) both; }
-
-/* ── Hero grid stagger ─────────────────────────────────────── */
-.ghero > *:nth-child(1) { animation: cardIn .45s cubic-bezier(0.16,1,0.3,1)  40ms both; }
-.ghero > *:nth-child(2) { animation: cardIn .45s cubic-bezier(0.16,1,0.3,1) 100ms both; }
-.ghero > *:nth-child(3) { animation: cardIn .45s cubic-bezier(0.16,1,0.3,1) 160ms both; }
-.ghero > *:nth-child(4) { animation: cardIn .45s cubic-bezier(0.16,1,0.3,1) 220ms both; }
-
-/* ── Button micro-interactions ─────────────────────────────── */
-button {
-  transition: opacity .15s, background .15s, transform .12s cubic-bezier(0.34,1.56,0.64,1), border-color .15s !important;
-}
-button:not(:disabled):active { transform: scale(0.965) !important; }
-
-/* ── Status dot with ripple ────────────────────────────────── */
-.dot.live {
-  box-shadow: 0 0 0 0 rgba(48,209,88,.5);
-  animation: livePulse 2.2s cubic-bezier(.455,.03,.515,.955) infinite !important;
-}
-@keyframes livePulse {
-  0%   { transform: scale(1);   box-shadow: 0 0 0 0   rgba(48,209,88,.55); }
-  60%  { transform: scale(1.3); box-shadow: 0 0 0 8px rgba(48,209,88,0); }
-  100% { transform: scale(1);   box-shadow: 0 0 0 0   rgba(48,209,88,0); }
-}
-
-/* ── Live badge pulse ──────────────────────────────────────── */
-.badge.live {
-  animation: badgePulse 3s ease-in-out infinite;
-}
-@keyframes badgePulse {
-  0%,100% { box-shadow: 0 0 0 0   rgba(48,209,88,.30); }
-  50%      { box-shadow: 0 0 0 6px rgba(48,209,88,0); }
-}
-
-/* ── Nav active tab indicator ──────────────────────────────── */
-.ntab { position: relative; overflow: hidden; }
-.ntab::after {
-  content: '';
-  position: absolute;
-  bottom: 5px; left: 50%;
-  transform: translateX(-50%) scaleX(0);
-  width: 55%; height: 2px;
-  border-radius: 2px;
-  background: var(--blue);
-  transition: transform .28s cubic-bezier(0.34,1.56,0.64,1);
-}
-.ntab.active::after { transform: translateX(-50%) scaleX(1); }
-
-/* ── Value flash on live data update ───────────────────────── */
-@keyframes valFlash {
-  0%   { opacity: 1; }
-  28%  { opacity: .38; }
-  100% { opacity: 1; }
-}
-.val-flash { animation: valFlash .42s cubic-bezier(0.16,1,0.3,1); }
-
-/* ── SOC / fill bar glow ───────────────────────────────────── */
-.soc-fill, .sfill, .pfill {
-  filter: drop-shadow(0 0 5px currentColor);
-}
-
-/* ── Styled scrollbars ─────────────────────────────────────── */
-::-webkit-scrollbar          { width: 5px; height: 5px; }
-::-webkit-scrollbar-track    { background: transparent; }
-::-webkit-scrollbar-thumb    { background: rgba(255,255,255,.11); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.22); }
-
-/* ── Focus rings ───────────────────────────────────────────── */
-button:focus-visible,
-input:focus-visible,
-select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 2px; }
-
-/* ── Reduced motion safety ─────────────────────────────────── */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: .01ms !important;
-    transition-duration: .01ms !important;
-  }
-}
-
-/* ══════════════════════════════════════════════════════════════
-   APPLIANCE CARDS — Compact, Fixed-Height, Responsive Fix
-   Root cause: flex:1 on .achart-wrap in unbounded flex column
-   → chart grows without limit. Fix: fixed height everywhere.
-══════════════════════════════════════════════════════════════ */
-
-/* Grid: tighter min-width so 3 columns fit on 1400px screens */
-.app-grid {
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)) !important;
-  gap: 16px !important;
-}
-
-/* Card: block height, no overflow-hiding cuts off chart tooltip */
-.app-chart-card {
-  display: flex !important;
-  flex-direction: column !important;
-  overflow: visible !important;
-}
-.acard-inner {
-  display: flex !important;
-  flex-direction: column !important;
-  flex: 1 !important;
-}
-
-/* ── Top identity panel — compact ─────────────────────────── */
-.aleft {
-  padding: 12px 16px 10px !important;
-  gap: 8px !important;
-  background: rgba(0,0,0,.22) !important;
-}
-
-/* Name + meta — smaller to save vertical space */
-.acard-header { margin-bottom: 0 !important; }
-.aname {
-  font-size: 17px !important;
-  font-weight: 600 !important;
-  line-height: 1.2 !important;
-  margin-bottom: 1px !important;
-}
-.ameta { font-size: 12px !important; }
-
-/* Value chips — 3-col, compact */
-.aval-row { gap: 6px !important; }
-.avchip {
-  padding: 7px 5px !important;
-  border-radius: 10px !important;
-}
-.avnum { font-size: 16px !important; margin-bottom: 2px !important; }
-.avlbl { font-size: 9px !important; letter-spacing: .6px !important; }
-
-/* Mode tabs — slim */
-.amode-tabs { gap: 3px !important; }
-.atab {
-  padding: 4px 9px !important;
-  font-size: 12px !important;
-  min-height: 28px !important;
-}
-
-/* ── Chart panel — fixed height, no flex bleed ─────────────── */
-.aright {
-  padding: 8px 14px 12px !important;
-  gap: 5px !important;
-  flex: none !important;        /* prevent this panel from growing */
-}
-
-/* THE KEY FIX: replace flex:1 with a fixed pixel height */
-.achart-wrap {
-  flex: none !important;
-  height: 155px !important;
-  min-height: 155px !important;
-  max-height: 155px !important;
-  position: relative !important;
-  overflow: hidden !important;
-}
-
-/* Legend — single row, compact */
-.alegend { gap: 8px !important; flex-wrap: nowrap !important; }
-.ald     { font-size: 11px !important; gap: 4px !important; }
-.aldd    { width: 12px !important; height: 2px !important; }
-
-/* CSV button in card header — smaller */
-.app-chart-card .csvb {
-  padding: 4px 10px !important;
-  font-size: 11px !important;
-  min-height: 28px !important;
-}
-
-/* ── Responsive breakpoints ────────────────────────────────── */
-@media (max-width: 1200px) {
-  .app-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important; }
-}
-@media (max-width: 860px) {
-  .app-grid { grid-template-columns: 1fr 1fr !important; }
-  .achart-wrap { height: 130px !important; min-height: 130px !important; max-height: 130px !important; }
-}
-@media (max-width: 560px) {
-  .app-grid { grid-template-columns: 1fr !important; }
-  .achart-wrap { height: 140px !important; min-height: 140px !important; max-height: 140px !important; }
-  .alegend { flex-wrap: wrap !important; }
-}
-</style>
 </head>
-<body id="app" v-cloak>
+<body>
 
 <div class="sb">
-  <div class="dot" :class="ui.connected ? 'live' : 'off'" id="cdot"></div>
+  <div class="dot off" id="cdot"></div>
   <span>ACFuture · RV Energy Dashboard</span>
-  <div class="vsep"></div><span id="sbstatus">[[ ui.statusText ]]</span>
-  <div class="vsep"></div><span id="sbtime">[[ ui.clock ]]</span>
+  <div class="vsep"></div><span id="sbstatus">Connecting…</span>
+  <div class="vsep"></div><span id="sbtime">--:--:--</span>
   <div style="margin-left:auto"></div>
-  <div class="badge" :class="hasData ? 'live' : 'off'" id="dbadge">[[ hasData ? 'LIVE' : 'NO DATA' ]]</div>
+  <div class="badge off" id="dbadge">NO DATA</div>
 </div>
 
 <nav><div class="ni">
-  <div>
-    <div class="brand-wordmark">ACFuture</div>
-    <div class="brand-sub">Real-Time MQTT Dashboard</div>
+  <div style="display:flex;align-items:center;gap:12px;flex-shrink:0">
+    <img src="data:image/png;base64,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" alt="AC Future" style="height:34px;width:auto;object-fit:contain;filter:var(--logo-filter,invert(1));transition:filter .3s">
+    <div style="border-left:1px solid var(--sep);padding-left:12px">
+      <div class="brand-sub" style="letter-spacing:1.8px">ENERGY DASHBOARD</div>
+    </div>
   </div>
   <div class="ntabs">
-    <button class="ntab" :class="{active:activeTab==='realtime'}" @click="showTab('realtime')">Real-Time</button>
-    <button class="ntab" :class="{active:activeTab==='appliances'}" @click="showTab('appliances')">Appliances</button>
-    <button class="ntab" :class="{active:activeTab==='stability'}" @click="showTab('stability')">Stability</button>
-    <button class="ntab" :class="{active:activeTab==='history'}" @click="showTab('history')">History</button>
+    <button class="ntab active" onclick="showTab('realtime',this)">Real-Time</button>
+    <button class="ntab" onclick="showTab('appliances',this)">Appliances</button>
+    <button class="ntab" onclick="showTab('stability',this)">Stability</button>
+    <button class="ntab" onclick="showTab('history',this)">History</button>
   </div>
   <div class="nr">
     <div class="nstat"><div>
-      <div class="nstat-v" id="nav-soc" :style="{color:ui.socColor}">[[ ui.navSoc ]]</div>
+      <div class="nstat-v" id="nav-soc" style="color:var(--green)">—%</div>
       <div class="nstat-l">Battery</div>
     </div></div>
     <div class="nstat"><div>
-      <div class="nstat-v" id="nav-si" :style="{color:ui.siColor}">[[ ui.navSi ]]</div>
+      <div class="nstat-v" id="nav-si" style="color:var(--blue)">—/10</div>
       <div class="nstat-l">Stability</div>
     </div></div>
+    <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle light/dark mode">🌙</button>
     <button class="btn-mqtt" onclick="openMod()">MQTT Settings</button>
   </div>
 </div></nav>
 
+<!-- ENERGY COST BAR -->
+<div class="cost-bar">
+  <label for="dash-cost-kwh">Energy cost:</label>
+  <input class="cost-input" type="number" id="dash-cost-kwh" value="0.14" min="0.01" max="9.99" step="0.01"
+    oninput="updateLiveCost()">
+  <span style="color:var(--l3);font-size:var(--sm)">$ / kWh</span>
+  <div class="cost-summary" id="dash-cost-summary">
+    <div class="cost-chip">
+      <span class="cost-chip-val" id="dc-solar">—</span>
+      <span class="cost-chip-lbl">solar saved / hr</span>
+    </div>
+    <div class="cost-chip">
+      <span class="cost-chip-val" id="dc-load">—</span>
+      <span class="cost-chip-lbl">load cost / hr</span>
+    </div>
+    <div class="cost-chip">
+      <span style="font-family:var(--fm);font-size:var(--lg);font-weight:500;color:var(--teal)" id="dc-net">—</span>
+      <span class="cost-chip-lbl">net / hr</span>
+    </div>
+  </div>
+</div>
+
 <main>
 
 <!-- ══ REAL-TIME ══════════════════════════════════════════════ -->
-<div id="tab-realtime" class="page" :class="{active:activeTab==='realtime'}">
-  <div id="empty-state" class="card" v-show="!hasData">
+<div id="tab-realtime" class="page active">
+  <div id="empty-state" class="card">
     <div class="empty-state">
       <div class="empty-ico">📡</div>
       <div class="empty-title">Waiting for MQTT data</div>
       <div class="empty-desc">
-        Start the Simulator at <a class="empty-link" href="/sim">Simulator</a>
+        Start the Simulator at <a class="empty-link" href="http://localhost:5001" target="_blank">localhost:5001</a>
         and click <strong>▶ Start Live Sim</strong>.<br>
         Data streams here in real time over MQTT.
       </div>
     </div>
   </div>
 
-  <div id="live-content" v-show="hasData">
+  <div id="live-content" style="display:none">
     <!-- HERO METRICS -->
     <div class="ghero" style="margin-bottom:var(--gap)">
       <div class="hcard">
         <div class="hlbl">Battery State of Charge</div>
-        <div class="hval" id="h-soc" :style="{color:ui.socColor}">[[ ui.heroSoc ]]</div>
+        <div class="hval green" id="h-soc">—</div>
         <div class="soc-wrap">
-          <div class="soc-track"><div class="soc-fill" id="soc-fill" :style="{width: ui.socPct + '%', background: ui.socColor}"></div></div>
+          <div class="soc-track"><div class="soc-fill" id="soc-fill" style="width:0%;background:var(--green)"></div></div>
           <div class="soc-marks">
             <span class="sm s0">0%</span>
             <span class="sm s10">10% ⚠</span>
@@ -568,16 +418,107 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
             <span class="sm s100">100%</span>
           </div>
         </div>
-        <div class="hsub" id="h-res">[[ ui.reserveText ]]</div>
+        <div class="hsub" id="h-res"></div>
       </div>
-      <div class="mcard"><div class="mlbl">Solar</div><div class="mval" id="h-sol" style="color:var(--orange)">[[ ui.heroSolar ]]</div><div class="msub">kW generating</div></div>
-      <div class="mcard"><div class="mlbl">Load</div><div class="mval" id="h-ld" style="color:var(--blue)">[[ ui.heroLoad ]]</div><div class="msub">kW consuming</div></div>
-      <div class="mcard"><div class="mlbl" id="h-net-l">Net</div><div class="mval" id="h-net" :style="{color:ui.netColor}">[[ ui.heroNet ]]</div><div class="msub" id="h-net-m">[[ ui.heroNetMsg ]]</div></div>
+      <div class="mcard"><div class="mlbl">Solar</div><div class="mval" id="h-sol" style="color:var(--orange)">—</div><div class="msub">kW generating</div></div>
+      <div class="mcard"><div class="mlbl">Load</div><div class="mval" id="h-ld" style="color:var(--blue)">—</div><div class="msub">kW consuming</div></div>
+      <div class="mcard"><div class="mlbl" id="h-net-l">Net</div><div class="mval" id="h-net">—</div><div class="msub" id="h-net-m">—</div></div>
     </div>
 
     <!-- Alerts -->
-    <div id="alerts-wrap" style="margin-bottom:var(--gap)">
-      <div v-for="(a, i) in alerts" :key="i" class="alert" :class="a.t"><div class="adot"></div><span>[[ a.m ]]</span></div>
+    <div id="alerts-wrap" style="margin-bottom:var(--gap)"></div>
+
+    <!-- Energy Cost Card -->
+    <div class="card" id="cost-card" style="margin-bottom:var(--gap)">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:20px">
+        <div>
+          <div class="ctitle">Live Energy Cost</div>
+          <div style="font-size:var(--sm);color:var(--l3);margin-top:4px">Based on current generation &amp; consumption</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <label style="font-size:var(--base);color:var(--l3);font-weight:500;white-space:nowrap">Rate</label>
+          <div style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.06);border:1.5px solid var(--sep);border-radius:var(--r16);padding:8px 14px">
+            <span style="font-size:var(--base);color:var(--l3)">$</span>
+            <input type="number" id="dash-cost-kwh" value="0.14" min="0.01" max="9.99" step="0.01"
+              style="width:68px;background:transparent;border:none;color:var(--l1);font-family:var(--fm);font-size:var(--xl);font-weight:500;text-align:center;outline:none"
+              oninput="updateLiveCost()">
+            <span style="font-size:var(--sm);color:var(--l3);white-space:nowrap">/ kWh</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4 cost metrics in a row -->
+      <div class="cost-card-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px">
+
+        <!-- Solar savings -->
+        <div style="background:rgba(48,209,88,.07);border:1.5px solid rgba(48,209,88,.22);border-radius:var(--r20);padding:20px">
+          <div style="font-size:var(--sm);color:var(--green);font-weight:500;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:10px">Solar Saving</div>
+          <div style="font-family:var(--fm);font-size:var(--xxl);font-weight:500;color:var(--green);line-height:1;margin-bottom:6px" id="cost-solar-hr">—</div>
+          <div style="font-size:var(--sm);color:var(--l3)">per hour</div>
+          <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(48,209,88,.18)">
+            <div style="font-size:var(--sm);color:var(--l3);margin-bottom:3px">Today est.</div>
+            <div style="font-family:var(--fm);font-size:var(--lg);font-weight:500;color:var(--green)" id="cost-solar-day">—</div>
+          </div>
+        </div>
+
+        <!-- Load cost -->
+        <div style="background:rgba(10,132,255,.07);border:1.5px solid rgba(10,132,255,.22);border-radius:var(--r20);padding:20px">
+          <div style="font-size:var(--sm);color:var(--blue);font-weight:500;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:10px">Load Cost</div>
+          <div style="font-family:var(--fm);font-size:var(--xxl);font-weight:500;color:var(--blue);line-height:1;margin-bottom:6px" id="cost-load-hr">—</div>
+          <div style="font-size:var(--sm);color:var(--l3)">per hour</div>
+          <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(10,132,255,.18)">
+            <div style="font-size:var(--sm);color:var(--l3);margin-bottom:3px">Today est.</div>
+            <div style="font-family:var(--fm);font-size:var(--lg);font-weight:500;color:var(--blue)" id="cost-load-day">—</div>
+          </div>
+        </div>
+
+        <!-- Net cost (grid draw) -->
+        <div style="background:rgba(255,159,10,.07);border:1.5px solid rgba(255,159,10,.22);border-radius:var(--r20);padding:20px">
+          <div style="font-size:var(--sm);color:var(--orange);font-weight:500;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:10px">Net Grid Cost</div>
+          <div style="font-family:var(--fm);font-size:var(--xxl);font-weight:500;color:var(--orange);line-height:1;margin-bottom:6px" id="cost-net-hr">—</div>
+          <div style="font-size:var(--sm);color:var(--l3)">per hour</div>
+          <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,159,10,.18)">
+            <div style="font-size:var(--sm);color:var(--l3);margin-bottom:3px">Today est.</div>
+            <div style="font-family:var(--fm);font-size:var(--lg);font-weight:500;color:var(--orange)" id="cost-net-day">—</div>
+          </div>
+        </div>
+
+        <!-- Solar offset % -->
+        <div style="background:rgba(90,200,245,.07);border:1.5px solid rgba(90,200,245,.22);border-radius:var(--r20);padding:20px">
+          <div style="font-size:var(--sm);color:var(--teal);font-weight:500;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:10px">Solar Offset</div>
+          <div style="font-family:var(--fm);font-size:var(--xxl);font-weight:500;color:var(--teal);line-height:1;margin-bottom:6px" id="cost-offset-pct">—</div>
+          <div style="font-size:var(--sm);color:var(--l3)">of load covered</div>
+          <!-- Mini offset bar -->
+          <div style="margin-top:12px;height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden">
+            <div id="cost-offset-bar" style="height:100%;background:var(--teal);border-radius:3px;width:0%;transition:width .8s ease"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cumulative session totals -->
+      <div style="background:rgba(255,255,255,.04);border-radius:var(--r16);padding:16px 20px;display:flex;align-items:center;gap:24px;flex-wrap:wrap">
+        <div style="font-size:var(--sm);color:var(--l3);font-weight:500;white-space:nowrap">Session totals</div>
+        <div style="display:flex;gap:24px;flex-wrap:wrap">
+          <div>
+            <span style="font-size:var(--sm);color:var(--l3)">Solar generated </span>
+            <span style="font-family:var(--fm);font-size:var(--lg);font-weight:500;color:var(--green)" id="cost-sess-solar">—</span>
+            <span style="font-size:var(--sm);color:var(--l3)"> kWh</span>
+          </div>
+          <div>
+            <span style="font-size:var(--sm);color:var(--l3)">Load consumed </span>
+            <span style="font-family:var(--fm);font-size:var(--lg);font-weight:500;color:var(--blue)" id="cost-sess-load">—</span>
+            <span style="font-size:var(--sm);color:var(--l3)"> kWh</span>
+          </div>
+          <div>
+            <span style="font-size:var(--sm);color:var(--l3)">Solar value </span>
+            <span style="font-family:var(--fm);font-size:var(--lg);font-weight:500;color:var(--green)" id="cost-sess-saved">—</span>
+          </div>
+          <div>
+            <span style="font-size:var(--sm);color:var(--l3)">Total grid cost </span>
+            <span style="font-family:var(--fm);font-size:var(--lg);font-weight:500;color:var(--orange)" id="cost-sess-total">—</span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Charts -->
@@ -624,25 +565,14 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
           <th style="text-align:right">Current</th><th style="text-align:right">Power</th>
           <th>Share of Load</th>
         </tr></thead>
-        <tbody id="rt-tbody">
-          <tr v-if="!liveRows.length"><td colspan="5" style="text-align:center;color:var(--l3);padding:36px">Waiting for data…</td></tr>
-          <tr v-for="row in liveRows" :key="row.aid">
-            <td style="font-size:var(--xl);font-weight:500"><span style="margin-right:12px">[[ row.icon ]]</span>[[ row.name ]]
-              <span style="font-size:var(--sm);color:var(--l3);margin-left:10px;font-weight:500">[[ row.cat ]]</span></td>
-            <td style="text-align:right"><span class="mnum" style="color:var(--l2)">[[ row.vText ]]</span></td>
-            <td style="text-align:right"><span class="mnum" style="color:var(--teal)">[[ row.aText ]]</span></td>
-            <td style="text-align:right"><span class="mnum" :style="{color:row.clr,fontSize:'var(--xl)'}">[[ row.wText ]]</span></td>
-            <td><div class="sbar"><div class="strack"><div class="sfill" :style="{width:row.pct+'%',background:row.clr}"></div></div>
-              <span class="spct">[[ row.pct.toFixed(1) ]]%</span></div></td>
-          </tr>
-        </tbody>
+        <tbody id="rt-tbody"><tr><td colspan="5" style="text-align:center;color:var(--l3);padding:36px">Waiting for data…</td></tr></tbody>
       </table>
     </div>
   </div>
 </div>
 
 <!-- ══ APPLIANCES ═════════════════════════════════════════════ -->
-<div id="tab-appliances" class="page" :class="{active:activeTab==='appliances'}">
+<div id="tab-appliances" class="page">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--gap-lg);flex-wrap:wrap;gap:14px">
     <div>
       <div style="font-family:var(--fd);font-size:var(--xxl);font-weight:600;margin-bottom:6px">Per-Appliance Telemetry</div>
@@ -661,7 +591,7 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
 </div>
 
 <!-- ══ STABILITY ══════════════════════════════════════════════ -->
-<div id="tab-stability" class="page" :class="{active:activeTab==='stability'}">
+<div id="tab-stability" class="page">
   <div class="g2">
     <div class="card" style="display:flex;flex-direction:column;align-items:center">
       <div class="ch" style="width:100%">
@@ -743,7 +673,7 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
 </div>
 
 <!-- ══ HISTORY ════════════════════════════════════════════════ -->
-<div id="tab-history" class="page" :class="{active:activeTab==='history'}">
+<div id="tab-history" class="page">
   <!-- Date/time range selector -->
   <div class="card" style="margin-bottom:var(--gap)">
     <div class="ctitle" style="margin-bottom:20px">Time Range Filter</div>
@@ -807,10 +737,10 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
 <div class="mov" id="modal" onclick="cMBg(event)">
   <div class="mbox">
     <div class="mtitle">MQTT Broker Settings</div>
-    <div class="mf"><label class="mlbl">Host</label><input class="mi" id="cm-host" value="{{ mqtt_host }}"></div>
+    <div class="mf"><label class="mlbl">Host</label><input class="mi" id="cm-host" value="localhost"></div>
     <div class="mr">
-      <div class="mf"><label class="mlbl">Port</label><input class="mi" id="cm-port" type="number" value="{{ mqtt_port }}"></div>
-      <div class="mf"><label class="mlbl">Base Topic</label><input class="mi" id="cm-topic" value="{{ mqtt_topic }}"></div>
+      <div class="mf"><label class="mlbl">Port</label><input class="mi" id="cm-port" type="number" value="1883"></div>
+      <div class="mf"><label class="mlbl">Base Topic</label><input class="mi" id="cm-topic" value="rv/energy"></div>
     </div>
     <div class="mr">
       <div class="mf"><label class="mlbl">Username</label><input class="mi" id="cm-user" placeholder="optional"></div>
@@ -832,30 +762,62 @@ const MAX = 1440;
 const COLORS = ['#FF9F0A','#0A84FF','#30D158','#FF453A','#BF5AF2','#5AC8F5','#FFD60A','#FF6B6B','#AC8E68','#30D158'];
 const GRADES = {S:'Exceptional',A:'Excellent',B:'Good',C:'Fair',D:'Poor',F:'Critical'};
 
-let sse=null, hasData=false;
+let sse=null, simSSE=null, hasData=false;
 let chartRefs={}, appCRefs={}, appMode={};
 let socBuf=[], pwBuf=[], siBuf=[];
 let TW={soc:'all',pw:'all',si:'all',hsoc:'all',hpw:'all'}, globalTW='all';
 let appState={};  // {aid: {meta, vBuf, aBuf, wBuf, latest}}
 let latestSI={score:0,grade:'F'};
-let vueApp=null;
+// Live power state — updated on every battery + solar MQTT message
+let latestLive={solar_kw:0, load_kw:0, soc_pct:0, net_kw:0};
 
+// Produce light-mode-aware base chart options on demand
+function makeBaseOpts(){
+  const isLight=document.documentElement.classList.contains('light');
+  const gc=isLight?'rgba(0,0,0,.07)':'rgba(255,255,255,.04)';
+  const tc=isLight?'rgba(0,0,0,.40)':'rgba(255,255,255,.30)';
+  const ttBg=isLight?'rgba(255,255,255,.98)':'rgba(16,16,20,.96)';
+  const ttTi=isLight?'rgba(0,0,0,.45)':'rgba(235,235,245,.55)';
+  const ttBo=isLight?'#1c1c1e':'#fff';
+  const ttBd=isLight?'rgba(0,0,0,.10)':'rgba(255,255,255,.10)';
+  return {
+    responsive:true,maintainAspectRatio:false,
+    plugins:{
+      legend:{display:false},
+      tooltip:{backgroundColor:ttBg,titleColor:ttTi,bodyColor:ttBo,
+        borderColor:ttBd,borderWidth:1,padding:14,cornerRadius:12,
+        bodyFont:{size:16,weight:'500'},titleFont:{size:12,weight:'500'}}
+    },
+    elements:{
+      point:{radius:0,hoverRadius:6},
+      line:{cubicInterpolationMode:'monotone'}
+    },
+    animation:{duration:300,easing:'easeOutCubic'},
+    scales:{
+      x:{grid:{color:gc,drawTicks:false},ticks:{color:tc,font:{size:13},maxTicksLimit:7},border:{display:false}},
+      y:{grid:{color:gc,drawTicks:false},ticks:{color:tc,font:{size:13}},border:{display:false}}
+    }
+  };
+}
+// Backward-compat alias (some callers use spread: {...baseOpts})
 const baseOpts={
   responsive:true,maintainAspectRatio:false,
   plugins:{legend:{display:false},tooltip:{
     backgroundColor:'rgba(16,16,20,.96)',titleColor:'rgba(235,235,245,.55)',
     bodyColor:'#fff',borderColor:'rgba(255,255,255,.10)',borderWidth:1,
-    padding:16,cornerRadius:14,bodyFont:{size:18,weight:'700'},titleFont:{size:13}}},
-  elements:{point:{radius:0,hoverRadius:7}},
+    padding:14,cornerRadius:12,bodyFont:{size:16,weight:'500'},titleFont:{size:12,weight:'500'}}},
+  elements:{point:{radius:0,hoverRadius:6},line:{cubicInterpolationMode:'monotone'}},
   animation:{duration:300,easing:'easeOutCubic'},
   scales:{
-    x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'rgba(255,255,255,.30)',font:{size:14},maxTicksLimit:8},border:{display:false}},
-    y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'rgba(255,255,255,.30)',font:{size:14}},border:{display:false}}
+    x:{grid:{color:'rgba(255,255,255,.04)',drawTicks:false},ticks:{color:'rgba(255,255,255,.30)',font:{size:13},maxTicksLimit:7},border:{display:false}},
+    y:{grid:{color:'rgba(255,255,255,.04)',drawTicks:false},ticks:{color:'rgba(255,255,255,.30)',font:{size:13}},border:{display:false}}
   }
 };
 
-function showTab(n){
-  if(vueApp)vueApp.activeTab=n;
+function showTab(n,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.ntab').forEach(b=>b.classList.remove('active'));
+  G('tab-'+n).classList.add('active');if(btn)btn.classList.add('active');
   if(n==='appliances') renderGrid();
   if(n==='stability')  refreshSI();
   if(n==='history')    refreshHist();
@@ -868,22 +830,36 @@ function connectSSE(){
   sse.onopen=()=>setConn(true);
   sse.onmessage=e=>{try{dispatch(JSON.parse(e.data));}catch(ex){}};
   sse.onerror=()=>{setConn(false);setTimeout(connectSSE,3000);};
+
+  // Also connect directly to simulator's live stream so SOC updates
+  // appear in the dashboard without relying solely on MQTT.
+  connectSimProxy();
+}
+
+function connectSimProxy(){
+  if(simSSE) simSSE.close();
+  simSSE = new EventSource('/api/sim-stream-proxy');
+  simSSE.onmessage = e => {
+    try {
+      const d = JSON.parse(e.data);
+      // Proxy delivers pre-formatted battery/solar/appliance events
+      if(d.type === 'battery' || d.type === 'solar' || d.type === 'appliance' || d.type === 'registry') {
+        dispatch(d);
+      }
+    } catch(ex){}
+  };
+  simSSE.onerror = () => {
+    // Simulator may not be running — retry quietly
+    setTimeout(connectSimProxy, 5000);
+  };
 }
 function setConn(on){
-  if(vueApp){
-    vueApp.ui.connected=on;
-    if(!on)vueApp.ui.statusText='Reconnecting…';
-  }
+  G('cdot').className='dot '+(on?'live':'off');
+  if(!on)G('sbstatus').textContent='Reconnecting…';
 }
 
 function dispatch(d){
-  if(d.type==='connected'){
-    if(vueApp){
-      vueApp.ui.connected=true;
-      vueApp.ui.statusText='Connected · ready for MQTT data';
-    }
-    return;
-  }
+  if(d.type==='connected'){G('sbstatus').textContent='Connected · ready for MQTT data';return;}
 
   if(d.type==='registry'){
     (d.appliances||[]).forEach(a=>{
@@ -891,6 +867,9 @@ function dispatch(d){
       if(!appState[aid])appState[aid]={meta:{},vBuf:[],aBuf:[],wBuf:[],latest:null};
       appState[aid].meta={name:a.name||'App '+aid,icon:a.icon||'',clr:a.clr||'#0A84FF',cat:a.cat||'medium'};
     });
+    if(Object.keys(appState).length)showData();
+    // Reset session cost accumulators on simulator restart
+    _sessIntervals=0; _sessSolarKwh=0; _sessLoadKwh=0;
     renderGrid();return;
   }
 
@@ -905,51 +884,45 @@ function dispatch(d){
     s.wBuf.push({ts,w:wv});if(s.wBuf.length>MAX)s.wBuf.shift();
     s.latest={v:vv,a:av,w:wv,ts};
     updateTable();
-    if(vueApp&&vueApp.activeTab==='appliances')liveCard(aid);
+    if(G('tab-appliances').classList.contains('active'))liveCard(aid);
     else ensureCard(aid);
     showData();return;
   }
 
   if(d.type==='battery'){
     const soc=+d.soc_pct||0,net=+d.net_kw||0;
+    latestLive.soc_pct=soc; latestLive.net_kw=net;
     const sc=soc>50?'var(--green)':soc>20?'var(--orange)':'var(--red)';
-    if(vueApp){
-      vueApp.ui.socPct=soc;
-      vueApp.ui.socColor=sc;
-      vueApp.ui.heroSoc=soc.toFixed(1)+'%';
-      vueApp.ui.reserveText=d.reserve_hit?'⚠ Reserve floor active — 10% protection mode':'';
-      vueApp.ui.heroNet=(net>=0?'+':'')+net.toFixed(3);
-      vueApp.ui.netColor=net>=0?'var(--green)':'var(--red)';
-      vueApp.ui.heroNetMsg=net>=0?'Charging battery':'Drawing from battery';
-      vueApp.ui.navSoc=soc.toFixed(0)+'%';
-    }
+    const set=(id,v,c)=>{const e=G(id);if(e){e.textContent=v;if(c)e.style.color=c;}};
+    set('h-soc',soc.toFixed(1)+'%',sc);
+    const sf=G('soc-fill');if(sf){sf.style.width=soc+'%';sf.style.background=sc;}
+    const hr=G('h-res');if(hr)hr.textContent=d.reserve_hit?'⚠ Reserve floor active — 10% protection mode':'';
+    set('h-net',(net>=0?'+':'')+net.toFixed(3),net>=0?'var(--green)':'var(--red)');
+    G('h-net-m').textContent=net>=0?'Charging battery':'Drawing from battery';
+    const ns=G('nav-soc');if(ns){ns.textContent=soc.toFixed(0)+'%';ns.style.color=sc;}
     const ts=fmt(d.ts);
     socBuf.push({ts,v:soc});if(socBuf.length>MAX)socBuf.shift();
     buildAlerts(soc,latestSI.score,latestSI.grade,d.reserve_hit);
-    buildRTCharts();
-    if(vueApp)vueApp.ui.statusText='Updated '+ts+' · SOC '+soc.toFixed(1)+'%';
+    buildRTCharts();G('sbstatus').textContent='Updated '+ts+' · SOC '+soc.toFixed(1)+'%';
+    updateLiveCost();
     showData();return;
   }
 
   if(d.type==='solar'){
     const s=+d.solar_kw||0,l=+d.load_kw||0;
-    if(vueApp){
-      vueApp.ui.heroSolar=s.toFixed(3);
-      vueApp.ui.heroLoad=l.toFixed(3);
-    }
+    latestLive.solar_kw=s; latestLive.load_kw=l;
+    const set=(id,v)=>{const e=G(id);if(e)e.textContent=v;};
+    set('h-sol',s.toFixed(3));set('h-ld',l.toFixed(3));
     const ts=fmt(d.ts);
     pwBuf.push({ts,s,l});if(pwBuf.length>MAX)pwBuf.shift();
-    buildRTCharts();return;
+    buildRTCharts();updateLiveCost();return;
   }
 }
 
 function fmt(ts){try{return new Date(ts).toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}catch(e){return new Date().toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}}
 
 function showData(){
-  if(!hasData){
-    hasData=true;
-    if(vueApp)vueApp.hasData=true;
-  }
+  if(!hasData){hasData=true;G('empty-state').style.display='none';G('live-content').style.display='block';G('dbadge').className='badge live';G('dbadge').textContent='LIVE';}
 }
 
 // ── Alerts ────────────────────────────────────────────────
@@ -961,7 +934,7 @@ function buildAlerts(soc,si,grade,res){
   if(si<5)a.push({t:'critical',m:`Stability Score ${(+si).toFixed(1)}/10 (Grade F) — system cannot sustain itself.`});
   else if(si<7)a.push({t:'warning',m:`Stability Score ${(+si).toFixed(1)}/10 (Grade ${grade}) — review energy balance.`});
   if(!a.length)a.push({t:'ok',m:'All systems nominal — energy balance is healthy.'});
-  if(vueApp)vueApp.alerts=a;
+  G('alerts-wrap').innerHTML=a.map(x=>`<div class="alert ${x.t}"><div class="adot"></div><span>${x.m}</span></div>`).join('');
 }
 
 // ── Time windows ──────────────────────────────────────────
@@ -969,7 +942,7 @@ function setTW(k,w,btn){
   TW[k]=w;const wrap=G('tw-'+k);
   if(wrap)wrap.querySelectorAll('.twb').forEach(b=>b.classList.toggle('active',b===btn));
   if(k==='soc'||k==='pw')buildRTCharts();
-  if(k==='si'){if(vueApp&&vueApp.activeTab==='stability')refreshSI();}
+  if(k==='si'){if(G('tab-stability').classList.contains('active'))refreshSI();}
   if(k.startsWith('h'))refreshHist();
 }
 function setGTW(w,btn){
@@ -986,53 +959,56 @@ function fBuf(buf,w){
 
 // ── RT Charts ─────────────────────────────────────────────
 function buildRTCharts(){
+  const opts=makeBaseOpts();
   const sf=fBuf(socBuf,TW.soc),sl=sf.map(p=>p.ts);
   if(!chartRefs.soc){
     const c=G('rt-soc');if(!c)return;
     chartRefs.soc=new Chart(c.getContext('2d'),{type:'line',data:{labels:sl,datasets:[
-      {data:sf.map(p=>p.v),borderColor:'#30D158',backgroundColor:'rgba(48,209,88,.07)',fill:true,tension:.45,borderWidth:2.5},
-      {data:sl.map(()=>20),borderColor:'rgba(255,159,10,.55)',borderDash:[6,4],borderWidth:2,pointRadius:0},
-      {data:sl.map(()=>10),borderColor:'rgba(255,69,58,.65)',borderDash:[3,4],borderWidth:2,pointRadius:0},
-    ]},options:{...baseOpts,scales:{...baseOpts.scales,y:{...baseOpts.scales.y,min:0,max:100,ticks:{...baseOpts.scales.y.ticks,callback:v=>v+'%'}}}}});
+      {data:sf.map(p=>p.v),borderColor:'#30D158',backgroundColor:'rgba(48,209,88,.08)',fill:true,borderWidth:2.5,pointRadius:0,pointHoverRadius:5,label:'SOC %'},
+      {data:sl.map(()=>20),borderColor:'rgba(255,159,10,.60)',borderDash:[7,4],borderWidth:1.5,pointRadius:0,label:'20% warning'},
+      {data:sl.map(()=>10),borderColor:'rgba(255,69,58,.70)',borderDash:[3,4],borderWidth:1.5,pointRadius:0,label:'10% floor'},
+    ]},options:{...opts,scales:{...opts.scales,y:{...opts.scales.y,min:0,max:100,ticks:{...opts.scales.y.ticks,callback:v=>v+'%'}}}}});
   } else {
-    chartRefs.soc.data.labels=sl;chartRefs.soc.data.datasets[0].data=sf.map(p=>p.v);
-    chartRefs.soc.data.datasets[1].data=sl.map(()=>20);chartRefs.soc.data.datasets[2].data=sl.map(()=>10);
+    chartRefs.soc.data.labels=sl;
+    chartRefs.soc.data.datasets[0].data=sf.map(p=>p.v);
+    chartRefs.soc.data.datasets[1].data=sl.map(()=>20);
+    chartRefs.soc.data.datasets[2].data=sl.map(()=>10);
     chartRefs.soc.update('none');
   }
   const pf=fBuf(pwBuf,TW.pw),pl=pf.map(p=>p.ts);
   if(!chartRefs.pw){
     const c=G('rt-pw');if(!c)return;
     chartRefs.pw=new Chart(c.getContext('2d'),{type:'line',data:{labels:pl,datasets:[
-      {data:pf.map(p=>p.s),borderColor:'#FF9F0A',backgroundColor:'rgba(255,159,10,.07)',fill:true,tension:.45,borderWidth:2.5},
-      {data:pf.map(p=>p.l),borderColor:'#0A84FF',backgroundColor:'rgba(10,132,255,.06)',fill:true,tension:.45,borderWidth:2.5},
-    ]},options:baseOpts});
+      {data:pf.map(p=>p.s),borderColor:'#FF9F0A',backgroundColor:'rgba(255,159,10,.08)',fill:true,borderWidth:2.5,pointRadius:0,pointHoverRadius:5,label:'Solar kW'},
+      {data:pf.map(p=>p.l),borderColor:'#0A84FF',backgroundColor:'rgba(10,132,255,.07)',fill:true,borderWidth:2.5,pointRadius:0,pointHoverRadius:5,label:'Load kW'},
+    ]},options:{...opts,plugins:{...opts.plugins,legend:{display:true,position:'top',align:'start',labels:{color:opts.scales.x.ticks.color,font:{size:13},usePointStyle:true,padding:14}}}}});
   } else {
-    chartRefs.pw.data.labels=pl;chartRefs.pw.data.datasets[0].data=pf.map(p=>p.s);
-    chartRefs.pw.data.datasets[1].data=pf.map(p=>p.l);chartRefs.pw.update('none');
+    chartRefs.pw.data.labels=pl;
+    chartRefs.pw.data.datasets[0].data=pf.map(p=>p.s);
+    chartRefs.pw.data.datasets[1].data=pf.map(p=>p.l);
+    chartRefs.pw.update('none');
   }
 }
 
 // ── Live table ────────────────────────────────────────────
 function updateTable(){
+  const tb=G('rt-tbody');if(!tb)return;
   const entries=Object.entries(appState).filter(([,s])=>s.latest);
-  if(!vueApp)return;
-  if(!entries.length){vueApp.liveRows=[];return;}
+  if(!entries.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--l3);padding:40px;font-size:var(--base)">No appliance data yet</td></tr>';return;}
   const maxW=Math.max(...entries.map(([,s])=>s.latest?.w||0),.01);
-  vueApp.liveRows=entries.map(([aid,s],i)=>{
+  tb.innerHTML=entries.map(([aid,s],i)=>{
     const l=s.latest,m=s.meta||{},clr=m.clr||COLORS[i%COLORS.length];
-    const pct=Math.min(100,(l.w/maxW)*100);
-    return {
-      aid,
-      icon:m.icon||'',
-      name:m.name||('App '+aid),
-      cat:m.cat||'',
-      vText:(+l.v).toFixed(1)+' V',
-      aText:(+l.a).toFixed(3)+' A',
-      wText:(+l.w).toFixed(1)+' W',
-      pct,
-      clr
-    };
-  });
+    const pct=Math.min(100,(l.w/maxW)*100).toFixed(1);
+    return `<tr>
+      <td style="font-size:var(--xl);font-weight:500"><span style="margin-right:12px">${m.icon||''}</span>${m.name||'App '+aid}
+        <span style="font-size:var(--sm);color:var(--l3);margin-left:10px;font-weight:500">${m.cat||''}</span></td>
+      <td style="text-align:right"><span class="mnum" style="color:var(--l2)">${(+l.v).toFixed(1)} V</span></td>
+      <td style="text-align:right"><span class="mnum" style="color:var(--teal)">${(+l.a).toFixed(3)} A</span></td>
+      <td style="text-align:right"><span class="mnum" style="color:${clr};font-size:var(--xl)">${(+l.w).toFixed(1)} W</span></td>
+      <td><div class="sbar"><div class="strack"><div class="sfill" style="width:${pct}%;background:${clr}"></div></div>
+          <span class="spct">${pct}%</span></div></td>
+    </tr>`;
+  }).join('');
 }
 
 // ── Appliance Charts ──────────────────────────────────────
@@ -1043,18 +1019,10 @@ function renderGrid(){
     grid.innerHTML=`<div class="card"><div class="empty-state">
       <div class="empty-ico">📡</div>
       <div class="empty-title">No appliance data</div>
-      <div class="empty-desc">Start the simulator at <a class="empty-link" href="/sim">Simulator</a> and click ▶ Start Live Sim</div>
+      <div class="empty-desc">Start the simulator at <a class="empty-link" href="http://localhost:5001" target="_blank">localhost:5001</a> and click ▶ Start Live Sim</div>
     </div></div>`;return;
   }
-  aids.forEach((aid,i)=>{
-    if(G('acard-'+aid)){
-      // Card already exists — refresh values and force chart rebuild with latest data
-      const s=appState[aid];if(s)s._tick=0;
-      liveCard(aid);
-    } else {
-      ensureCard(aid,i);
-    }
-  });
+  aids.forEach((aid,i)=>ensureCard(aid,i));
   grid.querySelectorAll('[id^="acard-"]').forEach(c=>{
     if(!appState[c.id.replace('acard-','')])c.remove();
   });
@@ -1074,14 +1042,11 @@ function ensureCard(aid,ci){
 
   card.innerHTML=`
     <div class="acard-inner">
-      <!-- TOP: identity, live values, controls -->
+      <!-- LEFT: identity, live values, controls -->
       <div class="aleft">
-        <div class="acard-header">
-          <div>
-            <div class="aname" id="aname-${aid}">${m.name||'App '+aid}</div>
-            <div class="ameta" id="ameta-${aid}">${m.cat||'—'}</div>
-          </div>
-          <button class="csvb" onclick="dlCSV('app-${aid}')" style="flex-shrink:0;padding:5px 12px;font-size:var(--sm)">↓ CSV</button>
+        <div>
+          <div class="aname" id="aname-${aid}">${m.name||'App '+aid}</div>
+          <div class="ameta" id="ameta-${aid}">${m.cat||'—'}</div>
         </div>
 
         <div class="aval-row">
@@ -1105,9 +1070,11 @@ function ensureCard(aid,ci){
           <button class="atab" onclick="swMode('${aid}','a',this)">Current</button>
           <button class="atab" onclick="swMode('${aid}','v',this)">Voltage</button>
         </div>
+
+        <button class="csvb" onclick="dlCSV('app-${aid}')" style="align-self:flex-start;padding:7px 14px;font-size:var(--sm)">↓ CSV</button>
       </div>
 
-      <!-- BOTTOM: chart with legend -->
+      <!-- RIGHT: chart with legend -->
       <div class="aright">
         <div class="alegend" id="leg-${aid}">
           <div class="ald"><div class="aldd" style="background:${clr}"></div>Power (W)</div>
@@ -1137,32 +1104,36 @@ function liveCard(aid){
     set('aa-'+aid,(+l.a).toFixed(3));
     set('av-'+aid,(+l.v).toFixed(1));
   }
-  // Only rebuild chart every 5 updates to keep rendering smooth
-  const tick=(s._tick=(s._tick||0)+1);
-  if(tick%5===1 || !appCRefs[aid]) buildChart(aid,appMode[aid]||'all');
-  else if(appCRefs[aid]){
-    // Fast path: update chart data in-place then redraw
-    const mode=appMode[aid]||'all';
-    const ch=appCRefs[aid];
-    const rawBuf=mode==='w'?s.wBuf:mode==='a'?s.aBuf:mode==='v'?s.vBuf:s.wBuf;
-    const buf=fBuf(rawBuf,globalTW);
-    if(ch.data.labels.length!==buf.length){
-      buildChart(aid,mode); // full rebuild if length changed
-    } else {
-      // Same length (sliding window at MAX) — update data arrays in-place
-      if(mode==='all'){
-        const wB=fBuf(s.wBuf,globalTW),aB=fBuf(s.aBuf,globalTW),vB=fBuf(s.vBuf,globalTW);
-        const len=Math.min(wB.length,aB.length,vB.length);
-        ch.data.labels=wB.slice(-len).map(p=>p.ts);
-        ch.data.datasets[0].data=wB.slice(-len).map(p=>p.w);
-        ch.data.datasets[1].data=aB.slice(-len).map(p=>p.a*10);
-        ch.data.datasets[2].data=vB.slice(-len).map(p=>p.v);
-      } else {
-        ch.data.labels=buf.map(p=>p.ts);
-        ch.data.datasets[0].data=buf.map(p=>p[mode]);
-      }
-      ch.update('none');
-    }
+  const mode=appMode[aid]||'all';
+  const ch=appCRefs[aid];
+  if(!ch){buildChart(aid,mode);return;}
+
+  // Fast incremental update — push new data without full rebuild
+  const rawBuf=mode==='w'?s.wBuf:mode==='a'?s.aBuf:mode==='v'?s.vBuf:s.wBuf;
+  const buf=fBuf(rawBuf,globalTW);
+  const newLen=buf.length;
+  const curLen=ch.data.labels?.length||0;
+
+  // Full rebuild if: length changed meaningfully, or every 60 points to prevent drift
+  s._tick=(s._tick||0)+1;
+  const needRebuild=(Math.abs(newLen-curLen)>2)||(s._tick%60===0);
+
+  if(needRebuild){
+    buildChart(aid,mode);
+  } else if(mode==='all'){
+    // Multi-series: update all 3 buffers
+    const wB=fBuf(s.wBuf,globalTW),aB=fBuf(s.aBuf,globalTW),vB=fBuf(s.vBuf,globalTW);
+    const len=Math.min(wB.length,aB.length,vB.length);
+    ch.data.labels=wB.slice(-len).map(p=>p.ts);
+    ch.data.datasets[0].data=wB.slice(-len).map(p=>p.w);
+    ch.data.datasets[1].data=aB.slice(-len).map(p=>p.a*10);
+    ch.data.datasets[2].data=vB.slice(-len).map(p=>p.v);
+    ch.update('none');
+  } else {
+    // Single series fast path
+    ch.data.labels=buf.map(p=>p.ts);
+    ch.data.datasets[0].data=buf.map(p=>p[mode]);
+    ch.update('none');
   }
 }
 
@@ -1191,107 +1162,169 @@ function buildChart(aid,mode){
   const m=s.meta||{},clr=m.clr||'#0A84FF';
   const c=G('ac-'+aid);if(!c)return;
 
-  // Ensure canvas container has a measured height
+  // Ensure the canvas wrapper has an explicit pixel height before Chart.js measures it
   const wrap=c.parentElement;
-  if(wrap&&wrap.offsetHeight<10){
-    wrap.style.height='180px';
+  if(wrap){
+    const h=wrap.offsetHeight;
+    if(h<20){
+      wrap.style.height='170px';
+      c.style.height='170px';
+    }
   }
 
-  // Destroy existing chart gracefully
-  if(appCRefs[aid]){try{appCRefs[aid].destroy();}catch(e){}delete appCRefs[aid];}
-
-  // Helper: clr → rgba bg
-  function bg(hex,a){
-    try{const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return `rgba(${r},${g},${b},${a})`;}
-    catch(e){return `rgba(10,132,255,${a})`;}
+  // Destroy existing instance gracefully
+  if(appCRefs[aid]){
+    try{appCRefs[aid].destroy();}catch(e){}
+    delete appCRefs[aid];
   }
 
-  // Shared chart options — clean, readable
-  const sharedOpts={
-    responsive:true,maintainAspectRatio:false,
-    animation:{duration:400,easing:'easeOutQuart'},
+  // Detect light mode for adaptive colours
+  const isLight=document.documentElement.classList.contains('light');
+  const gridColor  = isLight ? 'rgba(0,0,0,.07)'     : 'rgba(255,255,255,.05)';
+  const tickColor  = isLight ? 'rgba(0,0,0,.38)'      : 'rgba(255,255,255,.32)';
+  const tickColor2 = isLight ? 'rgba(0,0,0,.25)'      : 'rgba(255,255,255,.22)';
+  const ttBg       = isLight ? 'rgba(255,255,255,.97)' : 'rgba(12,12,16,.96)';
+  const ttTitle    = isLight ? 'rgba(0,0,0,.45)'       : 'rgba(235,235,245,.55)';
+  const ttBody     = isLight ? '#1c1c1e'               : '#fff';
+  const ttBorder   = isLight ? 'rgba(0,0,0,.12)'       : 'rgba(255,255,255,.12)';
+
+  // Helper: hex → rgba(r,g,b,a)
+  function rgba(hex,a){
+    try{
+      const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+      return `rgba(${r},${g},${b},${a})`;
+    }catch(e){return `rgba(10,132,255,${a})`;}
+  }
+
+  // Base chart configuration shared across all modes
+  const base={
+    responsive:true,
+    maintainAspectRatio:false,
+    // Smooth animated updates — not too slow
+    animation:{duration:350,easing:'easeOutCubic'},
+    // Smoother line rendering
+    elements:{line:{cubicInterpolationMode:'monotone',capBezierPoints:true}},
     interaction:{mode:'index',intersect:false},
     plugins:{
-      legend:{display:false},  // We render our own legend in HTML
+      legend:{display:false},  // HTML legend handles this
       tooltip:{
-        backgroundColor:'rgba(12,12,16,.96)',
-        titleColor:'rgba(235,235,245,.55)',
-        bodyColor:'#fff',
-        borderColor:'rgba(255,255,255,.12)',
+        enabled:true,
+        backgroundColor:ttBg,
+        titleColor:ttTitle,
+        bodyColor:ttBody,
+        borderColor:ttBorder,
         borderWidth:1,
-        padding:14,
-        cornerRadius:12,
-        bodyFont:{size:16,weight:'500'},
+        padding:12,
+        cornerRadius:10,
+        bodyFont:{size:15,weight:'500'},
         titleFont:{size:12,weight:'500'},
-        callbacks:{
-          title:items=>items[0]?.label||'',
-          label:ctx=>{
-            const v=ctx.raw;
-            if(ctx.datasetIndex===0) return ` Power: ${(+v).toFixed(1)} W`;
-            if(ctx.datasetIndex===1) return ` Current: ${(+v/10).toFixed(3)} A`;
-            return ` Voltage: ${(+v).toFixed(1)} V`;
-          }
-        }
+        displayColors:true,
+        boxWidth:10,boxHeight:10,boxPadding:4,
       }
     },
     scales:{
       x:{
-        grid:{color:'rgba(255,255,255,.04)',drawTicks:false},
-        ticks:{color:'rgba(255,255,255,.32)',font:{size:12},maxTicksLimit:6,maxRotation:0},
+        grid:{color:gridColor,drawTicks:false},
+        ticks:{
+          color:tickColor,font:{size:11,weight:'500'},
+          maxTicksLimit:7,maxRotation:0,
+          // Show clean HH:MM format
+          callback:(v,i,all)=>{
+            // Only show every Nth label to avoid crowding
+            const step=Math.max(1,Math.floor(all.length/6));
+            return i%step===0?(all[i]?.label||''):'';
+          }
+        },
         border:{display:false}
       }
     }
   };
 
   if(mode==='all'){
+    // Three-series: Power (W), Current×10 (A), Voltage (V)
     const wBuf=fBuf(s.wBuf,globalTW);
     const aBuf=fBuf(s.aBuf,globalTW);
     const vBuf=fBuf(s.vBuf,globalTW);
-    // Align lengths — use shortest buffer
     const len=Math.min(wBuf.length,aBuf.length,vBuf.length);
+    if(len===0){return;}
     const labels=wBuf.slice(-len).map(p=>p.ts);
 
     appCRefs[aid]=new Chart(c.getContext('2d'),{
       type:'line',
-      data:{labels,datasets:[
-        {
-          data:wBuf.slice(-len).map(p=>p.w),
-          borderColor:clr,
-          backgroundColor:bg(clr,0.10),
-          fill:true,tension:.4,borderWidth:2.5,
-          pointRadius:0,pointHoverRadius:5,
-          yAxisID:'yW',order:3
+      data:{
+        labels,
+        datasets:[
+          // Power — filled area, appliance colour
+          {
+            label:'Power (W)',
+            data:wBuf.slice(-len).map(p=>p.w),
+            borderColor:clr,
+            backgroundColor:rgba(clr,0.12),
+            fill:true,
+            borderWidth:2.5,
+            pointRadius:0,pointHoverRadius:5,pointHoverBackgroundColor:clr,
+            yAxisID:'yW',order:3
+          },
+          // Current×10 — dashed teal, no fill
+          {
+            label:'Current ×10 (A)',
+            data:aBuf.slice(-len).map(p=>p.a*10),
+            borderColor:'#5AC8F5',
+            borderDash:[7,3],
+            fill:false,
+            borderWidth:2,
+            pointRadius:0,pointHoverRadius:4,pointHoverBackgroundColor:'#5AC8F5',
+            yAxisID:'yW',order:2
+          },
+          // Voltage — dotted, right axis
+          {
+            label:'Voltage (V)',
+            data:vBuf.slice(-len).map(p=>p.v),
+            borderColor:isLight?'rgba(0,0,0,.28)':'rgba(255,255,255,.38)',
+            borderDash:[3,5],
+            fill:false,
+            borderWidth:1.5,
+            pointRadius:0,pointHoverRadius:3,
+            yAxisID:'yV',order:1
+          },
+        ]
+      },
+      options:{
+        ...base,
+        plugins:{
+          ...base.plugins,
+          tooltip:{
+            ...base.plugins.tooltip,
+            callbacks:{
+              title:items=>items[0]?.label||'',
+              label:ctx=>{
+                if(ctx.datasetIndex===0) return `  Power: ${(+ctx.raw).toFixed(1)} W`;
+                if(ctx.datasetIndex===1) return `  Current: ${((+ctx.raw)/10).toFixed(3)} A`;
+                return `  Voltage: ${(+ctx.raw).toFixed(1)} V`;
+              }
+            }
+          }
         },
-        {
-          data:aBuf.slice(-len).map(p=>p.a*10),
-          borderColor:'#5AC8F5',
-          borderDash:[6,3],
-          fill:false,tension:.4,borderWidth:2,
-          pointRadius:0,pointHoverRadius:5,
-          yAxisID:'yW',order:2
-        },
-        {
-          data:vBuf.slice(-len).map(p=>p.v),
-          borderColor:'rgba(255,255,255,.35)',
-          borderDash:[2,5],
-          fill:false,tension:.3,borderWidth:1.5,
-          pointRadius:0,pointHoverRadius:4,
-          yAxisID:'yV',order:1
-        },
-      ]},
-      options:{...sharedOpts,
         scales:{
-          ...sharedOpts.scales,
+          ...base.scales,
           yW:{
             position:'left',
-            grid:{color:'rgba(255,255,255,.04)',drawTicks:false},
-            ticks:{color:'rgba(255,255,255,.32)',font:{size:12},callback:v=>v<1?v.toFixed(1):Math.round(v)},
+            grid:{color:gridColor,drawTicks:false},
+            ticks:{
+              color:tickColor,font:{size:11,weight:'500'},
+              maxTicksLimit:5,
+              callback:v=>v>=1000?`${(v/1000).toFixed(1)}k`:v>=10?Math.round(v).toString():v.toFixed(1)
+            },
             border:{display:false}
           },
           yV:{
             position:'right',
             grid:{display:false},
-            ticks:{color:'rgba(255,255,255,.22)',font:{size:11},callback:v=>v.toFixed(0)+'V'},
+            ticks:{
+              color:tickColor2,font:{size:10,weight:'500'},
+              maxTicksLimit:4,
+              callback:v=>`${Math.round(v)}V`
+            },
             border:{display:false}
           }
         }
@@ -1300,42 +1333,54 @@ function buildChart(aid,mode){
     return;
   }
 
-  // Single-series mode
+  // Single-series mode (Power / Current / Voltage)
   const rawBuf=mode==='w'?s.wBuf:mode==='a'?s.aBuf:s.vBuf;
   const buf=fBuf(rawBuf,globalTW);
+  if(buf.length===0)return;
+
   const labels=buf.map(p=>p.ts);
-  const vals=buf.map(p=>p[mode]);
-  const borderColor=mode==='w'?clr:mode==='a'?'#5AC8F5':'rgba(255,255,255,.55)';
-  const bgColor=mode==='w'?bg(clr,0.10):mode==='a'?'rgba(90,200,245,.08)':'rgba(255,255,255,.04)';
+  const vals  =buf.map(p=>p[mode]);
+
+  const borderColor=mode==='w'?clr:mode==='a'?'#5AC8F5':(isLight?'rgba(0,0,0,.40)':'rgba(255,255,255,.60)');
+  const bgColor    =mode==='w'?rgba(clr,0.12):mode==='a'?'rgba(90,200,245,.10)':(isLight?'rgba(0,0,0,.05)':'rgba(255,255,255,.05)');
+  const unitLabel  =mode==='w'?'W':mode==='a'?'A':'V';
 
   appCRefs[aid]=new Chart(c.getContext('2d'),{
     type:'line',
-    data:{labels,datasets:[{
-      data:vals,
-      borderColor,
-      backgroundColor:bgColor,
-      fill:true,tension:.4,borderWidth:2.5,
-      pointRadius:0,pointHoverRadius:5,
-    }]},
-    options:{...sharedOpts,
-      plugins:{...sharedOpts.plugins,
-        tooltip:{...sharedOpts.plugins.tooltip,
+    data:{
+      labels,
+      datasets:[{
+        label:mode==='w'?'Power (W)':mode==='a'?'Current (A)':'Voltage (V)',
+        data:vals,
+        borderColor,
+        backgroundColor:bgColor,
+        fill:true,
+        borderWidth:2.5,
+        pointRadius:0,pointHoverRadius:5,pointHoverBackgroundColor:borderColor,
+      }]
+    },
+    options:{
+      ...base,
+      plugins:{
+        ...base.plugins,
+        tooltip:{
+          ...base.plugins.tooltip,
           callbacks:{
             title:items=>items[0]?.label||'',
-            label:ctx=>{
-              const v=ctx.raw;
-              if(mode==='w') return ` Power: ${(+v).toFixed(1)} W`;
-              if(mode==='a') return ` Current: ${(+v).toFixed(3)} A`;
-              return ` Voltage: ${(+v).toFixed(1)} V`;
-            }
+            label:ctx=>`  ${mode==='w'?'Power':mode==='a'?'Current':'Voltage'}: ${(+ctx.raw).toFixed(mode==='a'?3:1)} ${unitLabel}`
           }
         }
       },
       scales:{
-        ...sharedOpts.scales,
+        ...base.scales,
         y:{
-          grid:{color:'rgba(255,255,255,.04)',drawTicks:false},
-          ticks:{color:'rgba(255,255,255,.32)',font:{size:12}},
+          position:'left',
+          grid:{color:gridColor,drawTicks:false},
+          ticks:{
+            color:tickColor,font:{size:11,weight:'500'},
+            maxTicksLimit:5,
+            callback:v=>v>=1000?`${(v/1000).toFixed(1)}k${unitLabel}`:mode==='a'?v.toFixed(2)+unitLabel:Math.round(v)+unitLabel
+          },
           border:{display:false}
         }
       }
@@ -1356,10 +1401,7 @@ function drawGauge(score,grade){
   fi.setAttribute('d',arcPath(cx,cy,r,sd,fs));fi.setAttribute('stroke',siCol(score));fi.setAttribute('stroke-width',sw);
   if(gn){gn.textContent=score.toFixed(1);gn.setAttribute('fill',siCol(score));}
   if(gs)gs.textContent=`Grade ${grade} — ${GRADES[grade]||''}`;
-  if(vueApp){
-    vueApp.ui.navSi=score.toFixed(1)+'/10';
-    vueApp.ui.siColor=siCol(score);
-  }
+  const ns=G('nav-si');if(ns){ns.textContent=score.toFixed(1)+'/10';ns.style.color=siCol(score);}
   latestSI={score,grade};
 }
 
@@ -1377,10 +1419,13 @@ async function refreshSI(){
   const sf=fBuf(siBuf,TW.si),sl=sf.map(p=>p.ts);
   if(!chartRefs.si){
     const c=G('si-chart');if(!c)return;
+    const opts=makeBaseOpts();
     chartRefs.si=new Chart(c.getContext('2d'),{type:'line',data:{labels:sl,datasets:[
-      {data:sf.map(p=>p.v),borderColor:'#0A84FF',backgroundColor:'rgba(10,132,255,.07)',fill:true,tension:.45,borderWidth:2.5},
-      {data:sl.map(()=>5),borderColor:'rgba(255,69,58,.35)',borderDash:[6,4],borderWidth:2,pointRadius:0},
-    ]},options:{...baseOpts,scales:{...baseOpts.scales,y:{...baseOpts.scales.y,min:0,max:10}}}});
+      {data:sf.map(p=>p.v),borderColor:'#0A84FF',backgroundColor:'rgba(10,132,255,.08)',fill:true,borderWidth:2.5,pointRadius:0,pointHoverRadius:5,label:'Stability Score'},
+      {data:sl.map(()=>5),borderColor:'rgba(255,69,58,.40)',borderDash:[6,4],borderWidth:1.5,pointRadius:0,label:'Min threshold (5.0)'},
+    ]},options:{...opts,
+      plugins:{...opts.plugins,legend:{display:true,position:'top',align:'start',labels:{color:opts.scales.x.ticks.color,font:{size:13},usePointStyle:true,padding:14}}},
+      scales:{...opts.scales,y:{...opts.scales.y,min:0,max:10}}}});
   } else {
     chartRefs.si.data.labels=sl;chartRefs.si.data.datasets[0].data=sf.map(p=>p.v);
     chartRefs.si.data.datasets[1].data=sl.map(()=>5);chartRefs.si.update('none');
@@ -1476,23 +1521,25 @@ async function refreshHist(){
 
   if(chartRefs.hSoc)chartRefs.hSoc.destroy();
   const c1=G('h-soc-c');if(c1){
+    const opts=makeBaseOpts();
     chartRefs.hSoc=new Chart(c1.getContext('2d'),{type:'line',data:{labels:bl,datasets:[
-      {data:bh.map(p=>p.soc),borderColor:'#30D158',backgroundColor:'rgba(48,209,88,.07)',fill:true,tension:.4,borderWidth:2.5,label:'SOC %',pointRadius:0},
-      {data:bl.map(()=>20),borderColor:'rgba(255,159,10,.50)',borderDash:[6,4],borderWidth:1.5,pointRadius:0,label:'20% Warning'},
-      {data:bl.map(()=>10),borderColor:'rgba(255,69,58,.60)',borderDash:[3,4],borderWidth:1.5,pointRadius:0,label:'10% Floor'},
-    ]},options:{...baseOpts,
-      plugins:{legend:{display:true,position:'top',labels:{color:'rgba(255,255,255,.55)',font:{size:13,weight:'500'},usePointStyle:true,padding:16}}},
-      scales:{...baseOpts.scales,y:{...baseOpts.scales.y,min:0,max:100,ticks:{...baseOpts.scales.y.ticks,callback:v=>v+'%'}}}}});
+      {data:bh.map(p=>p.soc),borderColor:'#30D158',backgroundColor:'rgba(48,209,88,.08)',fill:true,borderWidth:2.5,label:'SOC %',pointRadius:0,pointHoverRadius:5},
+      {data:bl.map(()=>20),borderColor:'rgba(255,159,10,.55)',borderDash:[7,4],borderWidth:1.5,pointRadius:0,label:'20% Warning'},
+      {data:bl.map(()=>10),borderColor:'rgba(255,69,58,.65)',borderDash:[3,4],borderWidth:1.5,pointRadius:0,label:'10% Floor'},
+    ]},options:{...opts,
+      plugins:{...opts.plugins,legend:{display:true,position:'top',align:'start',labels:{color:opts.scales.x.ticks.color,font:{size:13},usePointStyle:true,padding:14}}},
+      scales:{...opts.scales,y:{...opts.scales.y,min:0,max:100,ticks:{...opts.scales.y.ticks,callback:v=>v+'%'}}}}});
   }
 
   const sl=sh.map(p=>mkTs(p.ts));
   if(chartRefs.hPw)chartRefs.hPw.destroy();
   const c2=G('h-pw-c');if(c2){
+    const opts=makeBaseOpts();
     chartRefs.hPw=new Chart(c2.getContext('2d'),{type:'line',data:{labels:sl,datasets:[
-      {data:sh.map(p=>p.solar_kw),borderColor:'#FF9F0A',backgroundColor:'rgba(255,159,10,.07)',fill:true,tension:.4,borderWidth:2.5,label:'Solar (kW)',pointRadius:0},
-      {data:sh.map(p=>p.load_kw), borderColor:'#0A84FF',backgroundColor:'rgba(10,132,255,.06)',fill:true,tension:.4,borderWidth:2.5,label:'Load (kW)',pointRadius:0},
-    ]},options:{...baseOpts,
-      plugins:{legend:{display:true,position:'top',labels:{color:'rgba(255,255,255,.55)',font:{size:13,weight:'500'},usePointStyle:true,padding:16}}}}});
+      {data:sh.map(p=>p.solar_kw),borderColor:'#FF9F0A',backgroundColor:'rgba(255,159,10,.08)',fill:true,borderWidth:2.5,label:'Solar (kW)',pointRadius:0,pointHoverRadius:5},
+      {data:sh.map(p=>p.load_kw), borderColor:'#0A84FF',backgroundColor:'rgba(10,132,255,.07)',fill:true,borderWidth:2.5,label:'Load (kW)',pointRadius:0,pointHoverRadius:5},
+    ]},options:{...opts,
+      plugins:{...opts.plugins,legend:{display:true,position:'top',align:'start',labels:{color:opts.scales.x.ticks.color,font:{size:13},usePointStyle:true,padding:14}}}}});
   }
 
   // Build per-appliance history mini-charts
@@ -1516,7 +1563,7 @@ async function refreshHist(){
         labels:filtered.map(p=>mkTs(p.ts)),
         datasets:[{data:filtered.map(p=>p.w),borderColor:s.meta.clr||'#0A84FF',
           backgroundColor:(s.meta.clr||'#0A84FF').replace(')',',.07)').replace('rgba(','rgba('),
-          fill:true,tension:.4,borderWidth:2,pointRadius:0,label:'Power (W)'}]
+          fill:true,cubicInterpolationMode:'monotone',borderWidth:2,pointRadius:0,label:'Power (W)'}]
       },options:{...baseOpts,animation:false,
         plugins:{legend:{display:true,position:'top',labels:{color:'rgba(255,255,255,.50)',font:{size:11},usePointStyle:true}}}}});
     });
@@ -1568,123 +1615,121 @@ async function reconnect(){
 }
 
 // ── Init ──────────────────────────────────────────────────
-function initVue(){
-  const app=Vue.createApp({
-    data(){
-      return {
-        activeTab:'realtime',
-        hasData:false,
-        alerts:[],
-        liveRows:[],
-        ui:{
-          connected:false,
-          statusText:'Connecting…',
-          clock:'--:--:--',
-          socPct:0,
-          socColor:'var(--green)',
-          heroSoc:'—',
-          reserveText:'',
-          heroSolar:'—',
-          heroLoad:'—',
-          heroNet:'—',
-          netColor:'var(--l1)',
-          heroNetMsg:'—',
-          navSoc:'—%',
-          navSi:'—/10',
-          siColor:'var(--blue)'
-        }
-      };
-    },
-    methods:{
-      showTab
-    }
+// ── Theme toggle ─────────────────────────────────────────
+function toggleTheme(){
+  const isLight=document.documentElement.classList.toggle('light');
+  localStorage.setItem('rv-theme',isLight?'light':'dark');
+  const btn=G('theme-btn');
+  if(btn) btn.textContent=isLight?'☀️':'🌙';
+  document.querySelectorAll('img[alt="AC Future"]').forEach(img=>{
+    img.style.filter=isLight?'none':'invert(1)';
   });
-  app.config.compilerOptions.delimiters=['[[',']]'];
-  vueApp=app.mount('#app');
+  // Destroy all charts so they rebuild with correct theme colours on next render
+  Object.keys(chartRefs).forEach(k=>{
+    try{if(chartRefs[k]){chartRefs[k].destroy();delete chartRefs[k];}}catch(e){}
+  });
+  Object.keys(appCRefs).forEach(k=>{
+    try{if(appCRefs[k]){appCRefs[k].destroy();delete appCRefs[k];}}catch(e){}
+  });
+  // Force immediate rebuild of visible tab charts
+  if(hasData) buildRTCharts();
+  if(G('tab-appliances').classList.contains('active')) renderGrid();
+  if(G('tab-stability').classList.contains('active'))  refreshSI();
+  if(G('tab-history').classList.contains('active'))    refreshHist();
+}
+(function(){
+  const saved=localStorage.getItem('rv-theme');
+  if(saved==='light'){
+    document.documentElement.classList.add('light');
+    document.addEventListener('DOMContentLoaded',()=>{
+      const btn=G('theme-btn');if(btn)btn.textContent='☀️';
+      document.querySelectorAll('img[alt="AC Future"]').forEach(img=>img.style.filter='none');
+    });
+  }
+})();
+
+// ── Live energy cost display ───────────────────────────────
+// Session accumulators — incremented on every solar data point
+let _sessIntervals=0;      // how many solar data points received
+let _sessSolarKwh=0;       // cumulative solar kWh this session
+let _sessLoadKwh=0;        // cumulative load kWh this session
+const _DT_HRS=1/120;       // each MQTT step ≈ 30 s = 1/120 hr
+
+function updateLiveCost(){
+  const rate=+(G('dash-cost-kwh')?.value)||0.14;
+  const s_kw=latestLive.solar_kw||0;
+  const l_kw=latestLive.load_kw||0;
+
+  // --- Per-hour rates (current instantaneous × rate) ---
+  const solarHr = s_kw * rate;                       // $/hr saved by solar
+  const loadHr  = l_kw * rate;                       // $/hr cost of consumption
+  const netHr   = Math.max(0, l_kw - s_kw) * rate;  // $/hr net from grid
+  const offsetPct = l_kw > 0 ? Math.min(100, (s_kw / l_kw) * 100) : 0;
+
+  // --- Today estimates (extrapolate from current rate × remaining day hours) ---
+  const now=new Date();
+  const hoursLeft=24-(now.getHours()+(now.getMinutes()/60));
+  const solarDay = solarHr * hoursLeft;
+  const loadDay  = loadHr  * hoursLeft;
+  const netDay   = netHr   * hoursLeft;
+
+  // --- Session cumulative kWh (integrate each step) ---
+  _sessIntervals++;
+  _sessSolarKwh += s_kw * _DT_HRS;
+  _sessLoadKwh  += l_kw * _DT_HRS;
+  const sessSolarVal = _sessSolarKwh * rate;
+  const sessLoadCost = _sessLoadKwh  * rate;
+  const sessNetCost  = Math.max(0, _sessLoadKwh - _sessSolarKwh) * rate;
+
+  // --- Dollar formatter ---
+  const $f = v => v >= 1 ? `$${v.toFixed(2)}` : v >= 0.01 ? `$${v.toFixed(3)}` : `$${v.toFixed(4)}`;
+  const kf = v => v >= 1 ? v.toFixed(2) : v.toFixed(3);
+
+  const set=(id,v)=>{const e=G(id);if(e)e.textContent=v;};
+
+  // Per-hour
+  set('cost-solar-hr',   $f(solarHr));
+  set('cost-load-hr',    $f(loadHr));
+  set('cost-net-hr',     $f(netHr));
+  set('cost-offset-pct', offsetPct.toFixed(1)+'%');
+  const bar=G('cost-offset-bar');
+  if(bar) bar.style.width=offsetPct.toFixed(1)+'%';
+
+  // Today estimates
+  set('cost-solar-day', $f(solarDay));
+  set('cost-load-day',  $f(loadDay));
+  set('cost-net-day',   $f(netDay));
+
+  // Session totals
+  set('cost-sess-solar', kf(_sessSolarKwh));
+  set('cost-sess-load',  kf(_sessLoadKwh));
+  set('cost-sess-saved', $f(sessSolarVal));
+  set('cost-sess-total', $f(sessLoadCost));
+
+  // Also update the legacy cost-bar chips (header bar) if they exist
+  const setT=(id,v)=>{const e=G(id);if(e)e.textContent=v;};
+  setT('dc-solar', $f(solarHr));
+  setT('dc-load',  $f(loadHr));
+  const ne=G('dc-net');if(ne)ne.textContent=$f(netHr);
 }
 
+setInterval(()=>{G('sbtime').textContent=new Date().toLocaleTimeString('en');},1000);
 setInterval(()=>{
-  if(vueApp)vueApp.ui.clock=new Date().toLocaleTimeString('en');
-},1000);
-setInterval(()=>{
-  if(vueApp&&vueApp.activeTab==='appliances')renderGrid();
-  if(vueApp&&vueApp.activeTab==='stability')refreshSI();
+  if(G('tab-appliances').classList.contains('active'))renderGrid();
+  if(G('tab-stability').classList.contains('active'))refreshSI();
 },5000);
 
 document.addEventListener('DOMContentLoaded',()=>{
-  initVue();
   drawGauge(0,'F');connectSSE();
-  fetch('/api/appliances').then(r=>r.ok?r.json():[]).then(apps=>{
+  fetch('http://localhost:5001/api/appliances').then(r=>r.ok?r.json():[]).then(apps=>{
     apps.forEach(a=>{
       const aid=String(a.id);
       if(!appState[aid])appState[aid]={meta:{},vBuf:[],aBuf:[],wBuf:[],latest:null};
       appState[aid].meta={name:a.name,icon:a.icon||'',clr:a.clr||'#0A84FF',cat:a.cat||'medium'};
     });
-    if(apps.length){renderGrid();}
+    if(apps.length){showData();renderGrid();}
   }).catch(()=>{});
 });
-</script>
-
-<!-- ═══ FRONTEND STUDIO — Enhancement Script ═══ -->
-<script>
-(function () {
-  'use strict';
-
-  /* 1 · Stagger cards + resize charts whenever a tab is shown */
-  const _origShowTab = window.showTab;
-  if (typeof _origShowTab === 'function') {
-    window.showTab = function (n, btn) {
-      _origShowTab(n, btn);
-      const page = document.getElementById('tab-' + n);
-      if (!page) return;
-
-      // Stagger entrance animation
-      const cards = page.querySelectorAll('.card, .hcard, .mcard, .app-chart-card');
-      cards.forEach(function (el, i) {
-        el.style.animation = 'none';
-        void el.offsetHeight;
-        el.style.animation = '';
-        el.style.animationDelay = (i * 38) + 'ms';
-      });
-
-      // Force Chart.js to re-measure container after CSS height takes effect
-      if (n === 'appliances') {
-        requestAnimationFrame(function () {
-          page.querySelectorAll('canvas[id^="ac-"]').forEach(function (canvas) {
-            var chart = Chart && Chart.getChart ? Chart.getChart(canvas) : null;
-            if (chart) { chart.resize(); }
-          });
-        });
-      }
-    };
-  }
-
-  /* 2 · Flash numeric values when live data updates */
-  var flashObserver = new MutationObserver(function (mutations) {
-    mutations.forEach(function (m) {
-      var el = m.target.nodeType === 3 ? m.target.parentElement : m.target;
-      if (el && el.matches && el.matches('.hval, .mval, .nstat-v')) {
-        el.classList.remove('val-flash');
-        void el.offsetHeight;
-        el.classList.add('val-flash');
-      }
-    });
-  });
-  document.querySelectorAll('.hval, .mval, .nstat-v').forEach(function (el) {
-    flashObserver.observe(el, { childList: true, subtree: true, characterData: true });
-  });
-
-  /* 3 · Stagger first visible page on load */
-  document.addEventListener('DOMContentLoaded', function () {
-    var firstPage = document.querySelector('.page.active');
-    if (firstPage) {
-      firstPage.querySelectorAll('.card, .hcard, .mcard').forEach(function (el, i) {
-        el.style.animationDelay = (i * 50) + 'ms';
-      });
-    }
-  });
-
-})();
 </script>
 </body>
 </html>

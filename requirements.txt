@@ -1,46 +1,22 @@
-aiosqlite==0.20.0
-amqtt==0.11.0b1
-annotated-doc==0.0.4
-annotated-types==0.7.0
-anyio==4.13.0
-astral==3.2
-asyncio-mqtt==0.16.2
-certifi==2026.2.25
-click==8.3.1
-colorama==0.4.6
-dnspython==2.8.0
-docopt==0.6.2
-email-validator==2.3.0
+# RV Energy Simulator — Standalone Package
+# Install: pip install -r requirements.txt
+
+# Web framework
 fastapi==0.111.0
-fastapi-cli==0.0.24
-h11==0.16.0
-httpcore==1.0.9
-httptools==0.7.1
-httpx==0.28.1
-idna==3.11
-Jinja2==3.1.4
-markdown-it-py==4.0.0
-MarkupSafe==3.0.3
-mdurl==0.1.2
-orjson==3.11.7
-paho-mqtt==2.1.0
-passlib==1.7.4
-pydantic==2.7.1
-pydantic_core==2.18.2
-Pygments==2.20.0
-python-dotenv==1.2.2
+uvicorn[standard]==0.29.0
+jinja2==3.1.4
 python-multipart==0.0.9
-PyYAML==6.0.3
-rich==14.3.3
-rich-toolkit==0.19.7
-shellingham==1.5.4
-six==1.17.0
-starlette==0.37.2
-transitions==0.8.11
-typer==0.24.1
-typing_extensions==4.15.0
-tzdata==2025.3
-ujson==5.12.0
-uvicorn==0.29.0
-watchfiles==1.1.1
-websockets==10.4
+
+# Database
+aiosqlite==0.20.0
+
+# MQTT
+paho-mqtt==2.1.0        # Publisher client
+amqtt==0.11.0b1         # Pure-Python MQTT broker (no mosquitto needed)
+
+# Data / validation
+pydantic==2.7.1
+astral==3.2             # Sunrise/sunset calculations from lat/lon
+
+# Async utilities
+asyncio-mqtt==0.16.2    # Async MQTT subscriber for dashboard
