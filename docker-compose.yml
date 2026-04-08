@@ -9,11 +9,11 @@ services:
       - sim-data:/app/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import socket; s=socket.create_connection(('localhost',1883),2); s.close()\""]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5001/api/simulate/live/status', timeout=2)\""]
       interval: 5s
-      timeout: 3s
+      timeout: 4s
       retries: 10
-      start_period: 10s
+      start_period: 15s
 
   dashboard:
     build: .
@@ -29,5 +29,20 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  dbgate:
+    image: dbgate/dbgate
+    ports:
+      - "${DBGATE_PORT}:3000"
+    volumes:
+      - sim-data:/app/data
+      - dbgate-data:/root/.dbgate
+    environment:
+      CONNECTIONS: sqlite_db
+      ENGINE_sqlite_db: sqlite@dbgate-plugin-sqlite
+      LABEL_sqlite_db: RV Simulator DB
+      FILE_sqlite_db: /app/data/simulator.db
+    restart: unless-stopped
+
 volumes:
   sim-data:
+  dbgate-data:
