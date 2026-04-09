@@ -30,7 +30,7 @@
 }
 :root[data-theme='light']{
   --bg:#f3f6fb;--bg2:#fff;--bg3:#fff;--bg4:#edf2f9;
-  --l1:#101420;--l2:rgba(16,20,32,.78);--l3:rgba(16,20,32,.56);--l4:rgba(16,20,32,.30);--l5:rgba(16,20,32,.10);
+  --l1:#101420;--l2:rgba(16,20,32,.82);--l3:rgba(16,20,32,.66);--l4:rgba(16,20,32,.48);--l5:rgba(16,20,32,.14);
   --sep:rgba(130,145,170,.30);
   --glass:rgba(255,255,255,.9);--gb:rgba(130,145,170,.26);--gh:rgba(130,145,170,.34);
   --sh:0 14px 36px rgba(16,20,32,.08),0 1px 0 rgba(255,255,255,.92) inset;
@@ -144,10 +144,10 @@ main{max-width:1600px;margin:0 auto;padding:28px}
   border-radius:50%;background:inherit;box-shadow:0 0 16px currentColor;opacity:.8}
 .soc-marks{position:relative;height:28px;margin-top:6px}
 .sm{position:absolute;font-size:var(--base);font-weight:500;transform:translateX(-50%)}
-.sm.s0{left:0;transform:none;color:var(--l4);font-weight:600}
+.sm.s0{left:0;transform:none;color:var(--l3);font-weight:600}
 .sm.s10{left:10%;color:var(--red)}
 .sm.s20{left:20%;color:var(--orange)}
-.sm.s100{right:0;transform:none;color:var(--l4);font-weight:600}
+.sm.s100{right:0;transform:none;color:var(--l3);font-weight:600}
 
 /* ── ALERTS ──────────────────────────────────────────────────── */
 .alert{display:flex;align-items:flex-start;gap:14px;padding:18px 22px;
@@ -235,7 +235,7 @@ main{max-width:1600px;margin:0 auto;padding:28px}
 .pval{font-family:var(--fm);font-size:var(--xxl);font-weight:600}
 .ptrack{height:6px;background:rgba(255,255,255,.07);border-radius:3px}
 .pfill{height:100%;border-radius:3px;transition:width 1s ease}
-.psub{font-size:var(--sm);color:var(--l4);margin-top:6px;font-weight:600}
+.psub{font-size:var(--sm);color:var(--l3);margin-top:6px;font-weight:600}
 
 /* ── GRADE TABLE ─────────────────────────────────────────────── */
 .gtable{width:100%;border-collapse:collapse}
@@ -805,14 +805,14 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
       </div>
       <div class="gauge-wrap" style="width:100%">
         <svg overflow="visible" viewBox="0 0 320 280" width="320" height="280">
-          <path id="si-bg" fill="none" stroke="rgba(255,255,255,.06)" stroke-linecap="round"/>
+          <path id="si-bg" fill="none" stroke="var(--l4)" stroke-linecap="round"/>
           <path id="si-arc" fill="none" stroke-linecap="round"/>
           <text id="si-num" x="160" y="162" text-anchor="middle" dominant-baseline="middle"
             font-family="-apple-system,BlinkMacSystemFont" font-size="88" font-weight="900" fill="white">—</text>
           <text id="si-sub" x="160" y="210" text-anchor="middle"
-            font-family="-apple-system,BlinkMacSystemFont" font-size="18" font-weight="600" fill="rgba(235,235,245,.50)">Waiting for data…</text>
-          <text x="44" y="262" text-anchor="middle" fill="rgba(235,235,245,.20)" font-size="16" font-family="SF Mono,Menlo,monospace">0</text>
-          <text x="276" y="262" text-anchor="middle" fill="rgba(235,235,245,.20)" font-size="16" font-family="SF Mono,Menlo,monospace">10</text>
+            font-family="-apple-system,BlinkMacSystemFont" font-size="18" font-weight="600" fill="var(--l3)">Waiting for data…</text>
+          <text x="44" y="262" text-anchor="middle" fill="var(--l4)" font-size="16" font-family="SF Mono,Menlo,monospace">0</text>
+          <text x="276" y="262" text-anchor="middle" fill="var(--l4)" font-size="16" font-family="SF Mono,Menlo,monospace">10</text>
         </svg>
         <div class="pillars" style="width:90%;max-width:400px">
           <div class="pcell">
@@ -1319,7 +1319,7 @@ function ensureCard(aid,ci){
             <div class="avlbl">Amps</div>
           </div>
           <div class="avchip">
-            <div class="avnum" id="av-${aid}" style="color:rgba(235,235,245,.60)">${l?l.v.toFixed(1):'—'}</div>
+            <div class="avnum" id="av-${aid}" style="color:var(--l2)">${l?l.v.toFixed(1):'—'}</div>
             <div class="avlbl">Volts</div>
           </div>
         </div>
@@ -1337,7 +1337,7 @@ function ensureCard(aid,ci){
         <div class="alegend" id="leg-${aid}">
           <div class="ald"><div class="aldd" style="background:${clr}"></div>Power (W)</div>
           <div class="ald"><div class="aldd" style="background:#5AC8F5;border-top:2px dashed #5AC8F5;background:none;border-radius:0"></div>Current (A×10)</div>
-          <div class="ald"><div class="aldd" style="background:rgba(255,255,255,.35)"></div>Voltage (V)</div>
+          <div class="ald"><div class="aldd" style="background:var(--l3)"></div>Voltage (V)</div>
         </div>
         <div class="achart-wrap">
           <canvas id="ac-${aid}" style="display:block;width:100%;height:100%"></canvas>
@@ -1403,9 +1403,9 @@ function swMode(aid,mode,btn){
     else if(mode==='a')
       leg.innerHTML=`<div class="ald"><div class="aldd" style="background:#5AC8F5"></div>Current (A)</div>`;
     else if(mode==='v')
-      leg.innerHTML=`<div class="ald"><div class="aldd" style="background:rgba(255,255,255,.4)"></div>Voltage (V)</div>`;
+      leg.innerHTML=`<div class="ald"><div class="aldd" style="background:var(--l3)"></div>Voltage (V)</div>`;
     else
-      leg.innerHTML=`<div class="ald"><div class="aldd" style="background:${clr}"></div>Power (W)</div><div class="ald"><div class="aldd" style="background:#5AC8F5;border-top:2px dashed #5AC8F5;background:none;border-radius:0"></div>Current (A×10)</div><div class="ald"><div class="aldd" style="background:rgba(255,255,255,.35)"></div>Voltage (V)</div>`;
+      leg.innerHTML=`<div class="ald"><div class="aldd" style="background:${clr}"></div>Power (W)</div><div class="ald"><div class="aldd" style="background:#5AC8F5;border-top:2px dashed #5AC8F5;background:none;border-radius:0"></div>Current (A×10)</div><div class="ald"><div class="aldd" style="background:var(--l3)"></div>Voltage (V)</div>`;
   }
   buildChart(aid,mode);
 }
@@ -1441,10 +1441,10 @@ function buildChart(aid,mode){
     plugins:{
       legend:{display:false},  // We render our own legend in HTML
       tooltip:{
-        backgroundColor:'rgba(12,12,16,.96)',
-        titleColor:'rgba(235,235,245,.55)',
-        bodyColor:'#fff',
-        borderColor:'rgba(255,255,255,.12)',
+        backgroundColor:t.tooltipBg,
+        titleColor:t.tooltipTitle,
+        bodyColor:t.tooltipBody,
+        borderColor:t.tooltipBorder,
         borderWidth:1,
         padding:14,
         cornerRadius:12,
@@ -1463,7 +1463,7 @@ function buildChart(aid,mode){
     },
     scales:{
       x:{
-        grid:{color:'rgba(255,255,255,.04)',drawTicks:false},
+        grid:{color:t.grid,drawTicks:false},
         ticks:{
           color:t.tick,font:{size:12},maxTicksLimit:6,maxRotation:0,
           callback:function(value,index,ticks){
