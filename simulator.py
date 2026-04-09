@@ -18,6 +18,7 @@ from __future__ import annotations
 import asyncio, json, logging, time
 from collections import defaultdict, deque
 from contextlib import asynccontextmanager
+from datetime import datetime
 from pathlib import Path
 from markupsafe import Markup
 
@@ -44,6 +45,11 @@ _sim_state = {
     "si_score": 0.0, "si_grade": "F", "publisher": None, "task": None,
     "rate_s": 1.0, "current_step": None,
     "app_meta": {},   # {aid_str: {name, icon, clr, cat}} for MQTT enrichment
+    "plan_name": "Default Plan",
+    "days": 1,
+    "config_rev": 0,
+    "applied_rev": 0,
+    "reload_requested": False,
 }
 _sse_queues: list[asyncio.Queue] = []
 
@@ -65,6 +71,15 @@ _dashboard_state = {
         "reserve_hit": False,
         "last_update": "—",
         "connected": False,
+    },
+    "energy": {
+        "rate_per_kwh": 0.10,
+        "last_ts_ms": None,
+        "today_solar_cost": 0.0,
+        "today_load_cost": 0.0,
+        "today_net_cost": 0.0,
+        "session_solar_kwh": 0.0,
+        "session_load_kwh": 0.0,
     },
 }
 
@@ -90,7 +105,39 @@ def _compute_live_si(soc_pct: float, solar_kw: float, load_kw: float, net_kw: fl
 
 def _snapshot_dashboard_status() -> dict:
     latest = _dashboard_state["latest"]
-    return dict(latest)
+    return {**dict(latest), "energy": _build_energy_payload()}
+
+
+def _parse_ts_ms(ts: str) -> float | None:
+    try:
+        return datetime.fromisoformat(ts).timestamp() * 1000.0
+    except (TypeError, ValueError):
+        return None
+
+
+def _build_energy_payload() -> dict:
+    latest = _dashboard_state["latest"]
+    e = _dashboard_state["energy"]
+    rate = float(e.get("rate_per_kwh", 0.10))
+    solar_kw = float(latest.get("solar_kw", 0.0))
+    load_kw = float(latest.get("load_kw", 0.0))
+    net_kw = max(load_kw - solar_kw, 0.0)
+    offset_pct = min(100.0, (solar_kw / max(load_kw, 0.0001)) * 100.0) if load_kw > 0 else 0.0
+
+    return {
+        "rate_per_kwh": round(rate, 4),
+        "cost_solar_hr": solar_kw * rate,
+        "cost_load_hr": load_kw * rate,
+        "cost_net_hr": net_kw * rate,
+        "cost_offset_pct": offset_pct,
+        "cost_solar_today": float(e.get("today_solar_cost", 0.0)),
+        "cost_load_today": float(e.get("today_load_cost", 0.0)),
+        "cost_net_today": float(e.get("today_net_cost", 0.0)),
+        "session_solar_kwh": float(e.get("session_solar_kwh", 0.0)),
+        "session_load_kwh": float(e.get("session_load_kwh", 0.0)),
+        "session_solar_value": float(e.get("session_solar_kwh", 0.0)) * rate,
+        "session_grid_cost": float(e.get("today_net_cost", 0.0)),
+    }
 
 
 def _record_live_step(step_data: dict):
@@ -104,6 +151,26 @@ def _record_live_step(step_data: dict):
     reserve_hit = bool(step_data.get("reserve_hit", False))
 
     latest = _dashboard_state["latest"]
+    energy = _dashboard_state["energy"]
+    prev_solar_kw = float(latest.get("solar_kw", 0.0))
+    prev_load_kw = float(latest.get("load_kw", 0.0))
+
+    ts_ms = _parse_ts_ms(ts)
+    prev_ts_ms = energy.get("last_ts_ms")
+    if ts_ms is not None and prev_ts_ms is not None and ts_ms > prev_ts_ms:
+        dt_ms = ts_ms - prev_ts_ms
+        # Guard reconnect gaps/outliers; only integrate continuous cadence windows.
+        if dt_ms <= 300_000:
+            dt_h = dt_ms / 3_600_000.0
+            rate = float(energy.get("rate_per_kwh", 0.10))
+            energy["session_solar_kwh"] += max(prev_solar_kw, 0.0) * dt_h
+            energy["session_load_kwh"] += max(prev_load_kw, 0.0) * dt_h
+            energy["today_solar_cost"] += max(prev_solar_kw, 0.0) * dt_h * rate
+            energy["today_load_cost"] += max(prev_load_kw, 0.0) * dt_h * rate
+            energy["today_net_cost"] += max(prev_load_kw - prev_solar_kw, 0.0) * dt_h * rate
+    if ts_ms is not None:
+        energy["last_ts_ms"] = ts_ms
+
     latest.update({
         "soc_pct": soc,
         "battery_kwh": kwh,
@@ -113,6 +180,7 @@ def _record_live_step(step_data: dict):
         "reserve_hit": reserve_hit,
         "last_update": ts,
         "connected": True,
+        "energy": _build_energy_payload(),
     })
 
     si = _compute_live_si(soc, solar_kw, load_kw, net)
@@ -128,6 +196,7 @@ def _record_live_step(step_data: dict):
         "load_kw": load_kw,
         "si_score": si["score"],
         "si_grade": si["grade"],
+        "energy": _build_energy_payload(),
     })
 
     for aid, data in step_data.get("appliances", {}).items():
@@ -218,6 +287,7 @@ async def create_appliance(req: Request):
     result = row_to_dict(row)
     result["schedules"] = []
     _sync_app_meta({str(aid): result})
+    _mark_live_reload("appliance_create")
     return result
 
 
@@ -246,6 +316,7 @@ async def update_appliance(aid: int, req: Request):
         return JSONResponse({"error": "not found"}, 404)
     result = row_to_dict(row)
     _sync_app_meta({str(aid): result})
+    _mark_live_reload("appliance_update")
     return result
 
 
@@ -270,6 +341,7 @@ async def delete_appliance(aid: int):
         await db.execute("DELETE FROM sim_appliances WHERE id=?", (aid,))
         await db.commit()
     _sim_state["app_meta"].pop(str(aid), None)
+    _mark_live_reload("appliance_delete")
     return {"deleted": aid}
 
 
@@ -286,6 +358,7 @@ async def toggle_appliance(aid: int, req: Request):
             new_state = not bool(row["on_state"])
         await db.execute("UPDATE sim_appliances SET on_state=? WHERE id=?", (int(new_state), aid))
         await db.commit()
+    _mark_live_reload("appliance_toggle")
     return {"id": aid, "on": new_state}
 
 
@@ -298,6 +371,21 @@ def _sync_app_meta(apps_dict: dict):
             "clr":  a.get("clr", "#0A84FF"),
             "cat":  a.get("cat", "medium"),
         }
+
+
+def _mark_live_reload(reason: str = "config_update"):
+    """Flag live loop to refresh runtime config without manual restart."""
+    _sim_state["config_rev"] = int(_sim_state.get("config_rev", 0)) + 1
+    if _sim_state.get("running"):
+        _sim_state["reload_requested"] = True
+        logger.info("Live reload requested (%s), rev=%s", reason, _sim_state["config_rev"])
+
+
+async def _load_runtime_settings() -> dict:
+    """Read persisted simulation settings used by live hot-reload."""
+    async with get_sim_db() as db:
+        row = await (await db.execute("SELECT * FROM sim_settings WHERE id=1")).fetchone()
+    return dict(row) if row else {"battery_cap_kwh": 45.0, "panel_kwp": 0.8, "starting_soc": 87.0, "load_factor": 1.0}
 
 
 # ── Schedules ─────────────────────────────────────────────────────────────────
@@ -322,6 +410,7 @@ async def add_schedule(aid: int, req: Request):
              d.get("label", "")))
         await db.commit()
         row = await (await db.execute("SELECT * FROM sim_schedules WHERE id=?", (cur.lastrowid,))).fetchone()
+    _mark_live_reload("schedule_add")
     return dict(row)
 
 
@@ -336,6 +425,7 @@ async def update_schedule(sid: int, req: Request):
              d.get("label", ""), sid))
         await db.commit()
         row = await (await db.execute("SELECT * FROM sim_schedules WHERE id=?", (sid,))).fetchone()
+    _mark_live_reload("schedule_update")
     return dict(row) if row else JSONResponse({"error": "not found"}, 404)
 
 
@@ -344,6 +434,7 @@ async def delete_schedule(sid: int):
     async with get_sim_db() as db:
         await db.execute("DELETE FROM sim_schedules WHERE id=?", (sid,))
         await db.commit()
+    _mark_live_reload("schedule_delete")
     return {"deleted": sid}
 
 
@@ -373,6 +464,7 @@ async def update_weather_day(plan_name: str, day_index: int, req: Request):
              float(d.get("cloud_pct", cloud_by_cond.get(cond, 10))),
              d.get("sunrise_hhmm", "06:30"), d.get("sunset_hhmm", "19:30")))
         await db.commit()
+    _mark_live_reload("weather_update")
     return {"ok": True}
 
 
@@ -473,6 +565,7 @@ async def apply_profile(profile_name: str):
                 "UPDATE sim_appliances SET on_state=? WHERE id=?",
                 (int(ov.get("on", True)), ov.get("id")))
         await db.commit()
+    _mark_live_reload("profile_apply")
     return {"applied": profile_name, "overrides_applied": len(overrides),
             "occupants": profile["occupants"], "load_factor": profile["load_factor"],
             "battery_cap_kwh": profile["battery_cap_kwh"], "panel_kwp": profile["panel_kwp"],
@@ -514,6 +607,7 @@ async def save_sim_settings(req: Request):
     # Update live simulation state if running
     if _sim_state["running"]:
         _sim_state["soc_pct"] = starting_soc   # reflect immediately in status
+    _mark_live_reload("settings_update")
 
     return {
         "battery_cap_kwh": battery_cap,
@@ -552,6 +646,8 @@ async def save_mqtt_settings(req: Request):
              int(d.get("send_solar", 1)), int(d.get("send_summary", 1)),
              int(d.get("send_weather", 1)), int(d.get("qos", 0)), int(d.get("retain", 0))))
         await db.commit()
+    _sim_state["rate_s"] = float(d.get("publish_rate_s", _sim_state.get("rate_s", 1.0)))
+    _mark_live_reload("mqtt_settings_update")
     return {"ok": True}
 
 
@@ -645,9 +741,14 @@ async def start_live_sim(req: Request):
     publisher.publish_registry(all_apps)
 
     rate_s = float(mqtt_cfg.get("publish_rate_s", 1.0))
+    days = int(body.get("days", max(len(weather_plan), 1)))
+    days = max(1, min(days, 7))
     _sim_state.update({
         "running": True, "day": 0, "step": 0,
         "soc_pct": start_soc * 100, "publisher": publisher, "rate_s": rate_s,
+        "plan_name": plan_name, "days": days,
+        "reload_requested": False,
+        "applied_rev": _sim_state.get("config_rev", 0),
     })
 
     task = asyncio.ensure_future(
@@ -688,12 +789,34 @@ async def live_status():
         "si_score":   _sim_state.get("si_score", 0),
         "si_grade":   _sim_state.get("si_grade", "F"),
         "current_step": _sim_state.get("current_step"),
+        "config_rev": _sim_state.get("config_rev", 0),
+        "applied_rev": _sim_state.get("applied_rev", 0),
+        "reload_requested": _sim_state.get("reload_requested", False),
     }
 
 
 @api.get("/status")
 async def dashboard_status():
     return _snapshot_dashboard_status()
+
+
+@api.get("/dashboard/energy")
+async def dashboard_energy():
+    return _build_energy_payload()
+
+
+@api.put("/dashboard/energy-rate")
+async def set_dashboard_energy_rate(req: Request):
+    body = await req.json()
+    try:
+        rate = float(body.get("rate_per_kwh", 0.10))
+    except Exception:
+        rate = 0.10
+    rate = max(0.0, min(5.0, rate))
+    _dashboard_state["energy"]["rate_per_kwh"] = rate
+    # Recalculate latest payload immediately so UI reflects changed rate at once.
+    _dashboard_state["latest"]["energy"] = _build_energy_payload()
+    return _build_energy_payload()
 
 
 @api.get("/appliances/live")
@@ -754,22 +877,42 @@ async def _live_loop(apps, schedules_by_id, weather_plan, battery_cap, panel_kwp
     """Background task: runs day-by-day, emitting steps via MQTT + SSE."""
     soc = start_soc
     app_meta = _sim_state["app_meta"]
+    day_cursor = 0
+    days_total = int(_sim_state.get("days", max(len(weather_plan), 1)))
+    days_total = max(1, days_total)
 
-    for day_cfg in weather_plan:
-        if not _sim_state["running"]:
-            break
-        _sim_state["day"] = day_cfg.get("day_index", 0)
+    while _sim_state["running"] and day_cursor < days_total:
+        plan_name = _sim_state.get("plan_name", "Default Plan")
+        apps, schedules_by_id, weather_plan, mqtt_cfg = await _load_sim_inputs(plan_name)
+        cfg = await _load_runtime_settings()
+        battery_cap = float(cfg.get("battery_cap_kwh", battery_cap))
+        panel_kwp = float(cfg.get("panel_kwp", panel_kwp))
+        _sim_state["rate_s"] = float(mqtt_cfg.get("publish_rate_s", _sim_state.get("rate_s", 1.0)))
+
+        if _sim_state.get("publisher"):
+            all_apps = await _get_all_apps_for_registry()
+            _sim_state["publisher"].publish_registry(all_apps)
+
+        if not weather_plan:
+            weather_plan = [{"day_index": day_cursor, "condition": "sunny", "temp_c": 22,
+                             "cloud_pct": 5, "sunrise_hhmm": "06:30", "sunset_hhmm": "19:30"}]
+
+        day_cfg = dict(weather_plan[day_cursor % len(weather_plan)])
+        day_cfg["day_index"] = day_cursor
+        _sim_state["day"] = day_cursor
 
         result = await asyncio.to_thread(
             run_day_simulation, apps, schedules_by_id, day_cfg,
-            battery_cap, soc, panel_kwp, seed=day_cfg.get("day_index", 0) * 42
+            battery_cap, soc, panel_kwp, seed=day_cursor * 42
         )
-        soc = result["end_soc_pct"] / 100.0
         _sim_state.update({
             "si_score": result["si_score"],
             "si_grade": result["si_grade"],
+            "applied_rev": _sim_state.get("config_rev", 0),
+            "reload_requested": False,
         })
 
+        reload_hit = False
         for step_data in result.get("timeseries", []):
             if not _sim_state["running"]:
                 break
@@ -814,6 +957,7 @@ async def _live_loop(apps, schedules_by_id, weather_plan, battery_cap, panel_kwp
                 "solar_kw": step_data["solar_kw"],
                 "load_kw": step_data["load_kw"],
                 "ts": step_data["ts"],
+                "energy": _build_energy_payload(),
             }
 
             for q in _sse_queues:
@@ -838,7 +982,21 @@ async def _live_loop(apps, schedules_by_id, weather_plan, battery_cap, panel_kwp
                 except asyncio.QueueFull:
                     pass
 
+            if _sim_state.get("reload_requested"):
+                # Soft-reload: re-plan immediately from latest SOC.
+                soc = max(0.0, min(1.0, float(step_data.get("soc_pct", 0.0)) / 100.0))
+                reload_hit = True
+                break
+
             await asyncio.sleep(_sim_state["rate_s"])
+
+        if not _sim_state["running"]:
+            break
+        if reload_hit:
+            continue
+
+        soc = result["end_soc_pct"] / 100.0
+        day_cursor += 1
 
     _sim_state["running"] = False
     logger.info("Live simulation complete")
