@@ -332,8 +332,8 @@ input[type=range]::-webkit-slider-thumb{
 
 /* Breakdown card */
 .bd-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:14px}
-.bd-title .t1{font-family:var(--fd);font-size:var(--text-xl);font-weight:500;margin-bottom:4px}
-.bd-title .t2{font-size:var(--text-base);color:var(--l2)}
+.bd-title .t1{font-family:var(--fd);font-size:var(--text-xl);font-weight:700;letter-spacing:.2px;margin-bottom:4px}
+.bd-title .t2{font-size:var(--text-base);color:var(--l2);font-weight:500}
 .bd-controls{display:flex;gap:10px;align-items:center}
 .btn-dl{
   padding:10px 22px;border-radius:var(--rp);border:1.5px solid rgba(255,255,255,.22);
@@ -352,16 +352,16 @@ input[type=range]::-webkit-slider-thumb{
 .bd-table{width:100%;border-collapse:collapse}
 .bd-table thead tr{border-bottom:1.5px solid var(--sep)}
 .bd-table th{
-  font-size:var(--text-base);font-weight:500;color:var(--l3);
-  text-transform:uppercase;letter-spacing:1.2px;padding:14px 16px;text-align:left;
+  font-size:var(--text-sm);font-weight:700;color:var(--l2);
+  text-transform:uppercase;letter-spacing:1.1px;padding:10px 14px;text-align:left;
 }
-.bd-table td{padding:16px 16px;border-bottom:1px solid rgba(255,255,255,.05);font-size:var(--text-lg);vertical-align:middle}
+.bd-table td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.05);font-size:var(--text-base);font-weight:500;vertical-align:middle}
 .bd-table tr:last-child td{border-bottom:none}
 .bd-table tr:hover td{background:rgba(255,255,255,.025)}
 .share-bar{display:flex;align-items:center;gap:12px}
-.share-track{flex:1;height:10px;background:rgba(255,255,255,.08);border-radius:5px;overflow:hidden}
+.share-track{flex:1;height:8px;background:rgba(255,255,255,.08);border-radius:5px;overflow:hidden}
 .share-fill{height:100%;border-radius:5px;transition:width .8s ease}
-.share-pct{font-family:var(--fm);font-size:var(--text-base);color:var(--l3);min-width:44px;text-align:right;font-weight:500}
+.share-pct{font-family:var(--fm);font-size:var(--text-sm);color:var(--l3);min-width:44px;text-align:right;font-weight:600}
 
 /* ── PROFILES PAGE ───────────────────────────────────────────── */
 .profiles-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:14px}
@@ -730,7 +730,7 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
 <!-- STATUS BAR -->
 <div class="sb">
   <div class="dot" :class="ui.connected ? 'live' : 'off'"></div>
-  <span>ACFuture · RV Energy Simulator</span>
+  
   <div class="vsep"></div>
   <span id="sim-status">[[ ui.simStatus ]]</span>
   <div class="vsep"></div>
@@ -743,7 +743,7 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
 <nav><div class="ni">
   <div class="brand">
     <div>
-      <img class="brand-logo" src="/static/ACfuturelogo.png" alt="AC Future">
+      <img class="brand-logo" src="/static/ACfuturelogo1.png" alt="AC Future">
       <div class="brand-sub">RV Energy Simulator</div>
     </div>
   </div>
@@ -1644,7 +1644,11 @@ async function runSimulation(){
   })});
   const data=await r.json();const results=data.days;
   showToast('Complete ✓');
+  renderSimulationResults(results);
+}
 
+function renderSimulationResults(results){
+  if(!Array.isArray(results) || !results.length) return;
   // SOC chart — uses simDays + configured reserve%
   const sL=[],sD=[];
   results.slice(0,simDays).forEach((d,di)=>d.soc_hourly.forEach((v,h)=>{sL.push(`D${di+1} ${h}:00`);sD.push(v);}));
@@ -1694,8 +1698,11 @@ async function runSimulation(){
 
   // Breakdown — large 480px horizontal bar chart
   const firstDay=results[0];const ae=firstDay.app_energy_kwh||{};
-  const ids=Object.keys(ae).filter(k=>+ae[k]>0);
-  const totalKwh=ids.reduce((s,id)=>s+(+ae[id]),0);
+  const sortedEntries=Object.entries(ae)
+    .filter(([,kwh])=>+kwh>0)
+    .sort((a,b)=>(+b[1])-(+a[1]));
+  const ids=sortedEntries.map(([id])=>id);
+  const totalKwh=sortedEntries.reduce((s,[,kwh])=>s+(+kwh),0);
   const names=ids.map(id=>{const a=APPS.find(x=>x.id==id);return a?a.name:'App '+id;});
   const clrs=ids.map(id=>{const a=APPS.find(x=>x.id==id);return a?.clr||'#0A84FF';});
 
@@ -1725,17 +1732,17 @@ async function runSimulation(){
   bdData=ids.map(id=>{const a=APPS.find(x=>x.id==id);const kwh=+ae[id];
     return{name:a?a.name:'App '+id,cat:a?.cat||'—',icon:a?.icon||'🔌',clr:a?.clr||'#0A84FF',
       eff_w:+(a?.avg_power_w||0),kwh:+kwh.toFixed(3),pct:totalKwh>0?(kwh/totalKwh*100).toFixed(1):'0'};
-  }).sort((a,b)=>b.kwh-a.kwh);
+  });
   const tbody=G('bd-tbody');
   if(tbody&&bdData.length){
     const maxK=bdData[0].kwh||1;
     tbody.innerHTML=bdData.map(a=>`<tr>
-      <td style="font-size:var(--text-xl);font-weight:500">
-        <span style="margin-right:12px;font-size:22px">${a.icon}</span>${a.name}
-        <span style="font-size:var(--text-sm);color:var(--l3);margin-left:10px;font-weight:500">${a.cat}</span>
+      <td style="font-size:var(--text-lg);font-weight:600">
+        <span style="margin-right:10px;font-size:20px">${a.icon}</span>${a.name}
+        <span style="font-size:var(--text-xs);color:var(--l3);margin-left:8px;font-weight:600">${a.cat}</span>
       </td>
-      <td style="text-align:right;font-family:var(--fm);font-size:var(--text-lg);font-weight:500;color:${a.clr}">${a.eff_w.toFixed(0)} W</td>
-      <td style="text-align:right;font-family:var(--fm);font-size:var(--text-xl);font-weight:600">${a.kwh}</td>
+      <td style="text-align:right;font-family:var(--fm);font-size:var(--text-base);font-weight:600;color:${a.clr}">${a.eff_w.toFixed(0)} W</td>
+      <td style="text-align:right;font-family:var(--fm);font-size:var(--text-lg);font-weight:700">${a.kwh}</td>
       <td><div class="share-bar">
         <div class="share-track"><div class="share-fill" style="width:${Math.min(100,a.kwh/maxK*100).toFixed(1)}%;background:${a.clr}"></div></div>
         <span class="share-pct">${a.pct}%</span></div></td>
@@ -1753,6 +1760,15 @@ async function toggleLive(){
     if(r.ok){
       simRunning=true;
       if(vueApp)vueApp.simRunning=true;
+      // Render charts immediately when simulation starts, so Simulate tab is not blank.
+      const simResp=await fetch('/api/simulate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+        battery_capacity_kwh:+G('cfg-bat').value,panel_kwp:+G('cfg-panel').value,
+        start_soc:+G('cfg-soc').value/100,plan_name:'Default Plan',days:simDays
+      })});
+      if(simResp.ok){
+        const simData=await simResp.json();
+        renderSimulationResults(simData.days||[]);
+      }
       connectSSE();showToast('Live simulation started');
     }
   } else {
