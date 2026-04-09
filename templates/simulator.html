@@ -92,6 +92,9 @@ nav{
   width:auto;
   object-fit:contain;
 }
+.brand-logo.logo-light{display:none}
+:root[data-theme='light'] .brand-logo.logo-dark{display:none}
+:root[data-theme='light'] .brand-logo.logo-light{display:block}
 .brand-sub{font-size:var(--text-xs);color:var(--l3);letter-spacing:1.5px;text-transform:uppercase;margin-top:2px;font-weight:600}
 
 /* Segmented control */
@@ -548,12 +551,13 @@ input[type=range]::-webkit-slider-thumb{
 <!-- ═══ FRONTEND STUDIO — Enhancement Layer ═══ -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
 /* ── Font override: Outfit for crisp cross-platform rendering ── */
 :root {
-  --f: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  --fd: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  --f: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --fd: 'Manrope', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --fm: 'JetBrains Mono', 'SF Mono', Menlo, Monaco, Consolas, monospace;
 }
 
 /* ── Dynamic aurora background ─────────────────────────────── */
@@ -723,6 +727,209 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
     transition-duration: .01ms !important;
   }
 }
+
+/* ── Modern UI polish layer (style-only) ───────────────────── */
+:root {
+  --bg: #0f141c;
+  --bg2: #171d27;
+  --bg3: #1d2531;
+  --bg4: #273243;
+  --bg5: #303d50;
+  --l1: #edf1f7;
+  --l2: rgba(237, 241, 247, 0.8);
+  --l3: rgba(210, 220, 234, 0.62);
+  --l4: rgba(190, 202, 220, 0.38);
+  --sep: rgba(140, 156, 178, 0.24);
+  --glass: rgba(24, 31, 42, 0.82);
+  --gb: rgba(156, 172, 196, 0.2);
+  --gh: rgba(176, 192, 214, 0.28);
+  --sh: 0 14px 30px rgba(8, 12, 18, 0.46), 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+  --blue: #4f8fe8;
+  --green: #3eb378;
+  --orange: #cb9a4d;
+  --red: #d06a70;
+  --teal: #4d9fbd;
+  --purple: #8e79c7;
+  --gap: 18px;
+  --gap-lg: 24px;
+}
+:root[data-theme='light'] {
+  --bg: #f6f7f9;
+  --bg2: #ffffff;
+  --bg3: #ffffff;
+  --bg4: #eef1f5;
+  --bg5: #e8ecf1;
+  --l1: #202a36;
+  --l2: rgba(32, 42, 54, 0.82);
+  --l3: rgba(32, 42, 54, 0.62);
+  --l4: rgba(32, 42, 54, 0.4);
+  --sep: rgba(118, 130, 149, 0.26);
+  --glass: rgba(255, 255, 255, 0.95);
+  --gb: rgba(140, 154, 175, 0.24);
+  --gh: rgba(140, 154, 175, 0.34);
+  --sh: 0 8px 22px rgba(24, 33, 46, 0.08), 0 1px 0 rgba(255, 255, 255, 0.96) inset;
+}
+html { letter-spacing: 0.01em; }
+body::before {
+  background:
+    radial-gradient(ellipse 135% 58% at 12% -8%, rgba(79, 143, 232, 0.12) 0%, transparent 56%),
+    radial-gradient(ellipse 82% 44% at 88% 118%, rgba(62, 179, 120, 0.06) 0%, transparent 54%) !important;
+}
+.card, .app-card, .ls-card, .prof-card, .day-card {
+  border-radius: 18px !important;
+  border-color: var(--gb) !important;
+}
+.section-label, .field-label, .sched-title, .brand-sub, .ls-lbl {
+  letter-spacing: 0.9px !important;
+}
+.ntab, .flt, .btn-add, .btn-live, .btn-run, .btn-dl, .vtb, .save-btn, .btn-add-sched {
+  font-weight: 600 !important;
+}
+.card, .app-card, .prof-card, .ls-card { padding: 20px !important; }
+.cards-grid, .profiles-grid, .sim-layout, .mqtt-grid { gap: 16px !important; }
+.live-strip { gap: 16px !important; }
+.app-card, .prof-card { min-height: 320px; }
+.field-input, .pi input, .pi select, .pp input, .pp select, .sw-input {
+  border-color: rgba(146, 162, 186, 0.26);
+}
+:root[data-theme='light'] .field-input,
+:root[data-theme='light'] .pi input,
+:root[data-theme='light'] .pi select,
+:root[data-theme='light'] .pp input,
+:root[data-theme='light'] .pp select,
+:root[data-theme='light'] .sw-input {
+  background: #ffffff !important;
+  color: var(--l1);
+}
+.bd-table td { border-bottom-color: rgba(152, 179, 216, 0.14); }
+.bd-table tr:hover td { background: rgba(115, 154, 209, 0.08); }
+:root[data-theme='light'] nav,
+:root[data-theme='light'] .sb {
+  background: rgba(255, 255, 255, 0.96);
+  border-bottom-color: rgba(118, 130, 149, 0.22);
+}
+:root[data-theme='light'] body::before {
+  background: radial-gradient(ellipse 120% 48% at 50% -10%, rgba(47, 111, 194, 0.08) 0%, transparent 64%) !important;
+}
+/* Simulate config cards: equal height + clearer boundaries */
+.cfg-grid { align-items: stretch !important; }
+.cfg-card {
+  min-height: 172px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+/* Keep SOC card visually same height despite larger value text */
+.cfg-card-soc #soc-display { font-size: 52px !important; }
+.cfg-card-soc #soc-kwh-display { margin-bottom: 10px !important; }
+.cfg-card-bat { border-color: rgba(146, 162, 186, 0.28) !important; }
+
+/* Slider visibility in light mode */
+:root[data-theme='light'] #cfg-soc,
+:root[data-theme='light'] #cfg-bat-slider,
+:root[data-theme='light'] #cfg-reserve-slider,
+:root[data-theme='light'] #cfg-panel-slider {
+  accent-color: var(--blue) !important;
+}
+:root[data-theme='light'] #cfg-soc::-webkit-slider-runnable-track,
+:root[data-theme='light'] #cfg-bat-slider::-webkit-slider-runnable-track,
+:root[data-theme='light'] #cfg-reserve-slider::-webkit-slider-runnable-track,
+:root[data-theme='light'] #cfg-panel-slider::-webkit-slider-runnable-track {
+  background: rgba(74, 96, 129, 0.26) !important;
+  height: 8px !important;
+  border-radius: 999px;
+}
+:root[data-theme='light'] #cfg-soc::-webkit-slider-thumb,
+:root[data-theme='light'] #cfg-bat-slider::-webkit-slider-thumb,
+:root[data-theme='light'] #cfg-reserve-slider::-webkit-slider-thumb,
+:root[data-theme='light'] #cfg-panel-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-top: -5px;
+  border-radius: 50%;
+  background: #2f6fc2;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 4px rgba(19, 36, 61, 0.24);
+}
+:root[data-theme='light'] #cfg-soc::-moz-range-track,
+:root[data-theme='light'] #cfg-bat-slider::-moz-range-track,
+:root[data-theme='light'] #cfg-reserve-slider::-moz-range-track,
+:root[data-theme='light'] #cfg-panel-slider::-moz-range-track {
+  background: rgba(74, 96, 129, 0.26) !important;
+  height: 8px;
+  border-radius: 999px;
+}
+:root[data-theme='light'] #cfg-soc::-moz-range-thumb,
+:root[data-theme='light'] #cfg-bat-slider::-moz-range-thumb,
+:root[data-theme='light'] #cfg-reserve-slider::-moz-range-thumb,
+:root[data-theme='light'] #cfg-panel-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #2f6fc2;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 4px rgba(19, 36, 61, 0.24);
+}
+
+/* Stronger card borders in light mode for visibility */
+:root[data-theme='light'] .cfg-card-bat {
+  background: rgba(255, 255, 255, 0.96) !important;
+  border-color: rgba(121, 137, 161, 0.36) !important;
+}
+:root[data-theme='light'] .cfg-card-soc { border-color: rgba(84, 157, 116, 0.28) !important; }
+:root[data-theme='light'] .cfg-card-reserve { border-color: rgba(196, 131, 137, 0.30) !important; }
+:root[data-theme='light'] .cfg-card-solar { border-color: rgba(191, 161, 106, 0.30) !important; }
+@media (max-width: 1200px) {
+  .live-strip { grid-template-columns: repeat(3, 1fr) !important; }
+  .cfg-grid { grid-template-columns: 1fr 1fr !important; }
+}
+@media (max-width: 900px) {
+  main { padding: 20px; }
+  .cards-grid, .profiles-grid, .sim-layout, .mqtt-grid, .live-strip { gap: 14px !important; }
+}
+@media (max-width: 700px) {
+  main { padding: 14px; }
+  .card, .app-card, .prof-card, .ls-card { padding: 16px !important; border-radius: 14px !important; }
+  .live-strip { grid-template-columns: 1fr 1fr !important; }
+  .cfg-grid { grid-template-columns: 1fr !important; }
+  .cfg-card { min-height: auto; }
+}
+/* Full responsive pass */
+.card, .app-card, .prof-card, .ls-card { min-width: 0; }
+.bd-table { min-width: 720px; }
+#tab-simulate .card, #tab-mqtt .card { overflow-x: auto; }
+
+@media (max-width: 1200px) {
+  .sim-layout, .mqtt-grid { grid-template-columns: 1fr !important; }
+  .profiles-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+}
+@media (max-width: 980px) {
+  .sb { padding: 0 14px; gap: 10px; font-size: 13px; }
+  nav { height: auto; min-height: 62px; }
+  .ni { flex-wrap: wrap; padding: 8px 14px; gap: 10px; }
+  .ntabs { order: 3; width: 100%; justify-content: center; overflow-x: auto; white-space: nowrap; }
+  .ntab { flex: 0 0 auto; }
+  .live-strip { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .cards-grid, .profiles-grid { grid-template-columns: 1fr !important; }
+}
+@media (max-width: 760px) {
+  .toolbar, .profiles-header, .bd-header { flex-direction: column; align-items: stretch; }
+  .filter-bar, .bd-controls { width: 100%; overflow-x: auto; white-space: nowrap; }
+  .btn-add, .btn-new-profile, .btn-run, .save-btn { width: 100%; }
+  .pg, .prof-params { grid-template-columns: 1fr !important; }
+  .comp-row { grid-template-columns: 1fr !important; }
+  .day-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+}
+@media (max-width: 520px) {
+  .live-strip { grid-template-columns: 1fr !important; }
+  .section-label, .field-label { font-size: 13px; letter-spacing: 0.7px !important; }
+  .ls-val { font-size: 28px !important; }
+  .app-name-edit, .prof-label-edit { font-size: 22px; }
+  .btn-theme { width: 40px; height: 40px; font-size: 18px; }
+  .btn-live { width: 100%; min-height: 44px; padding: 10px 14px; }
+}
 </style>
 </head>
 <body id="app" v-cloak>
@@ -743,7 +950,8 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
 <nav><div class="ni">
   <div class="brand">
     <div>
-      <img class="brand-logo" src="/static/ACfuturelogo1.png" alt="AC Future">
+      <img class="brand-logo logo-dark" src="/static/ACfuturelogo1.png" alt="AC Future">
+      <img class="brand-logo logo-light" src="/static/ACfuturelogo.png" alt="AC Future">
       <div class="brand-sub">RV Energy Simulator</div>
     </div>
   </div>
@@ -804,10 +1012,10 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
     <div class="section-label" style="margin-bottom:20px">Battery, Solar & Reserve Configuration</div>
 
     <!-- Top row: SOC hero + 3 parameter fields -->
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px;margin-bottom:20px;align-items:start">
+    <div class="cfg-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px;margin-bottom:20px;align-items:start">
 
       <!-- SOC Control — spans 1 column with large display -->
-      <div style="background:rgba(48,209,88,.07);border:1.5px solid rgba(48,209,88,.28);border-radius:var(--r20);padding:20px">
+      <div class="cfg-card cfg-card-soc" style="background:rgba(48,209,88,.07);border:1.5px solid rgba(48,209,88,.28);border-radius:var(--r20);padding:20px">
         <div style="font-size:var(--sm);color:var(--green);font-weight:500;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:8px">State of Charge</div>
         <div style="font-family:var(--fm);font-size:56px;font-weight:600;color:var(--green);line-height:1;margin-bottom:4px" id="soc-display">87%</div>
         <div style="font-size:var(--sm);color:var(--l3);margin-bottom:14px" id="soc-kwh-display">39.2 kWh available</div>
@@ -824,7 +1032,7 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
       </div>
 
       <!-- Battery Capacity -->
-      <div style="background:rgba(255,255,255,.04);border-radius:var(--r20);padding:20px;border:1.5px solid rgba(255,255,255,.08)">
+      <div class="cfg-card cfg-card-bat" style="background:rgba(255,255,255,.04);border-radius:var(--r20);padding:20px;border:1.5px solid rgba(255,255,255,.08)">
         <div style="font-size:var(--sm);color:var(--l3);font-weight:500;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:8px">Battery Capacity</div>
         <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:14px">
           <div style="font-family:var(--fm);font-size:48px;font-weight:600;color:var(--blue);line-height:1" id="bat-display">45</div>
@@ -842,7 +1050,7 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
       </div>
 
       <!-- Reserve Battery (configurable 5–30%) -->
-      <div style="background:rgba(255,69,58,.06);border-radius:var(--r20);padding:20px;border:1.5px solid rgba(255,69,58,.20)">
+      <div class="cfg-card cfg-card-reserve" style="background:rgba(255,69,58,.06);border-radius:var(--r20);padding:20px;border:1.5px solid rgba(255,69,58,.20)">
         <div style="font-size:var(--sm);color:var(--red);font-weight:500;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:8px">Reserve Floor</div>
         <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:14px">
           <div style="font-family:var(--fm);font-size:48px;font-weight:600;color:var(--red);line-height:1" id="res-display">10</div>
@@ -860,7 +1068,7 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
       </div>
 
       <!-- Solar Panels -->
-      <div style="background:rgba(255,159,10,.06);border-radius:var(--r20);padding:20px;border:1.5px solid rgba(255,159,10,.20)">
+      <div class="cfg-card cfg-card-solar" style="background:rgba(255,159,10,.06);border-radius:var(--r20);padding:20px;border:1.5px solid rgba(255,159,10,.20)">
         <div style="font-size:var(--sm);color:var(--orange);font-weight:500;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:8px">Solar Panels</div>
         <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:14px">
           <div style="font-family:var(--fm);font-size:48px;font-weight:600;color:var(--orange);line-height:1" id="panel-display">0.8</div>

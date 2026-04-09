@@ -66,6 +66,9 @@ nav{position:sticky;top:0;z-index:200;height:68px;
   width:auto;
   object-fit:contain;
 }
+.brand-logo.logo-light{display:none}
+:root[data-theme='light'] .brand-logo.logo-dark{display:none}
+:root[data-theme='light'] .brand-logo.logo-light{display:block}
 .brand-sub{font-size:var(--xs);color:var(--l3);letter-spacing:1.5px;text-transform:uppercase;font-weight:600;margin-top:2px}
 .ntabs{display:flex;gap:2px;padding:4px;background:rgba(255,255,255,.07);border-radius:var(--rp)}
 .ntab{padding:10px 24px;border-radius:var(--rp);font-size:var(--base);font-weight:600;
@@ -306,12 +309,13 @@ input[type='datetime-local']:focus{border-color:var(--blue) !important}
 <!-- ═══ FRONTEND STUDIO — Enhancement Layer ═══ -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
 /* ── Font override: Outfit for crisp cross-platform rendering ── */
 :root {
-  --f: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  --fd: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  --f: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --fd: 'Manrope', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --fm: 'JetBrains Mono', 'SF Mono', Menlo, Monaco, Consolas, monospace;
 }
 
 /* ── Dynamic aurora background ─────────────────────────────── */
@@ -557,6 +561,152 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
   .achart-wrap { height: 140px !important; min-height: 140px !important; max-height: 140px !important; }
   .alegend { flex-wrap: wrap !important; }
 }
+
+/* ── Modern UI polish layer (style-only) ───────────────────── */
+:root {
+  --bg: #0f141c;
+  --bg2: #171d27;
+  --bg3: #1d2531;
+  --bg4: #273243;
+  --l1: #edf1f7;
+  --l2: rgba(237, 241, 247, 0.8);
+  --l3: rgba(210, 220, 234, 0.62);
+  --l4: rgba(190, 202, 220, 0.38);
+  --sep: rgba(140, 156, 178, 0.24);
+  --glass: rgba(24, 31, 42, 0.82);
+  --gb: rgba(156, 172, 196, 0.2);
+  --gh: rgba(176, 192, 214, 0.28);
+  --sh: 0 14px 30px rgba(8, 12, 18, 0.46), 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+  --blue: #4f8fe8;
+  --green: #3eb378;
+  --orange: #cb9a4d;
+  --red: #d06a70;
+  --teal: #4d9fbd;
+  --purple: #8e79c7;
+  --gap: 18px;
+  --gap-lg: 24px;
+}
+:root[data-theme='light'] {
+  --bg: #f6f7f9;
+  --bg2: #ffffff;
+  --bg3: #ffffff;
+  --bg4: #eef1f5;
+  --l1: #202a36;
+  --l2: rgba(32, 42, 54, 0.82);
+  --l3: rgba(32, 42, 54, 0.62);
+  --l4: rgba(32, 42, 54, 0.4);
+  --sep: rgba(118, 130, 149, 0.26);
+  --glass: rgba(255, 255, 255, 0.95);
+  --gb: rgba(140, 154, 175, 0.24);
+  --gh: rgba(140, 154, 175, 0.34);
+  --sh: 0 8px 22px rgba(24, 33, 46, 0.08), 0 1px 0 rgba(255, 255, 255, 0.96) inset;
+}
+html { letter-spacing: 0.01em; }
+body::before {
+  background:
+    radial-gradient(ellipse 135% 58% at 12% -8%, rgba(79, 143, 232, 0.12) 0%, transparent 56%),
+    radial-gradient(ellipse 82% 44% at 88% 118%, rgba(62, 179, 120, 0.06) 0%, transparent 54%) !important;
+}
+.card, .hcard, .mcard, .app-chart-card, .pcell, .nstat {
+  border-radius: 18px !important;
+  border-color: var(--gb) !important;
+}
+.ctitle, .hlbl, .mlbl, .section-label, .plbl, .brand-sub, .nstat-l {
+  letter-spacing: 0.9px !important;
+}
+.ntab, .twb, .csvb, .btn-mqtt, .btn-theme, .bprim, .bsec, .atab {
+  font-weight: 600 !important;
+}
+.card, .hcard, .mcard, .app-chart-card, .pcell { padding: 20px !important; }
+.ghero .mcard { min-height: 198px; }
+.g2, .ghero, .app-grid { gap: 16px !important; }
+.acard-inner { min-height: 292px; }
+.dtable td, .gtable td { border-bottom-color: rgba(152, 179, 216, 0.14); }
+.dtable tr:hover td, .gtable tr:hover td { background: rgba(115, 154, 209, 0.08); }
+.mi, input[type='datetime-local'] {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(146, 162, 186, 0.26);
+}
+:root[data-theme='light'] .mi,
+:root[data-theme='light'] input[type='datetime-local'] {
+  background: #ffffff;
+  color: var(--l1);
+}
+:root[data-theme='light'] nav,
+:root[data-theme='light'] .sb {
+  background: rgba(255, 255, 255, 0.96);
+  border-bottom-color: rgba(118, 130, 149, 0.22);
+}
+:root[data-theme='light'] body::before {
+  background: radial-gradient(ellipse 120% 48% at 50% -10%, rgba(47, 111, 194, 0.08) 0%, transparent 64%) !important;
+}
+@media (max-width: 1200px) {
+  .ghero { grid-template-columns: 1fr 1fr !important; }
+}
+@media (max-width: 900px) {
+  main { padding: 20px; }
+  .g2, .ghero, .app-grid { gap: 14px !important; }
+}
+@media (max-width: 700px) {
+  main { padding: 14px; }
+  .card, .hcard, .mcard, .app-chart-card, .pcell { padding: 16px !important; border-radius: 14px !important; }
+}
+/* Full responsive pass */
+.card, .hcard, .mcard, .app-chart-card { min-width: 0; }
+.dtable, .gtable { min-width: 760px; }
+#tab-realtime .card,
+#tab-stability .card,
+#tab-history .card { overflow-x: auto; }
+
+@media (max-width: 1280px) {
+  .ghero { grid-template-columns: 1fr 1fr !important; }
+}
+@media (max-width: 1080px) {
+  .ni { padding: 0 16px; gap: 12px; }
+  .nr { gap: 8px; }
+  .btn-mqtt { padding: 10px 14px; }
+  .nstat { padding: 8px 12px; }
+  .hval { font-size: 62px; }
+}
+@media (max-width: 900px) {
+  .sb { padding: 0 14px; font-size: 13px; gap: 10px; }
+  nav { height: auto; min-height: 62px; }
+  .ni { flex-wrap: wrap; padding-top: 8px; padding-bottom: 8px; }
+  .ntabs { order: 3; width: 100%; justify-content: center; }
+  .nr { margin-left: auto; }
+  .ghero { grid-template-columns: 1fr !important; }
+  .mcard, .hcard { min-height: auto; }
+  .app-grid { grid-template-columns: 1fr !important; }
+}
+@media (max-width: 760px) {
+  .ch { flex-direction: column; align-items: stretch; }
+  .ccontrols { justify-content: flex-start; }
+  .tw, .ntabs { overflow-x: auto; white-space: nowrap; }
+  .twb, .ntab { flex: 0 0 auto; }
+  #tab-history .card > div[style*='display:flex;align-items:center;gap:16px'] {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  #tab-history .card > div[style*='display:flex;align-items:center;gap:16px'] > div {
+    width: 100%;
+  }
+  #tab-history .card > div[style*='display:flex;align-items:center;gap:16px'] input[type='datetime-local'] {
+    width: 100%;
+    min-width: 0 !important;
+  }
+}
+@media (max-width: 560px) {
+  .sb { height: auto; min-height: 38px; padding-top: 6px; padding-bottom: 6px; flex-wrap: wrap; }
+  .badge { margin-left: auto; }
+  .btn-theme { width: 40px; height: 40px; font-size: 18px; }
+  .btn-mqtt { min-height: 40px; font-size: 15px; }
+  .nstat-v { font-size: 20px; }
+  .hval { font-size: 48px; letter-spacing: -1px; }
+  .mval, .pval { font-size: 30px; }
+  .ctitle, .section-label { font-size: 14px; }
+  .soc-marks { height: 22px; }
+  .sm { font-size: 13px; }
+}
 </style>
 </head>
 <body id="app" v-cloak>
@@ -571,7 +721,8 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
 
 <nav><div class="ni">
   <div>
-    <img class="brand-logo" src="/static/ACfuturelogo1.png" alt="AC Future">
+    <img class="brand-logo logo-dark" src="/static/ACfuturelogo1.png" alt="AC Future">
+    <img class="brand-logo logo-light" src="/static/ACfuturelogo.png" alt="AC Future">
     <div class="brand-sub">Real-Time MQTT Dashboard</div>
   </div>
   <div class="ntabs">
