@@ -1595,7 +1595,10 @@ function drawGauge(score,grade){
   const fs=(Math.min(10,Math.max(0,score))/10)*st;
   fi.setAttribute('d',arcPath(cx,cy,r,sd,fs));fi.setAttribute('stroke',siCol(score));fi.setAttribute('stroke-width',sw);
   if(gn){gn.textContent=score.toFixed(1);gn.setAttribute('fill',siCol(score));}
-  if(gs)gs.textContent=`Grade ${grade} — ${GRADES[grade]||''}`;
+  if(gs){
+    gs.textContent=`Grade ${grade} — ${GRADES[grade]||''}`;
+    gs.setAttribute('fill',siCol(score));
+  }
   if(vueApp){
     vueApp.ui.navSi=score.toFixed(1)+'/10';
     vueApp.ui.siColor=siCol(score);
