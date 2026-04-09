@@ -86,11 +86,12 @@ nav{
 }
 /* Brand — text only, no fake icons */
 .brand{display:flex;align-items:center;gap:0;flex-shrink:0}
-.brand-wordmark{
-  font-family:var(--fd);font-size:22px;font-weight:600;letter-spacing:-.5px;
-  color:var(--l1);
+.brand-logo{
+  display:block;
+  height:42px;
+  width:auto;
+  object-fit:contain;
 }
-.brand-wordmark span{color:var(--blue)}
 .brand-sub{font-size:var(--text-xs);color:var(--l3);letter-spacing:1.5px;text-transform:uppercase;margin-top:2px;font-weight:600}
 
 /* Segmented control */
@@ -742,7 +743,7 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
 <nav><div class="ni">
   <div class="brand">
     <div>
-      <div class="brand-wordmark">ACFuture</div>
+      <img class="brand-logo" src="/static/ACfuturelogo.png" alt="AC Future">
       <div class="brand-sub">RV Energy Simulator</div>
     </div>
   </div>

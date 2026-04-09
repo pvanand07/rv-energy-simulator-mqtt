@@ -60,8 +60,12 @@ nav{position:sticky;top:0;z-index:200;height:68px;
   background:rgba(0,0,0,.88);backdrop-filter:blur(40px) saturate(180%);border-bottom:1px solid var(--sep)}
 .ni{max-width:1600px;margin:0 auto;height:100%;padding:0 28px;
   display:flex;align-items:center;justify-content:space-between;gap:20px}
-.brand-wordmark{font-family:var(--fd);font-size:22px;font-weight:600;letter-spacing:-.5px}
-.brand-wordmark span{color:var(--blue)}
+.brand-logo{
+  display:block;
+  height:42px;
+  width:auto;
+  object-fit:contain;
+}
 .brand-sub{font-size:var(--xs);color:var(--l3);letter-spacing:1.5px;text-transform:uppercase;font-weight:600;margin-top:2px}
 .ntabs{display:flex;gap:2px;padding:4px;background:rgba(255,255,255,.07);border-radius:var(--rp)}
 .ntab{padding:10px 24px;border-radius:var(--rp);font-size:var(--base);font-weight:600;
@@ -568,7 +572,7 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
 
 <nav><div class="ni">
   <div>
-    <div class="brand-wordmark">ACFuture</div>
+    <img class="brand-logo" src="/static/ACfuturelogo.png" alt="AC Future">
     <div class="brand-sub">Real-Time MQTT Dashboard</div>
   </div>
   <div class="ntabs">
