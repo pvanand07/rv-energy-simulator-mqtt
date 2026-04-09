@@ -133,7 +133,7 @@ INSERT OR IGNORE INTO sim_settings (id) VALUES (1);
 # ─── Default appliances with realistic RV cycling patterns ───────────────────
 _DEFAULTS = [
     # always_on devices use cycle_pattern to model realistic power modes
-    dict(name="Refrigerator",        cat="high",   icon="❄️", clr="#5E9EFF", voltage_v=120, current_a=0.90, power_factor=0.90, efficiency_pct=90, duty_cycle_pct=20,  avg_power_w=35,  always_on=1, cycle_pattern="compressor"),
+    dict(name="Refrigerator",        cat="high",   icon="❄️", clr="#5E9EFF", voltage_v=120, current_a=1.25, power_factor=0.95, efficiency_pct=85, duty_cycle_pct=25,  avg_power_w=42,  always_on=1, cycle_pattern="compressor"),
     dict(name="WiFi Router",         cat="low",    icon="📶", clr="#30D158", voltage_v=12,  current_a=1.25, power_factor=0.90, efficiency_pct=85, duty_cycle_pct=100, avg_power_w=12,  always_on=1, cycle_pattern="wifi_traffic"),
     dict(name="HMI Tablet",          cat="low",    icon="📱", clr="#5E9EFF", voltage_v=12,  current_a=1.00, power_factor=0.91, efficiency_pct=88, duty_cycle_pct=100, avg_power_w=5,   always_on=1, cycle_pattern="display_sleep"),
     dict(name="Security Cameras",    cat="low",    icon="📷", clr="#636366", voltage_v=12,  current_a=2.50, power_factor=0.92, efficiency_pct=90, duty_cycle_pct=100, avg_power_w=8,   always_on=1, cycle_pattern="motion_sensor"),
@@ -198,25 +198,6 @@ async def init_sim_db():
                     "INSERT OR IGNORE INTO sim_weather_plans (plan_name,day_index,condition,temp_c,cloud_pct) VALUES (?,?,?,?,?)",
                     ("Default Plan", i, cond, temp, {"sunny":5,"partly":40,"overcast":75,"rainy":90}[cond]))
             await conn.commit()
-        # Migrate legacy refrigerator defaults to realistic RV mini-fridge values.
-        # Only updates when row still matches the old seed values.
-        await conn.execute(
-            """
-            UPDATE sim_appliances
-               SET current_a = 0.90,
-                   power_factor = 0.90,
-                   efficiency_pct = 90.0,
-                   duty_cycle_pct = 20.0,
-                   avg_power_w = 35.0
-             WHERE lower(name) = 'refrigerator'
-               AND voltage_v = 120.0
-               AND current_a = 1.25
-               AND power_factor = 0.95
-               AND efficiency_pct = 85.0
-               AND duty_cycle_pct = 25.0
-            """
-        )
-        await conn.commit()
 
 def row_to_dict(row) -> dict:
     d = dict(row)

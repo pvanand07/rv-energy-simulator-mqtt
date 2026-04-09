@@ -30,7 +30,6 @@ SOLAR MODEL (sunrise-to-sunset sine arch)
 from __future__ import annotations
 import math, random, time as _time
 from datetime import datetime, date, timedelta
-from typing import Any
 
 # -----------------------------------------------------------------------------
 # CONSTANTS
@@ -40,14 +39,6 @@ DT_H    = 30 / 3600     # hours per step
 WEATHER_FACTOR = {"sunny": 1.00, "partly": 0.60, "overcast": 0.25, "rainy": 0.05}
 RESERVE_LOW  = 0.10     # 10% - hard floor (battery protection)
 RESERVE_HIGH = 0.20     # 20% - soft reserve warning threshold
-
-# Patterns that internally model their own duty cycle; dc must NOT be
-# applied as an additional multiplier for these (FIX #7).
-_SELF_CYCLING_PATTERNS = frozenset({
-    "compressor", "thermostat", "wifi_traffic", "display_sleep",
-    "motion_sensor", "network_load", "dimmer", "wash_cycle",
-})
-
 
 # -----------------------------------------------------------------------------
 # HELPERS
@@ -68,91 +59,120 @@ def solar_irr(h: float, sunrise_h: float, sunset_h: float) -> float:
 # PER-STEP CYCLE PATTERN FUNCTIONS
 # Returns a multiplier 0.0 - N that scales the rated power
 # -----------------------------------------------------------------------------
-def _pattern_compressor(step: int, rng: random.Random) -> float:
-    """RV mini-fridge compressor profile.
+def _smooth_sine(step: int, period: int, lo: float, hi: float) -> float:
+    """Smooth sine wave between lo and hi over one period."""
+    t = (step % period) / period
+    return lo + (hi - lo) * (0.5 - 0.5 * math.cos(2 * math.pi * t))
 
-    Uses a short startup surge then a lower steady compressor draw.
-    """
+def _pattern_compressor(step: int, _rng: random.Random) -> float:
+    """Fridge compressor: smooth ON/OFF cycle using a cosine envelope."""
     phase = step % 90
-    if phase < 2:
-        return 2.1 + rng.uniform(-0.15, 0.15)  # startup surge (~30-60s)
-    if phase < 18:
-        return 1.10 + rng.uniform(-0.10, 0.10)  # running compressor
-    return 0.10 + rng.uniform(0.0, 0.03)        # thermostat/controls idle
+    if phase < 22:
+        # smooth start/end over the ON window
+        return 0.08 + 3.22 * (0.5 - 0.5 * math.cos(2 * math.pi * phase / 22))
+    # fan-only idle drift
+    return 0.07 + 0.015 * math.sin((phase - 22) * 0.09)
 
-def _pattern_thermostat(step: int, rng: random.Random) -> float:
-    """Water heater / AC: stable 120-step thermostat cycle (50 ON, 70 OFF).
-    FIX #10: deterministic phase from step - no per-step randint() jitter
-    that previously caused erratic flicker instead of smooth cycling.
-    """
+def _pattern_thermostat(step: int, _rng: random.Random) -> float:
+    """Water heater / AC: deterministic thermostat cycle with soft edges."""
     phase = step % 120
-    return 1.0 if phase < 50 else 0.0
+    if phase < 50:
+        if phase < 6:
+            return phase / 6.0
+        if phase > 44:
+            return (50 - phase) / 6.0
+        return 1.0
+    return 0.0
 
-def _pattern_wifi(step: int, rng: random.Random) -> float:
-    """Router: mostly idle, occasional burst"""
-    if rng.random() < 0.05:     # 5% chance of data burst each step
-        return 2.5 + rng.uniform(0, 1.5)
-    return 0.35 + rng.uniform(0, 0.1)
-
-def _pattern_display_sleep(step: int, rng: random.Random) -> float:
-    """HMI tablet: night dim, day active, random wake events"""
+def _pattern_wifi(step: int, _rng: random.Random) -> float:
+    """Router: smooth traffic wave by time-of-day."""
     h = step * DT_H
-    if 22 <= h or h < 6:
-        return 0.05 + rng.uniform(0, 0.02)  # screen off
-    if rng.random() < 0.1:
-        return 1.5 + rng.uniform(0, 0.5)    # user interaction spike
-    return 0.7 + rng.uniform(0, 0.1)
+    if h < 7:
+        base = 0.25
+    elif h < 9:
+        base = 0.25 + 0.45 * (h - 7) / 2
+    elif h < 17:
+        base = 0.70 + 0.15 * math.sin((h - 9) / 8 * math.pi)
+    elif h < 22:
+        base = 0.70 - 0.45 * (h - 17) / 5
+    else:
+        base = 0.25
+    return base + 0.05 * math.sin(step * 0.03)
 
-def _pattern_motion(step: int, rng: random.Random) -> float:
-    """Security cameras: standby + motion-triggered active"""
+def _pattern_display_sleep(step: int, _rng: random.Random) -> float:
+    """HMI tablet: smooth wake/sleep profile."""
     h = step * DT_H
-    motion_prob = 0.25 if 7 <= h < 22 else 0.04
-    if rng.random() < motion_prob:
-        return 1.2 + rng.uniform(0, 0.3)   # recording
-    return 0.12 + rng.uniform(0, 0.02)     # standby IR
+    if h < 6 or h >= 23:
+        return 0.06
+    if h < 7:
+        return 0.06 + 0.64 * (h - 6)
+    if h >= 22:
+        return 0.70 - 0.64 * (h - 22)
+    return 0.70 + 0.08 * math.sin(step * 0.05)
 
-def _pattern_starlink(step: int, rng: random.Random) -> float:
-    """Starlink: base draw + usage spikes (video calls, downloads)"""
+def _pattern_motion(step: int, _rng: random.Random) -> float:
+    """Security cameras: smooth activity envelope."""
     h = step * DT_H
-    base = 0.5 if 22 <= h or h < 6 else 0.75
-    if 8 <= h < 18 and rng.random() < 0.08:
-        return base + rng.uniform(0.3, 0.6)  # heavy usage
-    return base + rng.uniform(0, 0.1)
+    if h < 6 or h >= 23:
+        envelope = 0.12
+    elif h < 8:
+        envelope = 0.12 + 0.25 * (h - 6) / 2
+    elif h < 20:
+        envelope = 0.37 + 0.18 * math.sin((h - 8) / 12 * math.pi)
+    else:
+        envelope = 0.37 - 0.25 * (h - 20) / 3
+    return max(0.10, envelope + 0.04 * math.sin(step * 0.08))
 
-def _pattern_dimmer(step: int, rng: random.Random) -> float:
-    """LED lights: gradual fade, random brightness adjustments"""
-    return max(0.1, min(1.1, 0.8 + rng.gauss(0, 0.12)))
+def _pattern_starlink(step: int, _rng: random.Random) -> float:
+    """Starlink: smooth usage curve through the day."""
+    h = step * DT_H
+    if h < 6 or h >= 23:
+        return 0.42
+    if h < 8:
+        return 0.42 + 0.23 * (h - 6) / 2
+    if h < 20:
+        return 0.65 + 0.25 * math.sin((h - 8) / 12 * math.pi)
+    return 0.65 - 0.23 * (h - 20) / 3
 
-def _pattern_wash(step: int, app_step: int, rng: random.Random) -> float:
-    """Washer: wash (high), rinse (medium), spin (very high), done.
-    FIX #11: app_step is schedule-relative so cycle phases are independent
-    of where in the simulation day the schedule window falls.
-    """
-    cycle_step = app_step % 300  # ~150 min full cycle in 30s steps
-    if cycle_step < 120:   return 0.8 + rng.uniform(-0.05, 0.05)  # wash
-    if cycle_step < 200:   return 0.4 + rng.uniform(-0.03, 0.03)  # rinse
-    if cycle_step < 270:   return 1.3 + rng.uniform(-0.1, 0.1)    # spin
-    return 0.0  # done
+def _pattern_dimmer(step: int, _rng: random.Random) -> float:
+    """LED lights: slow deterministic dimmer wave."""
+    return 0.80 + 0.10 * math.sin(step * 0.02)
 
-# FIX #11: all pattern functions now share a consistent 3-arg signature
-# (step, app_step, rng). Patterns that don't need app_step ignore it.
+def _pattern_wash(step: int, app_step: int, _rng: random.Random) -> float:
+    """Washer: smooth phase transitions for wash/rinse/spin."""
+    cycle_step = app_step % 300
+    if cycle_step < 120:
+        if cycle_step < 8:
+            return _smooth_sine(cycle_step, 16, 0.0, 0.80)
+        if cycle_step > 112:
+            return _smooth_sine(cycle_step - 112, 16, 0.80, 0.45)
+        return 0.80
+    if cycle_step < 200:
+        return 0.40 + 0.02 * math.sin(cycle_step * 0.15)
+    if cycle_step < 270:
+        sp = cycle_step - 200
+        if sp < 10:
+            return 0.40 + 0.90 * sp / 10
+        if sp > 60:
+            return 1.30 - 0.90 * (sp - 60) / 10
+        return 1.30 + 0.05 * math.sin(sp * 0.3)
+    return 0.0
+
 _CYCLE_FNS = {
-    "compressor":    lambda s, _a, r: _pattern_compressor(s, r),
-    "thermostat":    lambda s, _a, r: _pattern_thermostat(s, r),
-    "wifi_traffic":  lambda s, _a, r: _pattern_wifi(s, r),
-    "display_sleep": lambda s, _a, r: _pattern_display_sleep(s, r),
-    "motion_sensor": lambda s, _a, r: _pattern_motion(s, r),
-    "network_load":  lambda s, _a, r: _pattern_starlink(s, r),
-    "dimmer":        lambda s, _a, r: _pattern_dimmer(s, r),
-    "wash_cycle":    lambda s, a,  r: _pattern_wash(s, a, r),
-    "constant":      lambda s, _a, r: 1.0 + r.gauss(0, 0.02),
+    "compressor":    _pattern_compressor,
+    "thermostat":    _pattern_thermostat,
+    "wifi_traffic":  _pattern_wifi,
+    "display_sleep": _pattern_display_sleep,
+    "motion_sensor": _pattern_motion,
+    "network_load":  _pattern_starlink,
+    "dimmer":        _pattern_dimmer,
+    "wash_cycle":    lambda s, r: _pattern_wash(s, s, r),
+    "constant":      lambda s, _r: 1.0 + 0.015 * math.sin(s * 0.07),
 }
 
-def _cycle_multiplier(
-    pattern: str, step: int, app_step: int, rng: random.Random
-) -> float:
+def _cycle_multiplier(pattern: str, step: int, rng: random.Random) -> float:
     fn = _CYCLE_FNS.get(pattern, _CYCLE_FNS["constant"])
-    return max(0.0, fn(step, app_step, rng))
+    return max(0.0, fn(step, rng))
 
 
 # -----------------------------------------------------------------------------
@@ -241,8 +261,6 @@ def run_day_simulation(
     load_arr   = []
     soc_arr    = []
     app_energy: dict[int, float] = {a["id"]: 0.0 for a in appliances}
-    # FIX #11: per-appliance schedule-relative step counter for wash_cycle
-    app_sched_step: dict[int, int] = {a["id"]: 0 for a in appliances}
     reserve_hit = False
 
     # FIX #12: symmetric noise ceiling - instantaneous solar cannot exceed
@@ -289,21 +307,8 @@ def run_day_simulation(
                 step_apps[aid] = {"v": 0, "a": 0, "w": 0}
                 continue
 
-            # FIX #11: increment schedule-relative counter only while active
-            app_sched_step[aid] += 1
-            app_s = app_sched_step[aid]
-
-            raw_mult = _cycle_multiplier(pattern, s, app_s, rng)
-
-            # FIX #7: self-cycling patterns already encode their duty ratio
-            # internally - multiplying by dc again double-penalises them.
-            # Only apply dc for "constant" pattern appliances.
-            if pattern in _SELF_CYCLING_PATTERNS:
-                mult = raw_mult * frac
-            else:
-                mult = raw_mult * frac * dc
-
-            inst_w = eff_w * mult + rng.gauss(0, eff_w * 0.01)
+            mult = _cycle_multiplier(pattern, s, rng) * frac * dc
+            inst_w = eff_w * mult
             inst_w = max(0.0, inst_w)
 
             # Voltage sag under heavy load (realistic)
