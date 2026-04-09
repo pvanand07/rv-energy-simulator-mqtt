@@ -39,6 +39,13 @@
   --text-xs:13px; --text-sm:15px; --text-base:18px; --text-lg:22px;
   --text-xl:28px; --text-2xl:36px; --text-3xl:48px; --text-hero:72px;
 }
+:root[data-theme='light']{
+  --bg:#f3f6fb;--bg2:#ffffff;--bg3:#ffffff;--bg4:#edf2f9;--bg5:#e3eaf5;
+  --l1:#101420;--l2:rgba(16,20,32,.78);--l3:rgba(16,20,32,.56);--l4:rgba(16,20,32,.32);--l5:rgba(16,20,32,.10);
+  --sep:rgba(130,145,170,.32);
+  --glass:rgba(255,255,255,.86);--gb:rgba(130,145,170,.28);--gh:rgba(130,145,170,.34);
+  --sh:0 14px 36px rgba(16,20,32,.08),0 1px 0 rgba(255,255,255,.92) inset;
+}
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 html{
   background:var(--bg);color:var(--l1);
@@ -98,6 +105,12 @@ nav{
   box-shadow:0 1px 4px rgba(0,0,0,.35)}
 
 .nr{display:flex;align-items:center;gap:12px;flex-shrink:0}
+.btn-theme{
+  width:44px;height:44px;border-radius:50%;border:1.5px solid var(--sep);
+  background:rgba(255,255,255,.08);color:var(--l1);font-size:20px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:all .18s;
+}
+.btn-theme:hover{background:rgba(255,255,255,.15)}
 .btn-live{
   padding:12px 28px;border-radius:var(--rp);font-size:var(--text-base);font-weight:500;
   font-family:var(--f);cursor:pointer;border:none;transition:all .18s;min-height:52px;
@@ -478,6 +491,36 @@ input[type=range]::-webkit-slider-thumb{
 .toast.show{transform:translateY(0);opacity:1}
 .toast.ok{border-color:rgba(48,209,88,.35);color:var(--green)}
 .toast.err{border-color:rgba(255,69,58,.35);color:var(--red)}
+:root[data-theme='light'] nav,
+:root[data-theme='light'] .sb{
+  background:rgba(255,255,255,.88);
+  backdrop-filter:blur(34px) saturate(130%);
+}
+:root[data-theme='light'] .ntabs,
+:root[data-theme='light'] .view-toggle,
+:root[data-theme='light'] .tw,
+:root[data-theme='light'] .filter-bar{background:rgba(130,145,170,.14)}
+:root[data-theme='light'] .ntab.active,
+:root[data-theme='light'] .vtb.active,
+:root[data-theme='light'] .flt.active,
+:root[data-theme='light'] .dur-btn.active{background:rgba(130,145,170,.24)}
+:root[data-theme='light'] .btn-theme{background:#fff}
+:root[data-theme='light'] .btn-live.start{color:#06210f}
+:root[data-theme='light'] .btn-live.stop{color:#fff}
+:root[data-theme='light'] .pi,
+:root[data-theme='light'] .pp,
+:root[data-theme='light'] .comp-row,
+:root[data-theme='light'] .sched-win,
+:root[data-theme='light'] .day-card{background:rgba(130,145,170,.08)}
+:root[data-theme='light'] .pi input,
+:root[data-theme='light'] .pi select,
+:root[data-theme='light'] .pp input,
+:root[data-theme='light'] .pp select,
+:root[data-theme='light'] .field-input,
+:root[data-theme='light'] .sw-input{
+  background:rgba(255,255,255,.84);
+  border-color:rgba(130,145,170,.35);
+}
 
 /* ── RESPONSIVE ──────────────────────────────────────────────── */
 @media(max-width:1100px){
@@ -540,6 +583,30 @@ body::before {
     0 1px 0 rgba(255,255,255,.07) inset,
     0 -1px 0 rgba(0,0,0,.28) inset !important;
   transition: border-color .22s ease, box-shadow .22s ease, transform .22s ease !important;
+}
+:root[data-theme='light'] .card,
+:root[data-theme='light'] .app-card,
+:root[data-theme='light'] .ls-card,
+:root[data-theme='light'] .prof-card {
+  background: rgba(255,255,255,.9) !important;
+  border: 1px solid rgba(130,145,170,.28) !important;
+  box-shadow:
+    0 12px 34px rgba(16,20,32,.08),
+    0 1px 0 rgba(255,255,255,.95) inset !important;
+}
+:root[data-theme='light'] .card:hover,
+:root[data-theme='light'] .app-card:hover,
+:root[data-theme='light'] .prof-card:hover {
+  border-color: rgba(130,145,170,.42) !important;
+  box-shadow:
+    0 14px 40px rgba(16,20,32,.12),
+    0 1px 0 rgba(255,255,255,.96) inset !important;
+}
+:root[data-theme='light'] body::before {
+  background:
+    radial-gradient(ellipse 130% 55% at 15% -5%,  rgba(10,84,255,.09)  0%, transparent 58%),
+    radial-gradient(ellipse 70% 45% at 85% 110%, rgba(48,209,88,.05) 0%, transparent 52%),
+    radial-gradient(ellipse 55% 35% at 55% 55%, rgba(191,90,242,.04) 0%, transparent 55%) !important;
 }
 .card:hover, .app-card:hover, .prof-card:hover {
   border-color: rgba(255,255,255,.17) !important;
@@ -687,6 +754,7 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
     <button class="ntab" :class="{active:activeTab==='mqtt'}" @click="showTab('mqtt')">MQTT</button>
   </div>
   <div class="nr">
+    <button class="btn-theme" @click="toggleTheme" title="Toggle light/dark mode" aria-label="Toggle theme">[[ ui.themeIcon ]]</button>
     <button class="btn-live" :class="simRunning ? 'stop' : 'start'" id="live-btn" @click="toggleLive()">[[ simRunning ? '⏹ Stop' : '▶ Start Live Sim' ]]</button>
   </div>
 </div></nav>
@@ -997,29 +1065,75 @@ let APPS=[], PROFILES={{ profiles|tojson }}, curFilter='all', simRunning=false, 
 let activeProfileName=null, editDay=null, lastBD=null;
 let weatherPlan={{ weather|tojson }};
 let vueApp=null;
+let uiTheme='dark';
 if(!weatherPlan.length) weatherPlan=Array.from({length:7},(_,i)=>({day_index:i,condition:'sunny',temp_c:22,cloud_pct:5,sunrise_hhmm:'06:30',sunset_hhmm:'19:30'}));
 
 // Charts
 let socChart,energyChart,appBarChart;
-const baseChartOpts={
-  responsive:true,maintainAspectRatio:false,
-  plugins:{legend:{display:false},tooltip:{
-    backgroundColor:'rgba(16,16,20,.95)',titleColor:'rgba(235,235,245,.55)',
-    bodyColor:'#fff',borderColor:'rgba(255,255,255,.10)',borderWidth:1,
-    padding:14,cornerRadius:12,bodyFont:{size:16,weight:'700'},titleFont:{size:12}}},
-  elements:{point:{radius:0,hoverRadius:6}},
-  animation:{duration:400,easing:'easeOutCubic'},
-  scales:{
-    x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'rgba(255,255,255,.30)',font:{size:13},maxTicksLimit:8},border:{display:false}},
-    y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'rgba(255,255,255,.30)',font:{size:13}},border:{display:false}}
-  }
-};
+function chartTheme(){
+  return uiTheme==='light'
+    ? {tooltipBg:'rgba(255,255,255,.98)',tooltipTitle:'rgba(16,20,32,.58)',tooltipBody:'#101420',tooltipBorder:'rgba(130,145,170,.35)',grid:'rgba(130,145,170,.22)',tick:'rgba(16,20,32,.55)',legend:'rgba(16,20,32,.62)',yLabel:'rgba(16,20,32,.72)'}
+    : {tooltipBg:'rgba(16,16,20,.95)',tooltipTitle:'rgba(235,235,245,.55)',tooltipBody:'#fff',tooltipBorder:'rgba(255,255,255,.10)',grid:'rgba(255,255,255,.04)',tick:'rgba(255,255,255,.30)',legend:'rgba(255,255,255,.55)',yLabel:'rgba(255,255,255,.72)'};
+}
+function makeBaseChartOpts(){
+  const t=chartTheme();
+  return {
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{
+      backgroundColor:t.tooltipBg,titleColor:t.tooltipTitle,
+      bodyColor:t.tooltipBody,borderColor:t.tooltipBorder,borderWidth:1,
+      padding:14,cornerRadius:12,bodyFont:{size:16,weight:'700'},titleFont:{size:12}}},
+    elements:{point:{radius:0,hoverRadius:6}},
+    animation:{duration:400,easing:'easeOutCubic'},
+    scales:{
+      x:{grid:{color:t.grid},ticks:{color:t.tick,font:{size:13},maxTicksLimit:8},border:{display:false}},
+      y:{grid:{color:t.grid},ticks:{color:t.tick,font:{size:13}},border:{display:false}}
+    }
+  };
+}
 
 // ── Nav ──────────────────────────────────────────────────
 function showTab(n){
   if(vueApp)vueApp.activeTab=n;
   if(n==='weather') renderWeather();
   if(n==='profiles') renderProfiles();
+}
+
+function applyTheme(theme){
+  uiTheme=(theme==='light')?'light':'dark';
+  document.documentElement.setAttribute('data-theme',uiTheme);
+  localStorage.setItem('rv-theme',uiTheme);
+  if(vueApp)vueApp.ui.themeIcon=uiTheme==='light'?'🌙':'☀';
+}
+function initTheme(){
+  const saved=localStorage.getItem('rv-theme');
+  const preferLight=window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches;
+  applyTheme(saved||(preferLight?'light':'dark'));
+}
+function toggleTheme(){
+  applyTheme(uiTheme==='light'?'dark':'light');
+  const baseChartOpts=makeBaseChartOpts();
+  const t=chartTheme();
+  if(socChart){
+    socChart.options.plugins.tooltip=baseChartOpts.plugins.tooltip;
+    if(socChart.options.plugins.legend?.labels) socChart.options.plugins.legend.labels.color=t.legend;
+    socChart.options.scales.x=baseChartOpts.scales.x;
+    socChart.options.scales.y={...baseChartOpts.scales.y,min:0,max:100,ticks:{...baseChartOpts.scales.y.ticks,callback:v=>v+'%'}};
+    socChart.update('none');
+  }
+  if(energyChart){
+    energyChart.options.plugins.tooltip=baseChartOpts.plugins.tooltip;
+    if(energyChart.options.plugins.legend?.labels) energyChart.options.plugins.legend.labels.color=t.legend;
+    energyChart.options.scales.x=baseChartOpts.scales.x;
+    energyChart.options.scales.y=baseChartOpts.scales.y;
+    energyChart.update('none');
+  }
+  if(appBarChart){
+    appBarChart.options.plugins.tooltip=baseChartOpts.plugins.tooltip;
+    appBarChart.options.scales.x={...baseChartOpts.scales.x,ticks:{...baseChartOpts.scales.x.ticks,callback:v=>v.toFixed(2)+' kWh'}};
+    appBarChart.options.scales.y={...baseChartOpts.scales.y,ticks:{...baseChartOpts.scales.y.ticks,font:{size:15},color:t.yLabel}};
+    appBarChart.update('none');
+  }
 }
 
 // ── Clock ───────────────────────────────────────────────
@@ -1536,6 +1650,8 @@ async function runSimulation(){
   const resLinePct = +G('cfg-reserve').value || reservePct || 10;
   if(socChart)socChart.destroy();
   const sc=G('soc-chart');
+  const baseChartOpts=makeBaseChartOpts();
+  const t=chartTheme();
   if(sc)socChart=new Chart(sc.getContext('2d'),{type:'line',data:{labels:sL,datasets:[
     {data:sD,borderColor:'#30D158',backgroundColor:'rgba(48,209,88,.07)',fill:true,tension:.4,borderWidth:2.5,
      label:'Battery SOC',pointRadius:0,pointHoverRadius:5},
@@ -1545,7 +1661,7 @@ async function runSimulation(){
      label:`Reserve ${resLinePct}%`,pointRadius:0},
   ]},options:{...baseChartOpts,
     plugins:{legend:{display:true,position:'top',align:'start',
-      labels:{color:'rgba(255,255,255,.55)',font:{size:13,weight:'500'},usePointStyle:true,padding:16}},
+      labels:{color:t.legend,font:{size:13,weight:'500'},usePointStyle:true,padding:16}},
     tooltip:{...baseChartOpts.plugins.tooltip,mode:'index',intersect:false}},
     scales:{...baseChartOpts.scales,y:{...baseChartOpts.scales.y,min:0,max:100,ticks:{...baseChartOpts.scales.y.ticks,callback:v=>v+'%'}}}}});
 
@@ -1568,7 +1684,7 @@ async function runSimulation(){
       plugins:{
         legend:{
           display:true,
-          labels:{color:'rgba(255,255,255,.60)',font:{size:14,weight:'600'},
+          labels:{color:t.legend,font:{size:14,weight:'600'},
             padding:20,usePointStyle:true,pointStyleWidth:14}
         }
       }
@@ -1599,7 +1715,7 @@ async function runSimulation(){
       }},
       scales:{
         x:{...baseChartOpts.scales.x,ticks:{...baseChartOpts.scales.x.ticks,callback:v=>v.toFixed(2)+' kWh'}},
-        y:{...baseChartOpts.scales.y,ticks:{...baseChartOpts.scales.y.ticks,font:{size:15},color:'rgba(255,255,255,.72)'}}
+        y:{...baseChartOpts.scales.y,ticks:{...baseChartOpts.scales.y.ticks,font:{size:15},color:t.yLabel}}
       }
     }
   });
@@ -1733,7 +1849,8 @@ function initVue(){
           liveLoad:'—',
           liveSi:'—',
           liveSiColor:'var(--l1)',
-          liveDay:'—'
+          liveDay:'—',
+          themeIcon:'☀'
         }
       };
     },
@@ -1760,6 +1877,7 @@ function initVue(){
       syncCloud,
       saveDay,
       saveMqtt
+      ,toggleTheme
     }
   });
   app.config.compilerOptions.delimiters=['[[',']]'];
@@ -1767,7 +1885,9 @@ function initVue(){
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+  initTheme();
   initVue();
+  applyTheme(uiTheme);
   await loadAppliances();
   // Load persisted settings (SOC, battery cap, panel) from DB
   await loadSettings();

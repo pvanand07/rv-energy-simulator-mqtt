@@ -28,6 +28,13 @@
   /* Type scale — 2x larger than standard web */
   --xs:14px;--sm:17px;--base:20px;--lg:24px;--xl:32px;--xxl:44px;--hero:80px;
 }
+:root[data-theme='light']{
+  --bg:#f3f6fb;--bg2:#fff;--bg3:#fff;--bg4:#edf2f9;
+  --l1:#101420;--l2:rgba(16,20,32,.78);--l3:rgba(16,20,32,.56);--l4:rgba(16,20,32,.30);--l5:rgba(16,20,32,.10);
+  --sep:rgba(130,145,170,.30);
+  --glass:rgba(255,255,255,.9);--gb:rgba(130,145,170,.26);--gh:rgba(130,145,170,.34);
+  --sh:0 14px 36px rgba(16,20,32,.08),0 1px 0 rgba(255,255,255,.92) inset;
+}
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 html{background:var(--bg);color:var(--l1);font-family:var(--f);font-size:var(--base);
   line-height:1.5;-webkit-font-smoothing:antialiased}
@@ -62,6 +69,12 @@ nav{position:sticky;top:0;z-index:200;height:68px;
   transition:all .2s;white-space:nowrap;min-height:44px;display:flex;align-items:center}
 .ntab:hover{color:var(--l2)}.ntab.active{background:rgba(255,255,255,.15);color:var(--l1)}
 .nr{display:flex;align-items:center;gap:12px;flex-shrink:0}
+.btn-theme{
+  width:44px;height:44px;border-radius:50%;border:1.5px solid var(--sep);
+  background:rgba(255,255,255,.08);color:var(--l1);font-size:20px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:all .18s;
+}
+.btn-theme:hover{background:rgba(255,255,255,.15)}
 .nstat{display:flex;align-items:center;gap:10px;padding:8px 16px;
   background:var(--glass);border:1px solid var(--gb);border-radius:var(--rp)}
 .nstat-v{font-family:var(--fm);font-size:var(--lg);font-weight:600;line-height:1}
@@ -228,6 +241,8 @@ main{max-width:1600px;margin:0 auto;padding:28px}
 .gtable td{padding:16px 14px;border-bottom:1px solid rgba(255,255,255,.04);font-size:var(--lg)}
 .gtable tr:last-child td{border-bottom:none}
 .gletter{font-family:var(--fm);font-size:var(--xl);font-weight:600;width:48px}
+.grade-c{color:var(--blue)}
+:root[data-theme='light'] .grade-c{color:#0058c7}
 
 /* ── EMPTY STATE ─────────────────────────────────────────────── */
 .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -265,9 +280,23 @@ main{max-width:1600px;margin:0 auto;padding:28px}
 @media(max-width:1100px){.ghero{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}.app-grid{grid-template-columns:1fr}}
 @media(max-width:720px){.ghero{grid-template-columns:1fr};main{padding:16px};.ntabs{display:none}}
 
+/* ── energy rate input — hide spin arrows ─────────────────────── */
+.rate-input::-webkit-inner-spin-button,
+.rate-input::-webkit-outer-spin-button{-webkit-appearance:none;appearance:none;margin:0}
+.rate-input{-moz-appearance:textfield;appearance:textfield}
+
 /* ── datetime-local input color fix ──────────────────────────── */
 input[type='datetime-local']{color-scheme:dark}
 input[type='datetime-local']:focus{border-color:var(--blue) !important}
+:root[data-theme='light'] nav,
+:root[data-theme='light'] .sb{background:rgba(255,255,255,.88);backdrop-filter:blur(34px) saturate(130%)}
+:root[data-theme='light'] .ntabs,
+:root[data-theme='light'] .tw{background:rgba(130,145,170,.14)}
+:root[data-theme='light'] .ntab.active,
+:root[data-theme='light'] .twb.active{background:rgba(130,145,170,.24)}
+:root[data-theme='light'] .btn-theme,
+:root[data-theme='light'] .nstat{background:#fff}
+:root[data-theme='light'] input[type='datetime-local']{color-scheme:light}
 </style>
 
 <!-- ═══ FRONTEND STUDIO — Enhancement Layer ═══ -->
@@ -309,6 +338,30 @@ body::before {
     0 1px 0 rgba(255,255,255,.07) inset,
     0 -1px 0 rgba(0,0,0,.28) inset !important;
   transition: border-color .22s ease, box-shadow .22s ease, transform .22s ease !important;
+}
+:root[data-theme='light'] .card,
+:root[data-theme='light'] .hcard,
+:root[data-theme='light'] .mcard,
+:root[data-theme='light'] .app-chart-card {
+  background: rgba(255,255,255,.92) !important;
+  border: 1px solid rgba(130,145,170,.28) !important;
+  box-shadow:
+    0 12px 34px rgba(16,20,32,.08),
+    0 1px 0 rgba(255,255,255,.95) inset !important;
+}
+:root[data-theme='light'] .card:hover,
+:root[data-theme='light'] .hcard:hover {
+  border-color: rgba(130,145,170,.42) !important;
+  box-shadow:
+    0 14px 40px rgba(16,20,32,.12),
+    0 1px 0 rgba(255,255,255,.96) inset !important;
+}
+:root[data-theme='light'] .aleft{background:rgba(130,145,170,.12) !important}
+:root[data-theme='light'] body::before {
+  background:
+    radial-gradient(ellipse 130% 55% at 15% -5%,  rgba(10,84,255,.09)  0%, transparent 58%),
+    radial-gradient(ellipse 70% 45% at 85% 110%, rgba(48,209,88,.05) 0%, transparent 52%),
+    radial-gradient(ellipse 55% 35% at 55% 55%, rgba(191,90,242,.04) 0%, transparent 55%) !important;
 }
 .card:hover, .hcard:hover {
   border-color: rgba(255,255,255,.17) !important;
@@ -525,6 +578,7 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
     <button class="ntab" :class="{active:activeTab==='history'}" @click="showTab('history')">History</button>
   </div>
   <div class="nr">
+    <button class="btn-theme" @click="toggleTheme" title="Toggle light/dark mode" aria-label="Toggle theme">[[ ui.themeIcon ]]</button>
     <div class="nstat"><div>
       <div class="nstat-v" id="nav-soc" :style="{color:ui.socColor}">[[ ui.navSoc ]]</div>
       <div class="nstat-l">Battery</div>
@@ -578,6 +632,83 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
     <!-- Alerts -->
     <div id="alerts-wrap" style="margin-bottom:var(--gap)">
       <div v-for="(a, i) in alerts" :key="i" class="alert" :class="a.t"><div class="adot"></div><span>[[ a.m ]]</span></div>
+    </div>
+
+    <!-- Live energy cost -->
+    <div class="card" style="margin-bottom:var(--gap)">
+      <div class="ch" style="margin-bottom:16px">
+        <div>
+          <div class="ctitle">Live Energy Cost</div>
+          <div style="font-size:var(--sm);color:var(--l3);margin-top:4px">Based on current generation &amp; consumption</div>
+        </div>
+        <div class="ccontrols">
+          <span style="font-size:var(--sm);color:var(--l3);font-weight:600;text-transform:uppercase;letter-spacing:1px">Rate</span>
+          <div style="display:flex;align-items:center;gap:4px;padding:8px 14px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.18);border-radius:var(--rp)">
+            <span style="font-size:var(--base);color:var(--l2);font-family:var(--fm);font-weight:600">$</span>
+            <input
+              type="number"
+              min="0"
+              max="5"
+              step="0.01"
+              :value="ui.energyRate"
+              @input="onEnergyRateInput($event.target.value)"
+              @change="saveEnergyRate"
+              class="rate-input"
+              style="width:56px;background:transparent;border:none;color:var(--l1);font-family:var(--fm);font-size:var(--base);font-weight:700;text-align:center;outline:none;padding:0"
+            >
+            <span style="font-size:var(--sm);color:var(--l3);font-weight:600">/kWh</span>
+          </div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px">
+        <!-- Solar Saving -->
+        <div style="background:rgba(48,209,88,.07);border:1px solid rgba(48,209,88,.22);border-radius:var(--r16);padding:16px 18px">
+          <div style="font-size:var(--sm);color:var(--green);font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Solar Saving</div>
+          <div style="font-family:var(--fm);font-size:var(--xxl);font-weight:600;color:var(--green);line-height:1;margin-bottom:4px">[[ ui.costSolarHr ]]</div>
+          <div style="font-size:var(--sm);color:var(--l3);margin-bottom:8px">per hour</div>
+          <div style="font-size:var(--sm);color:var(--l3)">Today est.</div>
+          <div style="font-family:var(--fm);font-size:var(--lg);font-weight:600;color:var(--green)">[[ ui.costSolarToday ]]</div>
+        </div>
+        <!-- Load Cost -->
+        <div style="background:rgba(10,132,255,.07);border:1px solid rgba(10,132,255,.22);border-radius:var(--r16);padding:16px 18px">
+          <div style="font-size:var(--sm);color:var(--blue);font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Load Cost</div>
+          <div style="font-family:var(--fm);font-size:var(--xxl);font-weight:600;color:var(--blue);line-height:1;margin-bottom:4px">[[ ui.costLoadHr ]]</div>
+          <div style="font-size:var(--sm);color:var(--l3);margin-bottom:8px">per hour</div>
+          <div style="font-size:var(--sm);color:var(--l3)">Today est.</div>
+          <div style="font-family:var(--fm);font-size:var(--lg);font-weight:600;color:var(--blue)">[[ ui.costLoadToday ]]</div>
+        </div>
+        <!-- Net Grid Cost -->
+        <div style="background:rgba(255,159,10,.07);border:1px solid rgba(255,159,10,.22);border-radius:var(--r16);padding:16px 18px">
+          <div style="font-size:var(--sm);color:var(--orange);font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Net Grid Cost</div>
+          <div style="font-family:var(--fm);font-size:var(--xxl);font-weight:600;color:var(--orange);line-height:1;margin-bottom:4px">[[ ui.costNetHr ]]</div>
+          <div style="font-size:var(--sm);color:var(--l3);margin-bottom:8px">per hour</div>
+          <div style="font-size:var(--sm);color:var(--l3)">Today est.</div>
+          <div style="font-family:var(--fm);font-size:var(--lg);font-weight:600;color:var(--orange)">[[ ui.costNetToday ]]</div>
+        </div>
+        <!-- Solar Offset -->
+        <div style="background:rgba(90,200,245,.07);border:1px solid rgba(90,200,245,.22);border-radius:var(--r16);padding:16px 18px">
+          <div style="font-size:var(--sm);color:var(--teal);font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Solar Offset</div>
+          <div style="font-family:var(--fm);font-size:var(--xxl);font-weight:600;color:var(--teal);line-height:1;margin-bottom:4px">[[ ui.costOffset ]]</div>
+          <div style="font-size:var(--sm);color:var(--l3)">of load covered</div>
+        </div>
+      </div>
+      <!-- Session totals strip -->
+      <div style="padding:10px 16px;background:rgba(255,255,255,.04);border-radius:var(--r16);display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:var(--sm)">
+        <span style="color:var(--l3);font-weight:600;margin-right:4px">Session totals</span>
+        <span style="color:var(--l3)">Solar generated</span>
+        <span style="font-family:var(--fm);font-weight:700;color:var(--orange)">[[ ui.sessionSolarKwh ]]</span>
+        <span style="color:var(--l3)">kWh</span>
+        <span style="color:var(--sep);margin:0 4px">·</span>
+        <span style="color:var(--l3)">Load consumed</span>
+        <span style="font-family:var(--fm);font-weight:700;color:var(--blue)">[[ ui.sessionLoadKwh ]]</span>
+        <span style="color:var(--l3)">kWh</span>
+        <span style="color:var(--sep);margin:0 4px">·</span>
+        <span style="color:var(--l3)">Solar value</span>
+        <span style="font-family:var(--fm);font-weight:700;color:var(--green)">[[ ui.sessionSolarValue ]]</span>
+        <span style="color:var(--sep);margin:0 4px">·</span>
+        <span style="color:var(--l3)">Total grid cost</span>
+        <span style="font-family:var(--fm);font-weight:700;color:var(--orange)">[[ ui.sessionGridCost ]]</span>
+      </div>
     </div>
 
     <!-- Charts -->
@@ -727,7 +858,7 @@ select:focus-visible { outline: 2px solid rgba(10,132,255,.65); outline-offset: 
             <tr><td><span class="gletter" style="color:#30D158">S</span></td><td style="font-family:var(--fm)">9–10</td><td>Exceptional</td><td style="color:#30D158;font-weight:500">None — gold standard</td></tr>
             <tr><td><span class="gletter" style="color:#34C759">A</span></td><td style="font-family:var(--fm)">8–8.9</td><td>Excellent</td><td style="color:#34C759;font-weight:500">Monitor only</td></tr>
             <tr><td><span class="gletter" style="color:var(--teal)">B</span></td><td style="font-family:var(--fm)">7–7.9</td><td>Good</td><td style="color:var(--teal)">Schedule at peak solar</td></tr>
-            <tr><td><span class="gletter" style="color:var(--blue)">C</span></td><td style="font-family:var(--fm)">6–6.9</td><td>Fair</td><td style="color:var(--blue)">Monitor, plan ahead</td></tr>
+            <tr><td><span class="gletter grade-c">C</span></td><td style="font-family:var(--fm)">6–6.9</td><td>Fair</td><td class="grade-c">Monitor, plan ahead</td></tr>
             <tr><td><span class="gletter" style="color:var(--orange)">D</span></td><td style="font-family:var(--fm)">5–5.9</td><td>Poor</td><td style="color:var(--orange)">Shed non-essential loads</td></tr>
             <tr style="background:rgba(255,69,58,.05)">
               <td><span class="gletter" style="color:var(--red)">F</span></td>
@@ -839,26 +970,104 @@ let TW={soc:'all',pw:'all',si:'all',hsoc:'all',hpw:'all'}, globalTW='all';
 let appState={};  // {aid: {meta, vBuf, aBuf, wBuf, latest}}
 let latestSI={score:0,grade:'F'};
 let vueApp=null;
+let uiTheme='dark';
 
-const baseOpts={
-  responsive:true,maintainAspectRatio:false,
-  plugins:{legend:{display:false},tooltip:{
-    backgroundColor:'rgba(16,16,20,.96)',titleColor:'rgba(235,235,245,.55)',
-    bodyColor:'#fff',borderColor:'rgba(255,255,255,.10)',borderWidth:1,
-    padding:16,cornerRadius:14,bodyFont:{size:18,weight:'700'},titleFont:{size:13}}},
-  elements:{point:{radius:0,hoverRadius:7}},
-  animation:{duration:300,easing:'easeOutCubic'},
-  scales:{
-    x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'rgba(255,255,255,.30)',font:{size:14},maxTicksLimit:8},border:{display:false}},
-    y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'rgba(255,255,255,.30)',font:{size:14}},border:{display:false}}
-  }
-};
+function chartTheme(){
+  return uiTheme==='light'
+    ? {tooltipBg:'rgba(255,255,255,.98)',tooltipTitle:'rgba(16,20,32,.58)',tooltipBody:'#101420',tooltipBorder:'rgba(130,145,170,.35)',grid:'rgba(130,145,170,.22)',tick:'rgba(16,20,32,.55)',legend:'rgba(16,20,32,.62)',minor:'rgba(16,20,32,.50)'}
+    : {tooltipBg:'rgba(16,16,20,.96)',tooltipTitle:'rgba(235,235,245,.55)',tooltipBody:'#fff',tooltipBorder:'rgba(255,255,255,.10)',grid:'rgba(255,255,255,.04)',tick:'rgba(255,255,255,.30)',legend:'rgba(255,255,255,.55)',minor:'rgba(255,255,255,.50)'};
+}
+function makeBaseOpts(){
+  const t=chartTheme();
+  return {
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{
+      backgroundColor:t.tooltipBg,titleColor:t.tooltipTitle,
+      bodyColor:t.tooltipBody,borderColor:t.tooltipBorder,borderWidth:1,
+      padding:16,cornerRadius:14,bodyFont:{size:18,weight:'700'},titleFont:{size:13}}},
+    elements:{point:{radius:0,hoverRadius:7}},
+    animation:{duration:300,easing:'easeOutCubic'},
+    scales:{
+      x:{grid:{color:t.grid},ticks:{color:t.tick,font:{size:14},maxTicksLimit:8},border:{display:false}},
+      y:{grid:{color:t.grid},ticks:{color:t.tick,font:{size:14}},border:{display:false}}
+    }
+  };
+}
 
 function showTab(n){
   if(vueApp)vueApp.activeTab=n;
   if(n==='appliances') renderGrid();
   if(n==='stability')  refreshSI();
   if(n==='history')    refreshHist();
+}
+function applyTheme(theme){
+  uiTheme=(theme==='light')?'light':'dark';
+  document.documentElement.setAttribute('data-theme',uiTheme);
+  localStorage.setItem('rv-theme',uiTheme);
+  if(vueApp)vueApp.ui.themeIcon=uiTheme==='light'?'🌙':'☀';
+}
+function initTheme(){
+  const saved=localStorage.getItem('rv-theme');
+  const preferLight=window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches;
+  applyTheme(saved||(preferLight?'light':'dark'));
+}
+function toggleTheme(){
+  applyTheme(uiTheme==='light'?'dark':'light');
+  buildRTCharts();
+  if(vueApp&&vueApp.activeTab==='appliances')renderGrid();
+  if(vueApp&&vueApp.activeTab==='stability')refreshSI();
+  if(vueApp&&vueApp.activeTab==='history')refreshHist();
+}
+
+function clampRate(v){
+  const n=Number(v);
+  if(!Number.isFinite(n))return 0.10;
+  return Math.min(5,Math.max(0,n));
+}
+function money(v){
+  return '$'+(Number.isFinite(v)?v:0).toFixed(4);
+}
+function applyEnergyPayload(energy){
+  if(!vueApp||!vueApp.ui||!energy)return;
+  vueApp.ui.energyRate=(+energy.rate_per_kwh||0.10).toFixed(2);
+  vueApp.ui.costLoadHr=money(+energy.cost_load_hr||0);
+  vueApp.ui.costSolarHr=money(+energy.cost_solar_hr||0);
+  vueApp.ui.costNetHr=money(+energy.cost_net_hr||0);
+  vueApp.ui.costOffset=(+energy.cost_offset_pct||0).toFixed(1)+'%';
+  vueApp.ui.costLoadToday=money(+energy.cost_load_today||0);
+  vueApp.ui.costSolarToday=money(+energy.cost_solar_today||0);
+  vueApp.ui.costNetToday=money(+energy.cost_net_today||0);
+  vueApp.ui.sessionSolarKwh=(+energy.session_solar_kwh||0).toFixed(3);
+  vueApp.ui.sessionLoadKwh=(+energy.session_load_kwh||0).toFixed(3);
+  vueApp.ui.sessionSolarValue=money(+energy.session_solar_value||0);
+  vueApp.ui.sessionGridCost=money(+energy.session_grid_cost||0);
+}
+function setEnergyRate(v){
+  const rate=clampRate(v);
+  if(vueApp&&vueApp.ui)vueApp.ui.energyRate=rate.toFixed(2);
+}
+async function saveEnergyRate(){
+  const rate=clampRate(vueApp?.ui?.energyRate);
+  if(vueApp&&vueApp.ui)vueApp.ui.energyRate=rate.toFixed(2);
+  try{
+    const res=await fetch('/api/dashboard/energy-rate',{
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({rate_per_kwh:rate})
+    });
+    if(res.ok){
+      const payload=await res.json();
+      applyEnergyPayload(payload);
+    }
+  }catch(_e){}
+}
+async function initEnergyRate(){
+  try{
+    const res=await fetch('/api/dashboard/energy');
+    if(!res.ok)return;
+    const payload=await res.json();
+    applyEnergyPayload(payload);
+  }catch(_e){}
 }
 
 // ── SSE ──────────────────────────────────────────────────
@@ -933,6 +1142,7 @@ function dispatch(d){
 
   if(d.type==='solar'){
     const s=+d.solar_kw||0,l=+d.load_kw||0;
+    applyEnergyPayload(d.energy);
     if(vueApp){
       vueApp.ui.heroSolar=s.toFixed(3);
       vueApp.ui.heroLoad=l.toFixed(3);
@@ -977,6 +1187,17 @@ function setGTW(w,btn){
   if(wrap)wrap.querySelectorAll('.twb').forEach(b=>b.classList.toggle('active',b===btn));
   Object.keys(appState).forEach(aid=>liveCard(aid));
 }
+function appWindowSizeForTW(w){
+  if(w==='15m') return 90;
+  if(w==='1h') return 180;
+  return 240;
+}
+function stabilizeSeries(labels, values, targetLen){
+  const outL=labels.slice(-targetLen);
+  const outV=values.slice(-targetLen);
+  while(outL.length<targetLen){outL.unshift('');outV.unshift(null);}
+  return {labels:outL,values:outV};
+}
 function fBuf(buf,w){
   if(w==='all')return buf;
   const ms={'15m':900000,'1h':3600000,'6h':21600000}[w];if(!ms)return buf;
@@ -986,6 +1207,7 @@ function fBuf(buf,w){
 
 // ── RT Charts ─────────────────────────────────────────────
 function buildRTCharts(){
+  const baseOpts=makeBaseOpts();
   const sf=fBuf(socBuf,TW.soc),sl=sf.map(p=>p.ts);
   if(!chartRefs.soc){
     const c=G('rt-soc');if(!c)return;
@@ -1048,8 +1270,7 @@ function renderGrid(){
   }
   aids.forEach((aid,i)=>{
     if(G('acard-'+aid)){
-      // Card already exists — refresh values and force chart rebuild with latest data
-      const s=appState[aid];if(s)s._tick=0;
+      // Card already exists — refresh values only
       liveCard(aid);
     } else {
       ensureCard(aid,i);
@@ -1137,33 +1358,33 @@ function liveCard(aid){
     set('aa-'+aid,(+l.a).toFixed(3));
     set('av-'+aid,(+l.v).toFixed(1));
   }
-  // Only rebuild chart every 5 updates to keep rendering smooth
-  const tick=(s._tick=(s._tick||0)+1);
-  if(tick%5===1 || !appCRefs[aid]) buildChart(aid,appMode[aid]||'all');
-  else if(appCRefs[aid]){
-    // Fast path: update chart data in-place then redraw
-    const mode=appMode[aid]||'all';
-    const ch=appCRefs[aid];
-    const rawBuf=mode==='w'?s.wBuf:mode==='a'?s.aBuf:mode==='v'?s.vBuf:s.wBuf;
+  const mode=appMode[aid]||'all';
+  const ch=appCRefs[aid];
+  if(!ch){ buildChart(aid,mode); return; }
+
+  // Incremental update path: keep existing chart instance and patch data only.
+  if(mode==='all'){
+    const wB=fBuf(s.wBuf,globalTW),aB=fBuf(s.aBuf,globalTW),vB=fBuf(s.vBuf,globalTW);
+    const len=Math.min(wB.length,aB.length,vB.length);
+    const m=s.meta||{},clr=m.clr||'#0A84FF';
+    const target=appWindowSizeForTW(globalTW);
+    const sw=stabilizeSeries(wB.slice(-len).map(p=>p.ts), wB.slice(-len).map(p=>p.w), target);
+    const sa=stabilizeSeries(aB.slice(-len).map(p=>p.ts), aB.slice(-len).map(p=>p.a*10), target);
+    const sv=stabilizeSeries(vB.slice(-len).map(p=>p.ts), vB.slice(-len).map(p=>p.v), target);
+    ch.data.labels=sw.labels;
+    ch.data.datasets[0].data=sw.values;
+    ch.data.datasets[1].data=sa.values;
+    ch.data.datasets[2].data=sv.values;
+    ch.data.datasets[0].borderColor=clr;
+  } else {
+    const rawBuf=mode==='w'?s.wBuf:mode==='a'?s.aBuf:s.vBuf;
     const buf=fBuf(rawBuf,globalTW);
-    if(ch.data.labels.length!==buf.length){
-      buildChart(aid,mode); // full rebuild if length changed
-    } else {
-      // Same length (sliding window at MAX) — update data arrays in-place
-      if(mode==='all'){
-        const wB=fBuf(s.wBuf,globalTW),aB=fBuf(s.aBuf,globalTW),vB=fBuf(s.vBuf,globalTW);
-        const len=Math.min(wB.length,aB.length,vB.length);
-        ch.data.labels=wB.slice(-len).map(p=>p.ts);
-        ch.data.datasets[0].data=wB.slice(-len).map(p=>p.w);
-        ch.data.datasets[1].data=aB.slice(-len).map(p=>p.a*10);
-        ch.data.datasets[2].data=vB.slice(-len).map(p=>p.v);
-      } else {
-        ch.data.labels=buf.map(p=>p.ts);
-        ch.data.datasets[0].data=buf.map(p=>p[mode]);
-      }
-      ch.update('none');
-    }
+    const target=appWindowSizeForTW(globalTW);
+    const ss=stabilizeSeries(buf.map(p=>p.ts), buf.map(p=>p[mode]), target);
+    ch.data.labels=ss.labels;
+    ch.data.datasets[0].data=ss.values;
   }
+  ch.update('none');
 }
 
 function swMode(aid,mode,btn){
@@ -1186,6 +1407,8 @@ function swMode(aid,mode,btn){
 }
 
 function buildChart(aid,mode){
+  const baseOpts=makeBaseOpts();
+  const t=chartTheme();
   const s=appState[aid];if(!s)return;
   mode=mode||appMode[aid]||'all';appMode[aid]=mode;
   const m=s.meta||{},clr=m.clr||'#0A84FF';
@@ -1237,7 +1460,14 @@ function buildChart(aid,mode){
     scales:{
       x:{
         grid:{color:'rgba(255,255,255,.04)',drawTicks:false},
-        ticks:{color:'rgba(255,255,255,.32)',font:{size:12},maxTicksLimit:6,maxRotation:0},
+        ticks:{
+          color:t.tick,font:{size:12},maxTicksLimit:6,maxRotation:0,
+          callback:function(value,index,ticks){
+            if(!ticks.length) return '';
+            const stride=Math.max(1,Math.floor(ticks.length/4));
+            return (index===0||index===ticks.length-1||index%stride===0) ? this.getLabelForValue(value) : '';
+          }
+        },
         border:{display:false}
       }
     }
@@ -1249,13 +1479,17 @@ function buildChart(aid,mode){
     const vBuf=fBuf(s.vBuf,globalTW);
     // Align lengths — use shortest buffer
     const len=Math.min(wBuf.length,aBuf.length,vBuf.length);
-    const labels=wBuf.slice(-len).map(p=>p.ts);
+    const target=appWindowSizeForTW(globalTW);
+    const sw=stabilizeSeries(wBuf.slice(-len).map(p=>p.ts), wBuf.slice(-len).map(p=>p.w), target);
+    const sa=stabilizeSeries(aBuf.slice(-len).map(p=>p.ts), aBuf.slice(-len).map(p=>p.a*10), target);
+    const sv=stabilizeSeries(vBuf.slice(-len).map(p=>p.ts), vBuf.slice(-len).map(p=>p.v), target);
+    const labels=sw.labels;
 
     appCRefs[aid]=new Chart(c.getContext('2d'),{
       type:'line',
       data:{labels,datasets:[
         {
-          data:wBuf.slice(-len).map(p=>p.w),
+          data:sw.values,
           borderColor:clr,
           backgroundColor:bg(clr,0.10),
           fill:true,tension:.4,borderWidth:2.5,
@@ -1263,7 +1497,7 @@ function buildChart(aid,mode){
           yAxisID:'yW',order:3
         },
         {
-          data:aBuf.slice(-len).map(p=>p.a*10),
+          data:sa.values,
           borderColor:'#5AC8F5',
           borderDash:[6,3],
           fill:false,tension:.4,borderWidth:2,
@@ -1271,7 +1505,7 @@ function buildChart(aid,mode){
           yAxisID:'yW',order:2
         },
         {
-          data:vBuf.slice(-len).map(p=>p.v),
+          data:sv.values,
           borderColor:'rgba(255,255,255,.35)',
           borderDash:[2,5],
           fill:false,tension:.3,borderWidth:1.5,
@@ -1285,13 +1519,13 @@ function buildChart(aid,mode){
           yW:{
             position:'left',
             grid:{color:'rgba(255,255,255,.04)',drawTicks:false},
-            ticks:{color:'rgba(255,255,255,.32)',font:{size:12},callback:v=>v<1?v.toFixed(1):Math.round(v)},
+            ticks:{color:t.tick,font:{size:12},callback:v=>v<1?v.toFixed(1):Math.round(v)},
             border:{display:false}
           },
           yV:{
             position:'right',
             grid:{display:false},
-            ticks:{color:'rgba(255,255,255,.22)',font:{size:11},callback:v=>v.toFixed(0)+'V'},
+            ticks:{color:t.minor,font:{size:11},callback:v=>v.toFixed(0)+'V'},
             border:{display:false}
           }
         }
@@ -1303,8 +1537,10 @@ function buildChart(aid,mode){
   // Single-series mode
   const rawBuf=mode==='w'?s.wBuf:mode==='a'?s.aBuf:s.vBuf;
   const buf=fBuf(rawBuf,globalTW);
-  const labels=buf.map(p=>p.ts);
-  const vals=buf.map(p=>p[mode]);
+  const target=appWindowSizeForTW(globalTW);
+  const ss=stabilizeSeries(buf.map(p=>p.ts), buf.map(p=>p[mode]), target);
+  const labels=ss.labels;
+  const vals=ss.values;
   const borderColor=mode==='w'?clr:mode==='a'?'#5AC8F5':'rgba(255,255,255,.55)';
   const bgColor=mode==='w'?bg(clr,0.10):mode==='a'?'rgba(90,200,245,.08)':'rgba(255,255,255,.04)';
 
@@ -1335,7 +1571,7 @@ function buildChart(aid,mode){
         ...sharedOpts.scales,
         y:{
           grid:{color:'rgba(255,255,255,.04)',drawTicks:false},
-          ticks:{color:'rgba(255,255,255,.32)',font:{size:12}},
+          ticks:{color:t.tick,font:{size:12}},
           border:{display:false}
         }
       }
@@ -1364,6 +1600,7 @@ function drawGauge(score,grade){
 }
 
 async function refreshSI(){
+  const baseOpts=makeBaseOpts();
   const r=await fetch('/api/stability');const d=await r.json();
   const score=d.si_score||d.score||0,grade=d.si_grade||d.grade||'F';
   drawGauge(score,grade);
@@ -1457,6 +1694,8 @@ function dlHistCSV(){
 }
 
 async function refreshHist(){
+  const baseOpts=makeBaseOpts();
+  const t=chartTheme();
   const [br,sr]=await Promise.all([fetch('/api/history/battery?n=2000'),fetch('/api/history/solar?n=2000')]);
   const bhAll=await br.json(),shAll=await sr.json();
 
@@ -1481,7 +1720,7 @@ async function refreshHist(){
       {data:bl.map(()=>20),borderColor:'rgba(255,159,10,.50)',borderDash:[6,4],borderWidth:1.5,pointRadius:0,label:'20% Warning'},
       {data:bl.map(()=>10),borderColor:'rgba(255,69,58,.60)',borderDash:[3,4],borderWidth:1.5,pointRadius:0,label:'10% Floor'},
     ]},options:{...baseOpts,
-      plugins:{legend:{display:true,position:'top',labels:{color:'rgba(255,255,255,.55)',font:{size:13,weight:'500'},usePointStyle:true,padding:16}}},
+      plugins:{legend:{display:true,position:'top',labels:{color:t.legend,font:{size:13,weight:'500'},usePointStyle:true,padding:16}}},
       scales:{...baseOpts.scales,y:{...baseOpts.scales.y,min:0,max:100,ticks:{...baseOpts.scales.y.ticks,callback:v=>v+'%'}}}}});
   }
 
@@ -1492,7 +1731,7 @@ async function refreshHist(){
       {data:sh.map(p=>p.solar_kw),borderColor:'#FF9F0A',backgroundColor:'rgba(255,159,10,.07)',fill:true,tension:.4,borderWidth:2.5,label:'Solar (kW)',pointRadius:0},
       {data:sh.map(p=>p.load_kw), borderColor:'#0A84FF',backgroundColor:'rgba(10,132,255,.06)',fill:true,tension:.4,borderWidth:2.5,label:'Load (kW)',pointRadius:0},
     ]},options:{...baseOpts,
-      plugins:{legend:{display:true,position:'top',labels:{color:'rgba(255,255,255,.55)',font:{size:13,weight:'500'},usePointStyle:true,padding:16}}}}});
+      plugins:{legend:{display:true,position:'top',labels:{color:t.legend,font:{size:13,weight:'500'},usePointStyle:true,padding:16}}}}});
   }
 
   // Build per-appliance history mini-charts
@@ -1518,7 +1757,7 @@ async function refreshHist(){
           backgroundColor:(s.meta.clr||'#0A84FF').replace(')',',.07)').replace('rgba(','rgba('),
           fill:true,tension:.4,borderWidth:2,pointRadius:0,label:'Power (W)'}]
       },options:{...baseOpts,animation:false,
-        plugins:{legend:{display:true,position:'top',labels:{color:'rgba(255,255,255,.50)',font:{size:11},usePointStyle:true}}}}});
+        plugins:{legend:{display:true,position:'top',labels:{color:t.minor,font:{size:11},usePointStyle:true}}}}});
     });
   }
 }
@@ -1591,12 +1830,28 @@ function initVue(){
           heroNetMsg:'—',
           navSoc:'—%',
           navSi:'—/10',
-          siColor:'var(--blue)'
+          siColor:'var(--blue)',
+          themeIcon:'☀',
+          energyRate:'0.10',
+          costSolarHr:'$0.0000',
+          costLoadHr:'$0.0000',
+          costNetHr:'$0.0000',
+          costOffset:'0.0%',
+          costSolarToday:'$0.0000',
+          costLoadToday:'$0.0000',
+          costNetToday:'$0.0000',
+          sessionSolarKwh:'0.000',
+          sessionLoadKwh:'0.000',
+          sessionSolarValue:'$0.0000',
+          sessionGridCost:'$0.0000'
         }
       };
     },
     methods:{
-      showTab
+      showTab,
+      toggleTheme,
+      onEnergyRateInput(v){setEnergyRate(v);},
+      saveEnergyRate
     }
   });
   app.config.compilerOptions.delimiters=['[[',']]'];
@@ -1612,7 +1867,10 @@ setInterval(()=>{
 },5000);
 
 document.addEventListener('DOMContentLoaded',()=>{
+  initTheme();
   initVue();
+  initEnergyRate();
+  applyTheme(uiTheme);
   drawGauge(0,'F');connectSSE();
   fetch('/api/appliances').then(r=>r.ok?r.json():[]).then(apps=>{
     apps.forEach(a=>{
