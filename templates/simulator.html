@@ -878,6 +878,10 @@ body::before {
   background: rgba(255, 255, 255, 0.96) !important;
   border-color: rgba(121, 137, 161, 0.36) !important;
 }
+:root[data-theme='light'] .stat-card-usable {
+  background: rgba(255, 255, 255, 0.96) !important;
+  border-color: rgba(121, 137, 161, 0.36) !important;
+}
 :root[data-theme='light'] .cfg-card-soc { border-color: rgba(84, 157, 116, 0.28) !important; }
 :root[data-theme='light'] .cfg-card-reserve { border-color: rgba(196, 131, 137, 0.30) !important; }
 :root[data-theme='light'] .cfg-card-solar { border-color: rgba(191, 161, 106, 0.30) !important; }
@@ -1092,7 +1096,7 @@ body::before {
         <div style="font-size:var(--sm);color:var(--l3);margin-bottom:4px;font-weight:500">Available Now</div>
         <div style="font-family:var(--fm);font-size:var(--xl);font-weight:600;color:var(--green)" id="stat-avail">—</div>
       </div>
-      <div style="background:rgba(255,255,255,.04);border-radius:var(--r16);padding:14px 16px;border:1px solid rgba(255,255,255,.08)">
+      <div class="stat-card-usable" style="background:rgba(255,255,255,.04);border-radius:var(--r16);padding:14px 16px;border:1px solid rgba(255,255,255,.08)">
         <div style="font-size:var(--sm);color:var(--l3);margin-bottom:4px;font-weight:500">Usable Capacity</div>
         <div style="font-family:var(--fm);font-size:var(--xl);font-weight:600;color:var(--l2)" id="stat-usable">—</div>
       </div>
