@@ -85,19 +85,23 @@ def _pattern_thermostat(step: int, _rng: random.Random) -> float:
     return 0.0
 
 def _pattern_wifi(step: int, _rng: random.Random) -> float:
-    """Router: smooth traffic wave by time-of-day."""
+    """Router: smooth traffic wave by time-of-day.
+
+    Keep baseline draw realistic for always-on networking gear and add
+    moderate diurnal peaks for daytime traffic.
+    """
     h = step * DT_H
     if h < 7:
-        base = 0.25
+        base = 0.58
     elif h < 9:
-        base = 0.25 + 0.45 * (h - 7) / 2
+        base = 0.58 + 0.27 * (h - 7) / 2
     elif h < 17:
-        base = 0.70 + 0.15 * math.sin((h - 9) / 8 * math.pi)
+        base = 0.85 + 0.22 * math.sin((h - 9) / 8 * math.pi)
     elif h < 22:
-        base = 0.70 - 0.45 * (h - 17) / 5
+        base = 0.85 - 0.27 * (h - 17) / 5
     else:
-        base = 0.25
-    return base + 0.05 * math.sin(step * 0.03)
+        base = 0.58
+    return base + 0.06 * math.sin(step * 0.03)
 
 def _pattern_display_sleep(step: int, _rng: random.Random) -> float:
     """HMI tablet: smooth wake/sleep profile."""
